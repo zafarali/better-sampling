@@ -87,3 +87,16 @@ class MCSampler(Sampler):
 
 class ISSampler(MCSampler):
     pass
+
+class RVISampler(Sampler):
+    """
+    Reinforced Variational Inference Sampler
+    """
+    def __init__(self, policy, policy_optimizer, baseline=None,  seed=0):
+        super().__init__(seed)
+        self.policy = policy
+        self.policy_optimizer = policy_optimizer
+        self.baseline = baseline
+
+    def solve(self, stochastic_process, mc_samples):
+        pass
