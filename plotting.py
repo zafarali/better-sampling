@@ -41,3 +41,15 @@ def plot_mean_trajectories(trajectories, ts, true_trajectory, label='inferred', 
     return ax
 
 
+def plot_trajectory_time_evolution(trajectories, dimension=0, step=5, ax=None):
+    if ax is None:
+        plt.clf()
+        ax = plt.gca()
+    COLORS = sns.color_palette('Blues_d', n_colors=len(trajectories))
+    for i in range(0, len(trajectories), step):
+        ax.plot(trajectories[i][:, dimension], color=COLORS[i])
+
+    ax.set_xlabel('Time')
+    ax.set_ylabel('x_i')
+    ax.set_title('Evolution of Trajectories over time (lighter color is more recent)')
+    return ax

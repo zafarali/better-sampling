@@ -26,6 +26,7 @@ class RVISampler(Sampler):
         x_0 = stochastic_process.x0
         rewards_per_episode = []
         loss_per_episode = []
+        all_trajectories = []
         for i in range(mc_samples):
             x_t = stochastic_process.reset()  # start at the end
             x_tm1 = x_t
@@ -77,19 +78,23 @@ class RVISampler(Sampler):
             if self.use_cuda:
                 loss = loss.cuda()
 
-            self.policy_optimizer.zero_grad()
-            loss.backward()
-            clip_grad_norm(self.policy.fn_approximator.parameters(), 40)
+            if self.policy_optimizer is not None:
+                self.policy_optimizer.zero_grad()
+                loss.backward()
+                clip_grad_norm(self.policy.fn_approximator.parameters(), 40)
+                self.policy_optimizer.step()
+
             reward_summary = torch.sum(policy_gradient_trajectory_info.rewards, dim=0).mean()
             rewards_per_episode.append(reward_summary)
             loss_per_episode.append(loss.cpu().data[0])
             if i % 100 == 0 and verbose:
-                print('MC Sample {}, loss {}, episode_reward {}'.format(i, loss.cpu().data[0], reward_summary))
+                print('MC Sample {}, loss {:3g}, episode_reward {:3g}, successful trajs {}'.format(i, loss.cpu().data[0], reward_summary, len(trajectories)))
 
             trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T+1, x_t.size()[-1])
 
             selected_trajectories = np.where(log_path_prob > self.log_prob_tolerance)
             for traj_idx in selected_trajectories[0]:
                 trajectories.append(trajectory_i[traj_idx, ::-1, :])
-
-        return trajectories, loss_per_episode, rewards_per_episode
+            for m in range(trajectory_i.shape[0]):
+                all_trajectories.append(trajectory_i[m, ::-1, :])
+        return trajectories, loss_per_episode, rewards_per_episode, all_trajectories
