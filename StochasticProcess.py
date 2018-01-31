@@ -108,21 +108,26 @@ class RandomWalk(StochasticProcess):
         self.xT = self.true_trajectory[-1]
         return self.reset()
 
-    def step(self, actions):
+    def step(self, actions, reverse=True):
         """
         This will allow the agents to execute the actions in the stochastic process.
+        :param actions: the array with the actions to be executed by each agent
+        :param reverse: defines if the step execution is going in reverse or not
         """
         if self.global_time_step == self.T:
             raise TimeoutError('You have already reached the end of the episode. Use reset()')
         steps_taken = np.take(self.step_sizes, actions.ravel(), axis=0)
         step_log_probs = np.log(np.take(self.step_probs, actions.ravel(), axis=0).reshape(self.n_agents, -1))
-        self.x_agent = self.x_agent + steps_taken
+
+        reversal_param = -1 if reverse else +1
+        self.x_agent = self.x_agent + steps_taken * reversal_param
         self.global_time_step += 1
         if self.global_time_step == self.T:
             # this will count the agents who reached the correct entry in some state
             corrects = (self.x_agent == self.x0).sum(axis=1)
+            # print(corrects)
             # the final log prob is just the sum of getting to the correct
             # position in this space.
             step_log_probs = np.log(corrects * 1/self.dimensions + np.finfo('float').tiny)
-        return (self.x_agent, step_log_probs, self.global_time_step == self.T, {})
+        return (self.x_agent, step_log_probs.reshape(-1, 1), self.global_time_step == self.T, {})
 
