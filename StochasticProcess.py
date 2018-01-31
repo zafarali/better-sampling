@@ -1,6 +1,7 @@
 import gym
 import numpy as np
-
+import torch
+from torch.autograd import Variable
 
 class StochasticProcess(gym.Env):
     def __init__(self, seed, T):
@@ -131,3 +132,42 @@ class RandomWalk(StochasticProcess):
             step_log_probs = np.log(corrects * 1/self.dimensions + np.finfo('float').tiny)
         return (self.x_agent, step_log_probs.reshape(-1, 1), self.global_time_step == self.T, {})
 
+
+class PyTorchWrap(object):
+    def __init__(self, stochastic_process, use_cuda=False):
+        self.stochastic_process = stochastic_process
+        self.step_probs = stochastic_process.step_probs
+        self.dimensions = stochastic_process.dimensions
+        self.step_sizes = stochastic_process.step_sizes
+        self.x0 = stochastic_process.x0
+        self.state = stochastic_process.state
+        self.state_space = stochastic_process.state_space
+        self.action_space = stochastic_process.action_space
+        self.use_cuda = use_cuda
+
+    def variable_wrap(self, tensor):
+        if not isinstance(tensor, Variable):
+            tensor = Variable(tensor)
+        if self.use_cuda:
+            tensor = tensor.cuda()
+
+        return tensor
+
+    def simulate(self, rng=None):
+        return self.stochastic_process.simulate(rng=rng)
+
+    def reset(self):
+        return self.variable_wrap(torch.from_numpy(self.stochastic_process.reset()))
+
+    def new_task(self):
+        return self.stochastic_process.new_task()
+
+    def step(self, actions, reverse=True):
+        if isinstance(actions, Variable):
+            actions = actions.data
+        actions = actions.cpu()
+        actions = actions.numpy()
+        position, log_probs, done, info = self.stochastic_process.step(actions, reverse=reverse)
+        position = self.variable_wrap(torch.from_numpy(position))
+        log_probs = torch.from_numpy(log_probs)
+        return (position, log_probs, done, info)
