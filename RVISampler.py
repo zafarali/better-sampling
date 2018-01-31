@@ -18,7 +18,7 @@ class RVISampler(Sampler):
         self.use_cuda = use_cuda
         self.log_prob_tolerance = log_prob_tolerance
 
-    def solve(self, stochastic_process, mc_samples, verbose=False):
+    def solve(self, stochastic_process, mc_samples, verbose=False, feed_time=True):
         assert stochastic_process._pytorch, 'Your stochastic process must be pytorch wrapped.'
 
         trajectories = []
@@ -31,6 +31,15 @@ class RVISampler(Sampler):
             x_t = stochastic_process.reset()  # start at the end
             x_tm1 = x_t
             trajectory_i = [x_t.data.cpu().numpy() if isinstance(x_t, Variable) else x_t.cpu().numpy()]
+
+            if feed_time:
+                # this will augment the state space with the time dimension
+                # so that the learner has access to it.
+                x_with_time = torch.zeros(stochastic_process.n_agents, x_tm1.size()[-1]+1)
+                x_with_time[:, :x_tm1.size()[-1]].copy_(x_tm1.data)
+                x_with_time[:, x_tm1.size()[-1]].copy_(torch.ones(stochastic_process.n_agents, 1))
+                x_tm1 = Variable(x_with_time)
+
             log_path_prob = np.zeros((stochastic_process.n_agents, 1))
             policy_gradient_trajectory_info = MultiTrajectory(stochastic_process.n_agents)
             # go in reverse time:
@@ -51,8 +60,6 @@ class RVISampler(Sampler):
 
                 value_estimate = self.baseline(x_t) if self.baseline is not None else torch.FloatTensor([[0]*stochastic_process.n_agents])
 
-                policy_gradient_trajectory_info.append(x_tm1, action, reward, value_estimate, log_prob_action, x_t, done)
-
                 # probability of the path gets updated:
                 log_path_prob += path_log_prob.numpy()
                 # take the reverse step:
@@ -61,7 +68,18 @@ class RVISampler(Sampler):
                     trajectory_i.append(x_t.data.numpy())
                 else:
                     trajectory_i.append(x_t.numpy())
+
+                policy_gradient_trajectory_info.append(x_tm1, action, reward, value_estimate, log_prob_action, x_t, done)
+
                 x_tm1 = x_t
+                if feed_time:
+                    # this will augment the state space with the time dimension
+                    # so that the learner has access to it.
+                    x_with_time = torch.zeros(stochastic_process.n_agents, x_tm1.size()[-1]+1)
+                    x_with_time[:, :x_tm1.size()[-1]].copy_(x_tm1.data)
+                    x_with_time[:, x_tm1.size()[-1]].copy_((t/stochastic_process.T) * torch.ones(stochastic_process.n_agents, 1))
+                    x_tm1 = Variable(x_with_time)
+
             # print(trajectory_i)
             # conduct an update step.
             # print(policy_gradient_trajectory_info.rewards)
