@@ -134,6 +134,8 @@ class RandomWalk(StochasticProcess):
 
 
 class PyTorchWrap(object):
+    _pytorch = True
+    _vectorized = True
     def __init__(self, stochastic_process, use_cuda=False):
         self.stochastic_process = stochastic_process
         self.step_probs = stochastic_process.step_probs
@@ -144,6 +146,10 @@ class PyTorchWrap(object):
         self.state_space = stochastic_process.state_space
         self.action_space = stochastic_process.action_space
         self.use_cuda = use_cuda
+        self.T = stochastic_process.T
+        self.n_agents = stochastic_process.n_agents
+        self.xT = stochastic_process.xT
+        self.true_trajectory = self.stochastic_process.true_trajectory
 
     def variable_wrap(self, tensor):
         if not isinstance(tensor, Variable):
@@ -151,7 +157,7 @@ class PyTorchWrap(object):
         if self.use_cuda:
             tensor = tensor.cuda()
 
-        return tensor
+        return tensor.float()
 
     def simulate(self, rng=None):
         return self.stochastic_process.simulate(rng=rng)
@@ -160,7 +166,10 @@ class PyTorchWrap(object):
         return self.variable_wrap(torch.from_numpy(self.stochastic_process.reset()))
 
     def new_task(self):
-        return self.stochastic_process.new_task()
+        delayed_to_return = self.stochastic_process.new_task()
+        self.xT = self.stochastic_process.xT
+        self.true_trajectory = self.stochastic_process.true_trajectory
+        return delayed_to_return
 
     def step(self, actions, reverse=True):
         if isinstance(actions, Variable):
@@ -169,5 +178,6 @@ class PyTorchWrap(object):
         actions = actions.numpy()
         position, log_probs, done, info = self.stochastic_process.step(actions, reverse=reverse)
         position = self.variable_wrap(torch.from_numpy(position))
-        log_probs = torch.from_numpy(log_probs)
+        log_probs = torch.from_numpy(log_probs).float().view(self.n_agents, 1)
+        done = torch.IntTensor([[done] * self.n_agents])
         return (position, log_probs, done, info)
