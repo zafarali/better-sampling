@@ -20,15 +20,15 @@ DIMENSIONS = POSSIBLE_STEPS.shape[1]
 rw = PyTorchWrap(RandomWalk(DIMENSIONS, STEP_PROBS, POSSIBLE_STEPS, n_agents=10, T=100))
 rw.reset()
 
+
+"""
+Experiment without time information
+"""
 # real policy
 fn_approximator = MLP_factory(DIMENSIONS, hidden_sizes=[32, 32], output_size=POSSIBLE_STEPS.shape[0], hidden_non_linearity=nn.ReLU)
 policy = MultinomialPolicy(fn_approximator)
 policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=0.001)
 
-# random policy
-
-# policy = RandomPolicy(POSSIBLE_STEPS.shape[0])
-# policy_optimizer = None
 
 
 rvi = RVISampler(policy, policy_optimizer, baseline=MovingAverageBaseline(0.99), log_prob_tolerance=-2*10**2)
@@ -43,18 +43,31 @@ ax = f.add_subplot(122)
 ax = plot_trajectory_time_evolution(all_trajectories, 1, step=200, ax=ax)
 ax.set_title('Evolution of Trajectories over MCSamples \n (lighter = more recent, dim 1)')
 f.tight_layout()
-f.save_fig('RVI performance')
+f.suptitle('Without time information')
+f.savefig('RVIperformance_without_time.pdf')
 
 
-# def downsample(array, step=50):
-#     to_return = []
-#     steps = []
-#     for i in range(0, array.shape[0], step):
-#         to_return.append(array[i])
-#         steps.append(i)
-#
-#     return np.array(steps), np.array(to_return)
-#
-#
-# plt.plot(*downsample(np.array(rvis_rewards)))
-# # plt.ylim([0, -650])
+
+"""
+Experiment without time information
+"""
+fn_approximator = MLP_factory(DIMENSIONS+1, hidden_sizes=[32, 32], output_size=POSSIBLE_STEPS.shape[0], hidden_non_linearity=nn.ReLU)
+policy = MultinomialPolicy(fn_approximator)
+policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=0.001)
+
+
+rvi = RVISampler(policy, policy_optimizer, baseline=MovingAverageBaseline(0.9), log_prob_tolerance=-2*10**2)
+rvis_trajectories, rvis_losses, rvis_rewards, all_trajectories = rvi.solve(rw, MC_SAMPLES, verbose=True, feed_time=True)
+
+sns.set_style('white')
+f = plt.figure(figsize=(9, 4))
+ax = f.add_subplot(121)
+ax = plot_mean_trajectories(rvis_trajectories, np.arange(rw.T), rw.true_trajectory, ax=ax)
+ax.set_title('Reinforced Variational Inference % success {0:1g}'.format(100*len(rvis_trajectories)/(MC_SAMPLES*10)))
+ax = f.add_subplot(122)
+ax = plot_trajectory_time_evolution(all_trajectories, 1, step=200, ax=ax)
+ax.set_title('Evolution of Trajectories over MCSamples \n (lighter = more recent, dim 1)')
+f.tight_layout()
+f.suptitle('With time information')
+f.savefig('RVIperformance_wwithtime.pdf')
+
