@@ -4,15 +4,16 @@ import seaborn as sns
 from Samplers import ISSampler, ABCSampler, MCSampler
 from StochasticProcess import RandomWalk
 from proposal_distributions import MinimalProposal
+from prior_distributions import DiscreteUniform
 from plotting import plot_mean_trajectories
 sns.set_style('white')
 
 MC_SAMPLES = 1000
 POSSIBLE_STEPS = [[-1, -1], [1, 1], [1, -1], [0, 1], [0, 0]]
 STEP_PROBS = np.ones(5)/5
-
+DIMENSIONS = 2
 # first simulate a random walk
-rw = RandomWalk(2, STEP_PROBS, POSSIBLE_STEPS, n_agents=1, T=100)
+rw = RandomWalk(DIMENSIONS, STEP_PROBS, POSSIBLE_STEPS, n_agents=1, T=100, prior_distribution=DiscreteUniform(DIMENSIONS, -2, 4))
 rw.reset()
 
 # run importance sampling

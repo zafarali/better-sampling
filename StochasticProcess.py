@@ -2,6 +2,8 @@ import gym
 import numpy as np
 import torch
 from torch.autograd import Variable
+from prior_distributions import DiscreteUniform
+from functools import reduce
 
 class StochasticProcess(gym.Env):
     def __init__(self, seed, T):
@@ -45,7 +47,8 @@ class RandomWalk(StochasticProcess):
                  # dt=1,
                  seed=10,
                  T=100,
-                 n_agents=1):
+                 n_agents=1,
+                 prior_distribution=DiscreteUniform(1, 0, 2)):
         """
         This will simulate a (discrete) random walk in :dimensions: dimensions.
         The probability of transisitioning to a different state is given by step_probs
@@ -68,12 +71,13 @@ class RandomWalk(StochasticProcess):
         self.dimensions = dimensions
         self.step_sizes = step_sizes
         # self.dt = dt
-        self.x0 = np.zeros(dimensions)
-        self.state = self.x0
+        # self.state = self.x0
         self._state_space = dimensions
         self._action_space = 2*dimensions + 1
         self.n_agents = n_agents
+        self.prior = prior_distribution
         self.new_task()
+
     
     def simulate(self, rng=None):
         """
@@ -81,9 +85,10 @@ class RandomWalk(StochasticProcess):
         """
         if rng is None:
             rng = self.rng
+        x0 = self.prior.rvs()
         steps_idx = rng.multinomial(1, self.step_probs, self.T).argmax(axis=1)
         steps_taken = np.take(self.step_sizes, steps_idx, axis=0)
-        steps_taken = np.vstack([self.x0, steps_taken])
+        steps_taken = np.vstack([x0, steps_taken])
         return steps_taken.cumsum(axis=0)
 
     def reset_agent_locations(self):
@@ -91,7 +96,7 @@ class RandomWalk(StochasticProcess):
         This will reset the locations of all the agents who are currently interacting with
         the stochastic process
         """
-        self.global_time_step = 0
+        self.global_time = self.T-1
         self.x_agent = np.repeat(self.xT.reshape(1, self.dimensions), self.n_agents, axis=0)
 
     def reset(self):
@@ -106,6 +111,7 @@ class RandomWalk(StochasticProcess):
         This will create a new task/stochastic process for the agents to interact with
         """
         self.true_trajectory = self.simulate()
+        self.x0 = self.true_trajectory[0]
         self.xT = self.true_trajectory[-1]
         return self.reset()
 
@@ -115,22 +121,18 @@ class RandomWalk(StochasticProcess):
         :param actions: the array with the actions to be executed by each agent
         :param reverse: defines if the step execution is going in reverse or not
         """
-        if self.global_time_step == self.T:
+        if self.global_time == 0:
             raise TimeoutError('You have already reached the end of the episode. Use reset()')
         steps_taken = np.take(self.step_sizes, actions.ravel(), axis=0)
         step_log_probs = np.log(np.take(self.step_probs, actions.ravel(), axis=0).reshape(self.n_agents, -1))
 
         reversal_param = -1 if reverse else +1
         self.x_agent = self.x_agent + steps_taken * reversal_param
-        self.global_time_step += 1
-        if self.global_time_step == self.T:
-            # this will count the agents who reached the correct entry in some state
-            corrects = (self.x_agent == self.x0).sum(axis=1)
-            # print(corrects)
-            # the final log prob is just the sum of getting to the correct
-            # position in this space.
-            step_log_probs = np.log(corrects * 1/self.dimensions + np.finfo('float').tiny)
-        return (self.x_agent, step_log_probs.reshape(-1, 1), self.global_time_step == self.T, {})
+        self.global_time -= 1
+        if self.global_time == 0:
+            step_log_probs = np.log(self.prior.pdf(self.x_agent))
+
+        return (self.x_agent, step_log_probs.reshape(-1, 1), self.global_time == 0, {})
 
 
 class PyTorchWrap(object):
