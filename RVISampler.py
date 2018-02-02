@@ -43,7 +43,7 @@ class RVISampler(Sampler):
             log_path_prob = np.zeros((stochastic_process.n_agents, 1))
             policy_gradient_trajectory_info = MultiTrajectory(stochastic_process.n_agents)
             # go in reverse time:
-            for t in reversed(range(0, stochastic_process.T)):
+            for t in reversed(range(0, stochastic_process.T-1)):
                 # draw a reverse step
                 # this is p(w_{t} | w_{t+1})
                 action,  log_prob_action = self.policy(x_tm1)
@@ -57,6 +57,7 @@ class RVISampler(Sampler):
                     reward = path_log_prob.float()
 
                 # print(reward)
+                reward[reward < -10**10] = -10000. # throw away infinite negative rewards
 
                 value_estimate = self.baseline(x_t) if self.baseline is not None else torch.FloatTensor([[0]*stochastic_process.n_agents])
 
@@ -119,7 +120,7 @@ class RVISampler(Sampler):
                 trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T + 1,
                                                                x_t.size()[-1])
 
-            selected_trajectories = np.where(log_path_prob > self.log_prob_tolerance)
+            selected_trajectories = np.where(log_path_prob > -np.inf)
             for traj_idx in selected_trajectories[0]:
                     trajectories.append(trajectory_i[traj_idx, ::-1, :stochastic_process.dimensions])
             for m in range(trajectory_i.shape[0]):

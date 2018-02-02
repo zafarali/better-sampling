@@ -59,7 +59,7 @@ class MCSampler(Sampler):
             log_path_prob = 0
 
             # go in reverse time:
-            for t in reversed(range(0, stochastic_process.T)):
+            for t in reversed(range(0, stochastic_process.T-1)):
                 x_t = trajectory_i[-1]
                 # draw a reverse step
                 # this is p(w_{t} | w_{t+1})
@@ -70,15 +70,7 @@ class MCSampler(Sampler):
                 # take the reverse step:
                 trajectory_i.append(x_t)
 
-            # check if the trajectory ends at the right place
-            # if yes, the path prob is +=1
-
-            if np.all(x_t == x_0):
-                log_path_prob += np.log(1)
-            else:
-                log_path_prob += np.log(np.finfo('float').tiny)
-            if log_path_prob > self.log_prob_tolerance:
-                # print()
+            if log_path_prob > -np.inf:
                 trajectories.append(np.vstack(list(reversed(trajectory_i))))
 
         return trajectories
@@ -102,7 +94,7 @@ class ISSampler(Sampler):
             log_path_prob = 0
             log_proposal_prob = 0
             # go in reverse time:
-            for t in reversed(range(0, stochastic_process.T)):
+            for t in reversed(range(0, stochastic_process.T-1)):
                 x_t = trajectory_i[-1]
                 # draw a reverse step
                 # this is p(w_{t} | w_{t+1})
@@ -117,20 +109,10 @@ class ISSampler(Sampler):
                 # take the reverse step:
                 trajectory_i.append(x_t)
 
-            # check if the trajectory ends at the right place
-            # if yes, the path prob is +=1
 
-            if np.all(x_t == x_0):
-                log_path_prob += np.log(1)
-            else:
-                log_path_prob += np.log(np.finfo('float').tiny)
-            # print('log prob proposal', log_proposal_prob)
-            # print('log prob path', log_path_prob)
             likelihood_ratio = log_path_prob - log_proposal_prob
-            # print('ending location:',x_t)
-            # print('likelihood_ratio',likelihood_ratio)
 
-            if likelihood_ratio > self.log_prob_tolerance:
+            if log_path_prob > -np.inf:
                 # print()
                 trajectories.append(np.vstack(list(reversed(trajectory_i))))
 
