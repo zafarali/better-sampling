@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 class SamplingResults(object):
     """
@@ -108,3 +109,13 @@ class SamplingResults(object):
         else:
             return np.mean((posterior_weights*posterior_particles - expected_value)**2)
 
+
+    def plot_distribution(self, ax=None):
+        if ax is None:
+            ax = plt.gca()
+
+        ax.hist(np.array(self._posterior_particles).reshape(-1), weights=np.array(self._posterior_weights).reshape(-1))
+        ax.set_xlabel('x_0')
+        ax.set_ylabel('Frequency')
+        ax.set_title('Histogram of trajectory starting positions')
+        return ax
