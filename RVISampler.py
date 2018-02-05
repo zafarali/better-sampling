@@ -5,6 +5,7 @@ from torch.autograd import Variable
 from pg_methods.utils.data import MultiTrajectory
 import numpy as np
 from Samplers import Sampler
+from utils import RLSamplingResults
 
 class RVISampler(Sampler):
     """
@@ -20,13 +21,15 @@ class RVISampler(Sampler):
 
     def solve(self, stochastic_process, mc_samples, verbose=False, feed_time=False):
         assert stochastic_process._pytorch, 'Your stochastic process must be pytorch wrapped.'
-
+        results = RLSamplingResults('RVISampler', stochastic_process.true_trajectory)
         trajectories = []
         observed_ending_location = stochastic_process.xT
         x_0 = stochastic_process.x0
         rewards_per_episode = []
         loss_per_episode = []
         all_trajectories = []
+        posterior_particles = []
+        posterior_weights = []
         for i in range(mc_samples):
             x_t = stochastic_process.reset()  # start at the end
             x_tm1 = x_t
@@ -41,28 +44,33 @@ class RVISampler(Sampler):
                 x_tm1 = Variable(x_with_time)
 
             log_path_prob = np.zeros((stochastic_process.n_agents, 1))
+            log_proposal_prob = np.zeros((stochastic_process.n_agents, 1))
             policy_gradient_trajectory_info = MultiTrajectory(stochastic_process.n_agents)
             # go in reverse time:
             for t in reversed(range(0, stochastic_process.T-1)):
                 # draw a reverse step
                 # this is p(w_{t} | w_{t+1})
+                assert len(x_tm1.size()) == 2
                 action,  log_prob_action = self.policy(x_tm1)
                 # print('proposal_log_prob step:',log_prob_proposal_step)
                 x_t, path_log_prob, done, _ = stochastic_process.step(action)
 
                 if t != 0: # until we reach time 0
                     # provide an "instant reward"
-                    reward = path_log_prob.float() - log_prob_action.data.float().view(-1, 1)
+                    reward_ = path_log_prob.float() - log_prob_action.data.float().view(-1, 1)
                 else:
-                    reward = path_log_prob.float()
+                    reward_ = path_log_prob.float()
 
                 # print(reward)
-                reward[reward < -10**10] = -10000. # throw away infinite negative rewards
-
+                reward = torch.zeros_like(reward_)
+                reward.copy_(reward_)
+                reward[reward <= -np.inf] = -100000. # throw away infinite negative rewards
+                # if t==0: print(reward)
                 value_estimate = self.baseline(x_t) if self.baseline is not None else torch.FloatTensor([[0]*stochastic_process.n_agents])
 
                 # probability of the path gets updated:
                 log_path_prob += path_log_prob.numpy()
+                log_proposal_prob += log_prob_action.data.cpu().float().numpy().reshape(-1, 1)
                 # take the reverse step:
                 # if isinstance()
                 if isinstance(x_t, Variable):
@@ -113,16 +121,26 @@ class RVISampler(Sampler):
             if i % 100 == 0 and verbose:
                 print('MC Sample {}, loss {:3g}, episode_reward {:3g}, successful trajs {}'.format(i, loss.cpu().data[0], reward_summary, len(trajectories)))
 
+
             if feed_time:
-                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T + 1,
+                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T,
                                                                x_t.size()[-1]-1)
             else:
-                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T + 1,
+                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T,
                                                                x_t.size()[-1])
-
-            selected_trajectories = np.where(log_path_prob > -np.inf)
+            likelihood_ratios = log_path_prob - log_proposal_prob
+            selected_trajectories = np.where(log_path_prob > -np.inf) # TODO: find a way to make it less excplicit to throw away
             for traj_idx in selected_trajectories[0]:
                     trajectories.append(trajectory_i[traj_idx, ::-1, :stochastic_process.dimensions])
+                    posterior_particles.append(trajectories[-1][0])
+                    posterior_weights.append(np.exp(likelihood_ratios[traj_idx]))
             for m in range(trajectory_i.shape[0]):
                 all_trajectories.append(trajectory_i[m, ::-1, :stochastic_process.dimensions])
-        return trajectories, loss_per_episode, rewards_per_episode, all_trajectories
+
+        results.all_trajectories(all_trajectories)
+        results.trajectories(trajectories)
+        results.posterior(posterior_particles)
+        results.posterior_weights(posterior_weights)
+        results.loss_per_episode = loss_per_episode
+        results.rewards_per_episode = rewards_per_episode
+        return results

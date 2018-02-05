@@ -143,3 +143,7 @@ class SamplingResults(object):
             label = self.sampler_name
 
         return plot_mean_trajectories(trajectories, ts, self.true_trajectory, ax=ax)
+
+
+class RLSamplingResults(SamplingResults):
+    pass

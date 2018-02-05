@@ -146,7 +146,7 @@ class PyTorchWrap(object):
         self.dimensions = stochastic_process.dimensions
         self.step_sizes = stochastic_process.step_sizes
         self.x0 = stochastic_process.x0
-        self.state = stochastic_process.state
+        # self.state = stochastic_process.state
         self.state_space = stochastic_process.state_space
         self.action_space = stochastic_process.action_space
         self.use_cuda = use_cuda
