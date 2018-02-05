@@ -90,13 +90,21 @@ class SamplingResults(object):
         return estimate
 
     def variance(self, weighted=False):
+        """
+        The variance of the posterior
+        # from https://statweb.stanford.edu/~owen/mc/Ch-var-is.pdf
+        :param weighted:
+        :return:
+        """
         posterior_particles = np.array(self._posterior_particles).reshape(-1)
         posterior_weights = np.array(self._posterior_weights).reshape(-1)
 
-        expected_value = self.expectation()
-        # from https://statweb.stanford.edu/~owen/mc/Ch-var-is.pdf
+        expected_value = self.expectation(weighted)
+
         if weighted:
-            return np.sum((posterior_weights ** 2) * (posterior_particles - expected_value)**2)
+            modified_weights = (posterior_weights / posterior_weights.sum())**2
+            terms = (posterior_particles - expected_value)**2
+            return np.sum(modified_weights*terms)
         else:
             return np.mean((posterior_weights*posterior_particles - expected_value)**2)
 
