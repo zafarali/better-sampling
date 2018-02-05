@@ -1,4 +1,5 @@
 import numpy as np
+from utils import SamplingResults
 
 class Sampler(object):
     """
@@ -23,7 +24,9 @@ class ABCSampler(Sampler):
         self.tolerance = tolerance
 
     def solve(self, stochastic_process, mc_samples):
+        results = SamplingResults('ABCSampler')
         trajectories = []
+        all_trajectories = []
         observed_ending_location = stochastic_process.xT
         starting_location = stochastic_process.x0
         for i in range(mc_samples):
@@ -32,7 +35,12 @@ class ABCSampler(Sampler):
             # only accept this trajectory if it ended close to the final
             if np.sum(np.abs(observed_ending_location - final_position)) < self.tolerance:
                 trajectories.append(trajectory)
-        return trajectories
+            all_trajectories.append(trajectory)
+
+        results.all_trajectories(all_trajectories)
+        results.trajectories(trajectories)
+        results.create_posterior()
+        return results
 
 
 class MCSampler(Sampler):
@@ -48,8 +56,10 @@ class MCSampler(Sampler):
         return steps_idx, steps_taken, step_log_probs
 
     def solve(self, stochastic_process, mc_samples):
+        results = SamplingResults('MCSampler')
         self.step_probs, self.step_sizes = stochastic_process.step_probs, stochastic_process.step_sizes
         trajectories = []
+        all_trajectories = []
         observed_ending_location = stochastic_process.xT
         x_0 = stochastic_process.x0
 
@@ -72,8 +82,12 @@ class MCSampler(Sampler):
 
             if log_path_prob > -np.inf:
                 trajectories.append(np.vstack(list(reversed(trajectory_i))))
+            all_trajectories.append(np.vstack(list(reversed(trajectory_i))))
 
-        return trajectories
+        results.all_trajectories(all_trajectories)
+        results.trajectories(trajectories)
+        results.create_posterior()
+        return results
 
 
 class ISSampler(Sampler):
@@ -83,8 +97,12 @@ class ISSampler(Sampler):
         self.log_prob_tolerance = log_prob_tolerance
 
     def solve(self, stochastic_process, mc_samples):
+        results = SamplingResults('ISSampler')
         proposal = self.proposal(stochastic_process.x0, stochastic_process.step_sizes, rng=self.rng)
         trajectories = []
+        posterior_particles = []
+        posterior_weights = []
+        all_trajectories = []
         observed_ending_location = stochastic_process.xT
         x_0 = stochastic_process.x0
 
@@ -115,5 +133,12 @@ class ISSampler(Sampler):
             if log_path_prob > -np.inf:
                 # print()
                 trajectories.append(np.vstack(list(reversed(trajectory_i))))
+                posterior_particles.append(trajectories[-1][0])
+                posterior_weights.append(np.exp(likelihood_ratio))
+            all_trajectories.append(np.vstack(list(reversed(trajectory_i))))
 
-        return trajectories
+        results.all_trajectories(all_trajectories)
+        results.trajectories(trajectories)
+        results.posterior_weights(posterior_weights)
+        results.posterior(posterior_particles)
+        return results

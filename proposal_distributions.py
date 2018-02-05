@@ -114,6 +114,6 @@ class SimonsProposal(ProposalDistribution):
         choice_step = choices[choice_index]
         choice_prob = probs[choice_index]
 
-        return choice_index, choice_step, np.log(choice_prob)
+        return choice_index, choice_step, np.log(choice_prob)[0]
 
 #

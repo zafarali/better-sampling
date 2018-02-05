@@ -63,8 +63,9 @@ class RandomWalk(StochasticProcess):
         :param n_agents: the number of agents that will interact with the trajectory
         """
         super().__init__(seed, T)
-        assert len(step_probs) == 2*dimensions+1, 'You must supply {} step_probs for dimensions'.format(2*dimensions+1, dimensions)
-        assert len(step_sizes) == 2*dimensions+1, 'You must supply {} step_sizes for dimensions'.format(2*dimensions+1, dimensions)
+        # remove these requirements for now since we can specify a more diverse set of possible steps.
+        # assert len(step_probs) == 2*dimensions+1, 'You must supply {} step_probs for dimensions'.format(2*dimensions+1, dimensions)
+        # assert len(step_sizes) == 2*dimensions+1, 'You must supply {} step_sizes for dimensions'.format(2*dimensions+1, dimensions)
         assert sum([len(step_size) == dimensions for step_size in step_sizes]), 'Each element of step_sizes must be of length {}'.format(dimensions)
         assert sum(step_probs) == 1, 'Step probs must sum to 1.'
         self.step_probs = step_probs
@@ -123,6 +124,7 @@ class RandomWalk(StochasticProcess):
         """
         if self.global_time == 0:
             raise TimeoutError('You have already reached the end of the episode. Use reset()')
+
         steps_taken = np.take(self.step_sizes, actions.ravel(), axis=0)
         step_log_probs = np.log(np.take(self.step_probs, actions.ravel(), axis=0).reshape(self.n_agents, -1))
 
