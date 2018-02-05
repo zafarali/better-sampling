@@ -51,5 +51,5 @@ def plot_trajectory_time_evolution(trajectories, dimension=0, step=5, ax=None):
 
     ax.set_xlabel('Time')
     ax.set_ylabel('x_i')
-    ax.set_title('Evolution of Trajectories over time (lighter color is more recent)')
+    ax.set_title('Evolution of Trajectories over time\n (lighter color is more recent)')
     return ax

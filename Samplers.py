@@ -24,7 +24,7 @@ class ABCSampler(Sampler):
         self.tolerance = tolerance
 
     def solve(self, stochastic_process, mc_samples):
-        results = SamplingResults('ABCSampler')
+        results = SamplingResults('ABCSampler', stochastic_process.true_trajectory)
         trajectories = []
         all_trajectories = []
         observed_ending_location = stochastic_process.xT
@@ -56,7 +56,7 @@ class MCSampler(Sampler):
         return steps_idx, steps_taken, step_log_probs
 
     def solve(self, stochastic_process, mc_samples):
-        results = SamplingResults('MCSampler')
+        results = SamplingResults('MCSampler', stochastic_process.true_trajectory)
         self.step_probs, self.step_sizes = stochastic_process.step_probs, stochastic_process.step_sizes
         trajectories = []
         all_trajectories = []
@@ -97,7 +97,7 @@ class ISSampler(Sampler):
         self.log_prob_tolerance = log_prob_tolerance
 
     def solve(self, stochastic_process, mc_samples):
-        results = SamplingResults('ISSampler')
+        results = SamplingResults('ISSampler', stochastic_process.true_trajectory)
         proposal = self.proposal(stochastic_process.x0, stochastic_process.step_sizes, rng=self.rng)
         trajectories = []
         posterior_particles = []

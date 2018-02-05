@@ -1,12 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from plotting import plot_trajectory_time_evolution, plot_mean_trajectories
 
 class SamplingResults(object):
     """
     An abstraction on the results obtained
     """
-    def __init__(self, sampler_name):
+    def __init__(self, sampler_name, true_trajectory):
         self.sampler_name = sampler_name
+        self.true_trajectory = true_trajectory
         self._all_trajectories = None
         self._trajectories = None
         self._posterior_particles = None
@@ -119,3 +121,25 @@ class SamplingResults(object):
         ax.set_ylabel('Frequency')
         ax.set_title('Histogram of trajectory starting positions')
         return ax
+
+    def plot_trajectory_evolution(self, dimension=0, step=5, ax=None):
+        return plot_trajectory_time_evolution(self.trajectories(), dimension, step=step, ax=ax)
+
+    def plot_all_trajectory_evolution(self, dimension=0, step=20, ax=None):
+        return plot_trajectory_time_evolution(self.all_trajectories(), dimension, step=step, ax=ax)
+
+    def plot_mean_trajectory(self, label=None, ax=None):
+        trajectories = self.trajectories()
+        ts = np.arange(len(trajectories[0]))
+        if label is None:
+            label = self.sampler_name
+
+        return plot_mean_trajectories(trajectories, ts, self.true_trajectory, ax=ax)
+
+    def plot_mean_all_trajectory(self, label=None, ax=None):
+        trajectories = self.all_trajectories()
+        ts = np.arange(len(trajectories[0]))
+        if label is None:
+            label = self.sampler_name
+
+        return plot_mean_trajectories(trajectories, ts, self.true_trajectory, ax=ax)
