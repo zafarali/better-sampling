@@ -1,0 +1,3 @@
+[submodule "policy-gradient-methods"]
+	path = policy-gradient-methods
+	url = https://github.com/zafarali/policy-gradient-methods.git

@@ -4,8 +4,8 @@ import torch
 from torch.autograd import Variable
 from pg_methods.utils.data import MultiTrajectory
 import numpy as np
-from Samplers import Sampler
-from utils import RLSamplingResults
+from .Samplers import Sampler
+from ..results import RLSamplingResults
 
 class RVISampler(Sampler):
     """
