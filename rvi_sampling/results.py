@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from plotting import plot_trajectory_time_evolution, plot_mean_trajectories
+from .plotting import plot_trajectory_time_evolution, plot_mean_trajectories
 
 class SamplingResults(object):
     """

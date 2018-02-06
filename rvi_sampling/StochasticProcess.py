@@ -2,7 +2,7 @@ import gym
 import numpy as np
 import torch
 from torch.autograd import Variable
-from prior_distributions import DiscreteUniform
+from .distributions.prior_distributions import DiscreteUniform
 from functools import reduce
 
 class StochasticProcess(gym.Env):

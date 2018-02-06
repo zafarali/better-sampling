@@ -1,5 +1,5 @@
 import numpy as np
-from utils import SamplingResults
+from ..results import SamplingResults
 
 class Sampler(object):
     """
