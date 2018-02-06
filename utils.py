@@ -116,7 +116,7 @@ class SamplingResults(object):
         if ax is None:
             ax = plt.gca()
 
-        ax.hist(np.array(self._posterior_particles).reshape(-1), weights=np.array(self._posterior_weights).reshape(-1))
+        ax.hist(np.array(self._posterior_particles).reshape(-1), bins=np.arange(-4, 5)+0.5,weights=np.array(self._posterior_weights).reshape(-1))
         ax.set_xlabel('x_0')
         ax.set_ylabel('Frequency')
         ax.set_title('Histogram of trajectory starting positions')
