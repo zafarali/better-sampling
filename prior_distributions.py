@@ -1,6 +1,8 @@
 import numpy as np
 
 def __discrete_unif_pdf(x, start, n_numbers):
+    # TODO ensure that only ints are passed here.
+    # TODO this should return 0 for any non integer number.
     if x >= start and x <= start +n_numbers:
         return 1/n_numbers
     else:
