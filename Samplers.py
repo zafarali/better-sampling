@@ -1,4 +1,5 @@
 import numpy as np
+from utils import SamplingResults
 
 class Sampler(object):
     """
@@ -23,16 +24,23 @@ class ABCSampler(Sampler):
         self.tolerance = tolerance
 
     def solve(self, stochastic_process, mc_samples):
+        results = SamplingResults('ABCSampler', stochastic_process.true_trajectory)
         trajectories = []
+        all_trajectories = []
         observed_ending_location = stochastic_process.xT
         starting_location = stochastic_process.x0
         for i in range(mc_samples):
             trajectory = stochastic_process.simulate(self.rng)
             final_position = trajectory[-1]
             # only accept this trajectory if it ended close to the final
-            if np.sum(np.abs(observed_ending_location - final_position)) < self.tolerance:
+            if np.sum(np.abs(observed_ending_location - final_position)) <= self.tolerance:
                 trajectories.append(trajectory)
-        return trajectories
+            all_trajectories.append(trajectory)
+
+        results.all_trajectories(all_trajectories)
+        results.trajectories(trajectories)
+        results.create_posterior()
+        return results
 
 
 class MCSampler(Sampler):
@@ -48,8 +56,10 @@ class MCSampler(Sampler):
         return steps_idx, steps_taken, step_log_probs
 
     def solve(self, stochastic_process, mc_samples):
+        results = SamplingResults('MCSampler', stochastic_process.true_trajectory)
         self.step_probs, self.step_sizes = stochastic_process.step_probs, stochastic_process.step_sizes
         trajectories = []
+        all_trajectories = []
         observed_ending_location = stochastic_process.xT
         x_0 = stochastic_process.x0
 
@@ -59,29 +69,30 @@ class MCSampler(Sampler):
             log_path_prob = 0
 
             # go in reverse time:
-            for t in reversed(range(0, stochastic_process.T)):
+            # for t in reversed(range(0, stochastic_process.T-1)):
+            while True:
                 x_t = trajectory_i[-1]
                 # draw a reverse step
                 # this is p(w_{t} | w_{t+1})
-                step_idx, step, proposal_log_prob = self.draw_step(x_t)
-                x_t, path_log_prob, _, _ = stochastic_process.step(step_idx)
+                try:
+                    step_idx, step, proposal_log_prob = self.draw_step(x_t)
+                    x_t, path_log_prob, _, _ = stochastic_process.step(step_idx)
+                except TimeoutError:
+                    # print('Ended at {}.'.format(x_t))
+                    break
                 # probability of the path gets updated:
                 log_path_prob += path_log_prob
                 # take the reverse step:
                 trajectory_i.append(x_t)
 
-            # check if the trajectory ends at the right place
-            # if yes, the path prob is +=1
-
-            if np.all(x_t == x_0):
-                log_path_prob += np.log(1)
-            else:
-                log_path_prob += np.log(np.finfo('float').tiny)
-            if log_path_prob > self.log_prob_tolerance:
-                # print()
+            if log_path_prob > -np.inf:
                 trajectories.append(np.vstack(list(reversed(trajectory_i))))
+            all_trajectories.append(np.vstack(list(reversed(trajectory_i))))
 
-        return trajectories
+        results.all_trajectories(all_trajectories)
+        results.trajectories(trajectories)
+        results.create_posterior()
+        return results
 
 
 class ISSampler(Sampler):
@@ -91,8 +102,12 @@ class ISSampler(Sampler):
         self.log_prob_tolerance = log_prob_tolerance
 
     def solve(self, stochastic_process, mc_samples):
+        results = SamplingResults('ISSampler', stochastic_process.true_trajectory)
         proposal = self.proposal(stochastic_process.x0, stochastic_process.step_sizes, rng=self.rng)
         trajectories = []
+        posterior_particles = []
+        posterior_weights = []
+        all_trajectories = []
         observed_ending_location = stochastic_process.xT
         x_0 = stochastic_process.x0
 
@@ -102,13 +117,17 @@ class ISSampler(Sampler):
             log_path_prob = 0
             log_proposal_prob = 0
             # go in reverse time:
-            for t in reversed(range(0, stochastic_process.T)):
+            t = stochastic_process.T
+            while True:
                 x_t = trajectory_i[-1]
                 # draw a reverse step
                 # this is p(w_{t} | w_{t+1})
-                step_idx, step, log_prob_proposal_step = proposal.draw(x_t, t)
-                # print('proposal_log_prob step:',log_prob_proposal_step)
-                x_t, path_log_prob, _, _ = stochastic_process.step(step_idx)
+                try:
+                    step_idx, step, log_prob_proposal_step = proposal.draw(x_t, t)
+                    # print('proposal_log_prob step:',log_prob_proposal_step)
+                    x_t, path_log_prob, _, _ = stochastic_process.step(step_idx)
+                except TimeoutError:
+                    break
                 # print('path_log_prob step:',path_log_prob)
 
                 # probability of the path gets updated:
@@ -116,22 +135,20 @@ class ISSampler(Sampler):
                 log_proposal_prob += log_prob_proposal_step
                 # take the reverse step:
                 trajectory_i.append(x_t)
+                t-=1
 
-            # check if the trajectory ends at the right place
-            # if yes, the path prob is +=1
 
-            if np.all(x_t == x_0):
-                log_path_prob += np.log(1)
-            else:
-                log_path_prob += np.log(np.finfo('float').tiny)
-            # print('log prob proposal', log_proposal_prob)
-            # print('log prob path', log_path_prob)
             likelihood_ratio = log_path_prob - log_proposal_prob
-            # print('ending location:',x_t)
-            # print('likelihood_ratio',likelihood_ratio)
 
-            if likelihood_ratio > self.log_prob_tolerance:
+            if log_path_prob > -np.inf:
                 # print()
                 trajectories.append(np.vstack(list(reversed(trajectory_i))))
+                posterior_particles.append(trajectories[-1][0])
+                posterior_weights.append(np.exp(likelihood_ratio))
+            all_trajectories.append(np.vstack(list(reversed(trajectory_i))))
 
-        return trajectories
+        results.all_trajectories(all_trajectories)
+        results.trajectories(trajectories)
+        results.posterior_weights(posterior_weights)
+        results.posterior(posterior_particles)
+        return results

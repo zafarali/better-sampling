@@ -1,6 +1,9 @@
 import gym
 import numpy as np
-
+import torch
+from torch.autograd import Variable
+from prior_distributions import DiscreteUniform
+from functools import reduce
 
 class StochasticProcess(gym.Env):
     def __init__(self, seed, T):
@@ -44,7 +47,8 @@ class RandomWalk(StochasticProcess):
                  # dt=1,
                  seed=10,
                  T=100,
-                 n_agents=1):
+                 n_agents=1,
+                 prior_distribution=DiscreteUniform(1, 0, 2)):
         """
         This will simulate a (discrete) random walk in :dimensions: dimensions.
         The probability of transisitioning to a different state is given by step_probs
@@ -59,20 +63,22 @@ class RandomWalk(StochasticProcess):
         :param n_agents: the number of agents that will interact with the trajectory
         """
         super().__init__(seed, T)
-        assert len(step_probs) == 2*dimensions+1, 'You must supply {} step_probs for dimensions'.format(2*dimensions+1, dimensions)
-        assert len(step_sizes) == 2*dimensions+1, 'You must supply {} step_sizes for dimensions'.format(2*dimensions+1, dimensions)
+        # remove these requirements for now since we can specify a more diverse set of possible steps.
+        # assert len(step_probs) == 2*dimensions+1, 'You must supply {} step_probs for dimensions'.format(2*dimensions+1, dimensions)
+        # assert len(step_sizes) == 2*dimensions+1, 'You must supply {} step_sizes for dimensions'.format(2*dimensions+1, dimensions)
         assert sum([len(step_size) == dimensions for step_size in step_sizes]), 'Each element of step_sizes must be of length {}'.format(dimensions)
         assert sum(step_probs) == 1, 'Step probs must sum to 1.'
         self.step_probs = step_probs
         self.dimensions = dimensions
         self.step_sizes = step_sizes
         # self.dt = dt
-        self.x0 = np.zeros(dimensions)
-        self.state = self.x0
+        # self.state = self.x0
         self._state_space = dimensions
         self._action_space = 2*dimensions + 1
         self.n_agents = n_agents
+        self.prior = prior_distribution
         self.new_task()
+
     
     def simulate(self, rng=None):
         """
@@ -80,9 +86,10 @@ class RandomWalk(StochasticProcess):
         """
         if rng is None:
             rng = self.rng
+        x0 = self.prior.rvs()
         steps_idx = rng.multinomial(1, self.step_probs, self.T).argmax(axis=1)
         steps_taken = np.take(self.step_sizes, steps_idx, axis=0)
-        steps_taken = np.vstack([self.x0, steps_taken])
+        steps_taken = np.vstack([x0, steps_taken])
         return steps_taken.cumsum(axis=0)
 
     def reset_agent_locations(self):
@@ -90,7 +97,7 @@ class RandomWalk(StochasticProcess):
         This will reset the locations of all the agents who are currently interacting with
         the stochastic process
         """
-        self.global_time_step = 0
+        self.global_time = self.T
         self.x_agent = np.repeat(self.xT.reshape(1, self.dimensions), self.n_agents, axis=0)
 
     def reset(self):
@@ -105,6 +112,7 @@ class RandomWalk(StochasticProcess):
         This will create a new task/stochastic process for the agents to interact with
         """
         self.true_trajectory = self.simulate()
+        self.x0 = self.true_trajectory[0]
         self.xT = self.true_trajectory[-1]
         return self.reset()
 
@@ -114,20 +122,71 @@ class RandomWalk(StochasticProcess):
         :param actions: the array with the actions to be executed by each agent
         :param reverse: defines if the step execution is going in reverse or not
         """
-        if self.global_time_step == self.T:
+        if self.global_time == 0:
+            #TODO return a custom error here to not conflate it with builtin types.
             raise TimeoutError('You have already reached the end of the episode. Use reset()')
+
         steps_taken = np.take(self.step_sizes, actions.ravel(), axis=0)
         step_log_probs = np.log(np.take(self.step_probs, actions.ravel(), axis=0).reshape(self.n_agents, -1))
 
         reversal_param = -1 if reverse else +1
-        self.x_agent = self.x_agent + steps_taken * reversal_param
-        self.global_time_step += 1
-        if self.global_time_step == self.T:
-            # this will count the agents who reached the correct entry in some state
-            corrects = (self.x_agent == self.x0).sum(axis=1)
-            # print(corrects)
-            # the final log prob is just the sum of getting to the correct
-            # position in this space.
-            step_log_probs = np.log(corrects * 1/self.dimensions + np.finfo('float').tiny)
-        return (self.x_agent, step_log_probs.reshape(-1, 1), self.global_time_step == self.T, {})
+        self.x_agent = self.x_agent + (steps_taken * reversal_param)
+        self.global_time -= 1
+        if self.global_time == 0:
+            step_log_probs = np.log(self.prior.pdf(self.x_agent))
 
+        return (self.x_agent, step_log_probs.reshape(-1, 1), self.global_time == 0, {})
+
+
+class PyTorchWrap(object):
+    _pytorch = True
+    _vectorized = True
+    def __init__(self, stochastic_process, use_cuda=False):
+        self.stochastic_process = stochastic_process
+        self.step_probs = stochastic_process.step_probs
+        self.dimensions = stochastic_process.dimensions
+        self.step_sizes = stochastic_process.step_sizes
+        self.x0 = stochastic_process.x0
+        # self.state = stochastic_process.state
+        self.state_space = stochastic_process.state_space
+        self.action_space = stochastic_process.action_space
+        self.use_cuda = use_cuda
+        self.T = stochastic_process.T
+        self.n_agents = stochastic_process.n_agents
+        self.xT = stochastic_process.xT
+        self.true_trajectory = self.stochastic_process.true_trajectory
+
+    @property
+    def global_time(self):
+        return self.stochastic_process.global_time
+
+    def variable_wrap(self, tensor):
+        if not isinstance(tensor, Variable):
+            tensor = Variable(tensor)
+        if self.use_cuda:
+            tensor = tensor.cuda()
+
+        return tensor.float()
+
+    def simulate(self, rng=None):
+        return self.stochastic_process.simulate(rng=rng)
+
+    def reset(self):
+        return self.variable_wrap(torch.from_numpy(self.stochastic_process.reset()))
+
+    def new_task(self):
+        delayed_to_return = self.stochastic_process.new_task()
+        self.xT = self.stochastic_process.xT
+        self.true_trajectory = self.stochastic_process.true_trajectory
+        return delayed_to_return
+
+    def step(self, actions, reverse=True):
+        if isinstance(actions, Variable):
+            actions = actions.data
+        actions = actions.cpu()
+        actions = actions.numpy()
+        position, log_probs, done, info = self.stochastic_process.step(actions, reverse=reverse)
+        position = self.variable_wrap(torch.from_numpy(position))
+        log_probs = torch.from_numpy(log_probs).float().view(self.n_agents, 1)
+        done = torch.IntTensor([[done] * self.n_agents])
+        return (position, log_probs, done, info)
