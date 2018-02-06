@@ -69,12 +69,17 @@ class MCSampler(Sampler):
             log_path_prob = 0
 
             # go in reverse time:
-            for t in reversed(range(0, stochastic_process.T-1)):
+            # for t in reversed(range(0, stochastic_process.T-1)):
+            while True:
                 x_t = trajectory_i[-1]
                 # draw a reverse step
                 # this is p(w_{t} | w_{t+1})
-                step_idx, step, proposal_log_prob = self.draw_step(x_t)
-                x_t, path_log_prob, _, _ = stochastic_process.step(step_idx)
+                try:
+                    step_idx, step, proposal_log_prob = self.draw_step(x_t)
+                    x_t, path_log_prob, _, _ = stochastic_process.step(step_idx)
+                except TimeoutError:
+                    # print('Ended at {}.'.format(x_t))
+                    break
                 # probability of the path gets updated:
                 log_path_prob += path_log_prob
                 # take the reverse step:

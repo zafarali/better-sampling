@@ -97,7 +97,7 @@ class RandomWalk(StochasticProcess):
         This will reset the locations of all the agents who are currently interacting with
         the stochastic process
         """
-        self.global_time = self.T-1
+        self.global_time = self.T
         self.x_agent = np.repeat(self.xT.reshape(1, self.dimensions), self.n_agents, axis=0)
 
     def reset(self):
@@ -123,13 +123,14 @@ class RandomWalk(StochasticProcess):
         :param reverse: defines if the step execution is going in reverse or not
         """
         if self.global_time == 0:
+            #TODO return a custom error here to not conflate it with builtin types.
             raise TimeoutError('You have already reached the end of the episode. Use reset()')
 
         steps_taken = np.take(self.step_sizes, actions.ravel(), axis=0)
         step_log_probs = np.log(np.take(self.step_probs, actions.ravel(), axis=0).reshape(self.n_agents, -1))
 
         reversal_param = -1 if reverse else +1
-        self.x_agent = self.x_agent + steps_taken * reversal_param
+        self.x_agent = self.x_agent + (steps_taken * reversal_param)
         self.global_time -= 1
         if self.global_time == 0:
             step_log_probs = np.log(self.prior.pdf(self.x_agent))
