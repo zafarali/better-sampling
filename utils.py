@@ -6,13 +6,14 @@ class SamplingResults(object):
     """
     An abstraction on the results obtained
     """
-    def __init__(self, sampler_name, true_trajectory):
+    def __init__(self, sampler_name, true_trajectory, histbin_range=None):
         self.sampler_name = sampler_name
         self.true_trajectory = true_trajectory
         self._all_trajectories = None
         self._trajectories = None
         self._posterior_particles = None
         self._posterior_weights = None
+        self._histbin_range = histbin_range
 
     def all_trajectories(self, trajectories=None):
         """
@@ -42,8 +43,9 @@ class SamplingResults(object):
         :param posterior_particles:
         :return:
         """
-        if posterior_particles is None:
+        if posterior_particles is not None:
             assert self._posterior_particles is None
+            self._posterior_particles = posterior_particles
             return self._posterior_particles
         else:
             self._posterior_particles = posterior_particles
@@ -54,8 +56,9 @@ class SamplingResults(object):
         :param posterior_weights:
         :return:
         """
-        if posterior_weights is None:
+        if posterior_weights is not None:
             assert self._posterior_weights is None
+            self._posterior_weights = posterior_weights
             return self._posterior_weights
         else:
             self._posterior_weights = posterior_weights
@@ -111,12 +114,17 @@ class SamplingResults(object):
         else:
             return np.mean((posterior_weights*posterior_particles - expected_value)**2)
 
-
-    def plot_distribution(self, ax=None):
+    def plot_distribution(self, histbin_range=None, ax=None, **kwargs):
         if ax is None:
             ax = plt.gca()
 
-        ax.hist(np.array(self._posterior_particles).reshape(-1), bins=np.arange(-4, 5)+0.5,weights=np.array(self._posterior_weights).reshape(-1))
+        _histbin_range = self._histbin_range if not histbin_range else histbin_range
+
+        ax.hist(np.array(self._posterior_particles).reshape(-1),
+                normed=True,
+                bins=np.arange(-_histbin_range-1, _histbin_range+2)+0.5,
+                weights=np.array(self._posterior_weights).reshape(-1),
+                **kwargs)
         ax.set_xlabel('x_0')
         ax.set_ylabel('Frequency')
         ax.set_title('Histogram of trajectory starting positions')

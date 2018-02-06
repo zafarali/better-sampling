@@ -34,7 +34,7 @@ def plot_mean_trajectories(trajectories, ts, true_trajectory, label='inferred', 
         ax.plot(ts, mean[:, i], '--', label=label + ' mean of $x_{}$'.format(i), color=COLORS[i])
 
     for i in range(dimensions):
-        ax.plot(ts, true_trajectory[:, i][:-1], label='true $x_{}$'.format(i), color=COLORS[i])
+        ax.plot(ts, true_trajectory[:, i], label='true $x_{}$'.format(i), color=COLORS[i])
     ax.legend()
     ax.set_xlabel('Time')
     ax.set_ylabel(r"$x_i$")

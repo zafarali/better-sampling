@@ -47,7 +47,10 @@ class RVISampler(Sampler):
             log_proposal_prob = np.zeros((stochastic_process.n_agents, 1))
             policy_gradient_trajectory_info = MultiTrajectory(stochastic_process.n_agents)
             # go in reverse time:
-            for t in reversed(range(0, stochastic_process.T-1)):
+            # for t in reversed(range(0, stochastic_process.T-1)):
+            t = stochastic_process.T
+            while True:
+                if stochastic_process.global_time == 0: break
                 # draw a reverse step
                 # this is p(w_{t} | w_{t+1})
                 assert len(x_tm1.size()) == 2
@@ -92,6 +95,7 @@ class RVISampler(Sampler):
                     policy_gradient_trajectory_info.append(x_tm1, action, reward, value_estimate, log_prob_action, x_t, done)
 
                 x_tm1 = x_t
+                t -= 1
 
             # print(trajectory_i)
             # conduct an update step.
@@ -123,10 +127,10 @@ class RVISampler(Sampler):
 
 
             if feed_time:
-                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T,
+                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T+1,
                                                                x_t.size()[-1]-1)
             else:
-                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T,
+                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T+1,
                                                                x_t.size()[-1])
             likelihood_ratios = log_path_prob - log_proposal_prob
             selected_trajectories = np.where(log_path_prob > -np.inf) # TODO: find a way to make it less excplicit to throw away

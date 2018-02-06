@@ -156,6 +156,10 @@ class PyTorchWrap(object):
         self.xT = stochastic_process.xT
         self.true_trajectory = self.stochastic_process.true_trajectory
 
+    @property
+    def global_time(self):
+        return self.stochastic_process.global_time
+
     def variable_wrap(self, tensor):
         if not isinstance(tensor, Variable):
             tensor = Variable(tensor)

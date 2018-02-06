@@ -1,5 +1,6 @@
 from scipy.misc import comb
 import numpy as np
+import matplotlib.pyplot as plt
 
 class AnalyticPosterior(object):
     def pdf(self, x, d):
@@ -52,8 +53,26 @@ class TwoStepRandomWalkPosterior(AnalyticPosterior):
         """
         c, T, p = self.c, self.T, self.p
         term = 0.5 * (d-x+T)
-        if not (x in range(-c, c, 1) and term in range(0, T)):
+        if not (x in range(-c, c+1, 1) and term in range(0, T+1)):
             return 0
         else:
             return (1/(2*c))*comb(T, term)*(p**term)*((1-p)**(T-term))
 
+
+    def plot(self, observed_d, ax=None, **kwargs):
+        if ax is None:
+            ax = plt.gca()
+        prior_domain = np.arange(-self.c-2, self.c+2)
+        pdf = np.array([self.pdf(x, observed_d) for x in prior_domain])
+        pdf /= pdf.sum()
+        ax.scatter(prior_domain, pdf, **kwargs)
+        ax.set_xlabel(r"$x_0$")
+        ax.set_ylabel('Probability')
+        ax.set_title('Posterior Distribution')
+        # ax.set_xticklabels(prior_domain)
+        return ax
+
+    def expectation(self, observed_d):
+        pdf = np.array([self.pdf(x, observed_d) for x in np.arange(-self.c, self.c+1)])
+        pdf /= pdf.sum()
+        return np.sum(np.arange(-self.c, self.c+1) * pdf)

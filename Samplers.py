@@ -33,7 +33,7 @@ class ABCSampler(Sampler):
             trajectory = stochastic_process.simulate(self.rng)
             final_position = trajectory[-1]
             # only accept this trajectory if it ended close to the final
-            if np.sum(np.abs(observed_ending_location - final_position)) < self.tolerance:
+            if np.sum(np.abs(observed_ending_location - final_position)) <= self.tolerance:
                 trajectories.append(trajectory)
             all_trajectories.append(trajectory)
 
@@ -117,13 +117,17 @@ class ISSampler(Sampler):
             log_path_prob = 0
             log_proposal_prob = 0
             # go in reverse time:
-            for t in reversed(range(0, stochastic_process.T-1)):
+            t = stochastic_process.T
+            while True:
                 x_t = trajectory_i[-1]
                 # draw a reverse step
                 # this is p(w_{t} | w_{t+1})
-                step_idx, step, log_prob_proposal_step = proposal.draw(x_t, t)
-                # print('proposal_log_prob step:',log_prob_proposal_step)
-                x_t, path_log_prob, _, _ = stochastic_process.step(step_idx)
+                try:
+                    step_idx, step, log_prob_proposal_step = proposal.draw(x_t, t)
+                    # print('proposal_log_prob step:',log_prob_proposal_step)
+                    x_t, path_log_prob, _, _ = stochastic_process.step(step_idx)
+                except TimeoutError:
+                    break
                 # print('path_log_prob step:',path_log_prob)
 
                 # probability of the path gets updated:
@@ -131,6 +135,7 @@ class ISSampler(Sampler):
                 log_proposal_prob += log_prob_proposal_step
                 # take the reverse step:
                 trajectory_i.append(x_t)
+                t-=1
 
 
             likelihood_ratio = log_path_prob - log_proposal_prob
