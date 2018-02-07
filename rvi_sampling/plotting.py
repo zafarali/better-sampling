@@ -1,3 +1,5 @@
+import torch
+from torch.autograd import Variable
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
@@ -53,3 +55,59 @@ def plot_trajectory_time_evolution(trajectories, dimension=0, step=5, ax=None):
     ax.set_ylabel('x_i')
     ax.set_title('Evolution of Trajectories over time\n (lighter color is more recent)')
     return ax
+
+def conduct_draws_nn(sp_, x, t, n_draws=100):
+    """
+    Conducts draws from a neural network policy and takes the average.
+    :param sp_:
+    :param x:
+    :param t:
+    :return:
+    """
+    a = np.mean([2*sp_(Variable(torch.FloatTensor([[x, t]]), volatile=True))[0].data[0]-1 for i in range(n_draws)])
+    return a
+
+def conduct_draws(sp_, x, t, n_draws=100):
+    """
+    Conducts draws from a regular (non-neural network) policy and takes the average
+    :param sp_:
+    :param x:
+    :param t:
+    :return:
+    """
+    a = np.mean([sp_.draw([[x]], t)[1] for i in range(n_draws)])
+#     print(a)
+    return float(a)
+
+
+def visualize_proposal(list_of_sps, timesteps, xranges, neural_network=True):
+    """
+    Takes a list of policies and returns the components needed to visualize using plt.quiver.
+
+    For example:
+    ```
+    t, x, x_arrows, y_arrows_list = visualize_proposal([polic1, policy2], 50, 10)
+    plt.quiver(t, x, x_arrows, y_arrows_list[0])
+    plt.quiver(t, x, x_arrows, y_arrows_list[1])
+    ```
+    :param list_of_sps:
+    :param timesteps:
+    :param xranges:
+    :return:
+    """
+    t, x = np.meshgrid(range(0, timesteps), range(-xranges, xranges + 1))
+    vector_grid_arrows_x = np.zeros_like(t)
+
+    vector_grid_y_arrows = [[] for _ in list_of_sps]
+    for x_ in x[:, 0]:
+        vector_grid_y_arrows_t = [[] for _ in list_of_sps]
+        for t_ in t[0, :]:
+            for sp, vector_grid_y_arrows_t_i in zip(list_of_sps, vector_grid_y_arrows_t):
+                if neural_network:
+                    vector_grid_y_arrows_t_i.append(conduct_draws_nn(sp, float(x_), t_ / timesteps))
+                else:
+                    vector_grid_y_arrows_t_i.append(conduct_draws(sp, float(x_), t_))
+        for i in range(len(vector_grid_y_arrows_t)):
+            vector_grid_y_arrows[i].append(vector_grid_y_arrows_t[i])
+    return t, x, vector_grid_arrows_x, vector_grid_y_arrows
+
