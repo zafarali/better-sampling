@@ -6,6 +6,7 @@ from pg_methods.utils.data import MultiTrajectory
 import numpy as np
 from .Samplers import Sampler
 from ..results import RLSamplingResults
+import logging
 
 class RVISampler(Sampler):
     """
@@ -18,6 +19,10 @@ class RVISampler(Sampler):
         self.baseline = baseline
         self.use_cuda = use_cuda
         self.log_prob_tolerance = log_prob_tolerance
+        self._training = True
+    def train_mode(self, mode):
+        self._training = mode
+        logging.warning('Train mode has been changed to {}. Make sure to also update the PyTorchWrap train_mode as well..'.format(self._training))
 
     def solve(self, stochastic_process, mc_samples, verbose=False, feed_time=False):
         assert stochastic_process._pytorch, 'Your stochastic process must be pytorch wrapped.'
@@ -96,33 +101,34 @@ class RVISampler(Sampler):
 
                 x_tm1 = x_t
                 t -= 1
+                # endwhile loop
 
-            # print(trajectory_i)
-            # conduct an update step.
-            # print(policy_gradient_trajectory_info.rewards)
             policy_gradient_trajectory_info.torchify()
-            returns = gradients.calculate_returns(policy_gradient_trajectory_info.rewards, 1, None)
-            advantages = returns - policy_gradient_trajectory_info.values
-            if self.baseline is not None:
-                self.baseline.update_baseline(policy_gradient_trajectory_info.rewards,
-                                              advantages,
-                                              policy_gradient_trajectory_info.values)
 
-            loss = gradients.calculate_policy_gradient_terms(policy_gradient_trajectory_info.log_probs, advantages)
-            loss = loss.sum(dim=0).mean()
-            if self.use_cuda:
-                loss = loss.cuda()
+            if self._training:
+                returns = gradients.calculate_returns(policy_gradient_trajectory_info.rewards, 1, None)
+                advantages = returns - policy_gradient_trajectory_info.values
+                if self.baseline is not None:
+                    self.baseline.update_baseline(policy_gradient_trajectory_info.rewards,
+                                                  advantages,
+                                                  policy_gradient_trajectory_info.values)
 
-            if self.policy_optimizer is not None:
-                self.policy_optimizer.zero_grad()
-                loss.backward()
-                clip_grad_norm(self.policy.fn_approximator.parameters(), 40)
-                self.policy_optimizer.step()
+                loss = gradients.calculate_policy_gradient_terms(policy_gradient_trajectory_info.log_probs, advantages)
+                loss = loss.sum(dim=0).mean()
+                if self.use_cuda:
+                    loss = loss.cuda()
+
+                if self.policy_optimizer is not None:
+                    self.policy_optimizer.zero_grad()
+                    loss.backward()
+                    clip_grad_norm(self.policy.fn_approximator.parameters(), 40)
+                    self.policy_optimizer.step()
+                # end training statement.
 
             reward_summary = torch.sum(policy_gradient_trajectory_info.rewards, dim=0).mean()
             rewards_per_episode.append(reward_summary)
-            loss_per_episode.append(loss.cpu().data[0])
-            if i % 100 == 0 and verbose:
+            if self._training: loss_per_episode.append(loss.cpu().data[0])
+            if i % 100 == 0 and verbose and self._training:
                 print('MC Sample {}, loss {:3g}, episode_reward {:3g}, successful trajs {}'.format(i, loss.cpu().data[0], reward_summary, len(trajectories)))
 
 
@@ -145,6 +151,6 @@ class RVISampler(Sampler):
         results.trajectories(trajectories)
         results.posterior(posterior_particles)
         results.posterior_weights(posterior_weights)
-        results.loss_per_episode = loss_per_episode
+        if self._training: results.loss_per_episode = loss_per_episode
         results.rewards_per_episode = rewards_per_episode
         return results

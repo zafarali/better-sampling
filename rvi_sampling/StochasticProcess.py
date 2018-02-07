@@ -155,14 +155,20 @@ class PyTorchWrap(object):
         self.n_agents = stochastic_process.n_agents
         self.xT = stochastic_process.xT
         self.true_trajectory = self.stochastic_process.true_trajectory
+        self._training = True
 
+    def train_mode(self, mode):
+        self._training = mode
     @property
     def global_time(self):
         return self.stochastic_process.global_time
 
     def variable_wrap(self, tensor):
         if not isinstance(tensor, Variable):
-            tensor = Variable(tensor)
+            if self._training:
+                tensor = Variable(tensor)
+            else:
+                tensor = Variable(tensor, volatile=True)
         if self.use_cuda:
             tensor = tensor.cuda()
 
