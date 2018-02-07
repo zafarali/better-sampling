@@ -76,7 +76,7 @@ class MCSampler(Sampler):
                 # this is p(w_{t} | w_{t+1})
                 try:
                     step_idx, step, proposal_log_prob = self.draw_step(x_t)
-                    x_t, path_log_prob, _, _ = stochastic_process.step(step_idx)
+                    x_t, path_log_prob, _, _ = stochastic_process.step(step_idx, reverse=False)
                 except TimeoutError:
                     # print('Ended at {}.'.format(x_t))
                     break
@@ -125,7 +125,7 @@ class ISSampler(Sampler):
                 try:
                     step_idx, step, log_prob_proposal_step = proposal.draw(x_t, t)
                     # print('proposal_log_prob step:',log_prob_proposal_step)
-                    x_t, path_log_prob, _, _ = stochastic_process.step(step_idx)
+                    x_t, path_log_prob, _, _ = stochastic_process.step(step_idx, reverse=False)
                 except TimeoutError:
                     break
                 # print('path_log_prob step:',path_log_prob)

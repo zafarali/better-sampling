@@ -56,7 +56,7 @@ class RVISampler(Sampler):
                 assert len(x_tm1.size()) == 2
                 action,  log_prob_action = self.policy(x_tm1)
                 # print('proposal_log_prob step:',log_prob_proposal_step)
-                x_t, path_log_prob, done, _ = stochastic_process.step(action)
+                x_t, path_log_prob, done, _ = stochastic_process.step(action, reverse=False)
 
                 if t != 0: # until we reach time 0
                     # provide an "instant reward"
