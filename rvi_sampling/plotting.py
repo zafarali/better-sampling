@@ -111,3 +111,48 @@ def visualize_proposal(list_of_sps, timesteps, xranges, neural_network=True):
             vector_grid_y_arrows[i].append(vector_grid_y_arrows_t[i])
     return t, x, vector_grid_arrows_x, vector_grid_y_arrows
 
+
+def determine_panel_size(n_panels):
+    """
+    Determines panel size based on the number of panels we have
+    :param n_panels:
+    :return:
+    """
+    assert n_panels <= 9, 'We can only plot at most 9 panels at a time'
+
+    if n_panels in [7, 8, 9]:
+        return '33'
+    elif n_panels in [5, 6]:
+        return '23'
+    elif n_panels in [4]:
+        return '22'
+    elif n_panels in [3]:
+        return '13'
+    elif n_panels in [2]:
+        return '12'
+    elif n_panels in [1]:
+        return '11'
+
+def multi_quiver_plot(t, x, x_arrows, proposal_arrows, titles=None, figsize=None):
+    """
+    Plots at most 9 quiver plots on one figure.
+    :param t:
+    :param x:
+    :param x_arrows:
+    :param proposal_arrows: a list of proposal visualizations
+    :return:
+    """
+
+    panel_size = determine_panel_size(len(proposal_arrows))
+    f = plt.figure() if figsize is None else plt.figure(figsize=figsize)
+
+    for i, proposal in enumerate(proposal_arrows):
+        ax = f.add_subplot(panel_size+str(i+1))
+        ax.quiver(t, x, x_arrows, proposal)
+        if titles is not None: ax.set_title(titles[i])
+        ax.set_xlabel('Time')
+        ax.set_ylabel('x')
+
+    f.tight_layout()
+    return f
+
