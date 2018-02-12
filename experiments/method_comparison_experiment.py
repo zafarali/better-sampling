@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from Samplers import ISSampler, ABCSampler, MCSampler
-from StochasticProcess import RandomWalk
-from proposal_distributions import MinimalProposal, SimonsProposal
-from prior_distributions import DiscreteUniform
-from plotting import plot_mean_trajectories, plot_trajectory_time_evolution
+from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler, RVISampler
+from rvi_sampling.StochasticProcess import RandomWalk
+from rvi_sampling.distributions.proposal_distributions import MinimalProposal, SimonsProposal
+from rvi_sampling.distributions.prior_distributions import DiscreteUniform
+from rvi_sampling.plotting import plot_mean_trajectories, plot_trajectory_time_evolution
 sns.set_style('white')
 
 MC_SAMPLES = 2000
@@ -15,6 +15,9 @@ DIMENSIONS = 1
 # first simulate a random walk
 rw = RandomWalk(DIMENSIONS, STEP_PROBS, POSSIBLE_STEPS, n_agents=1, T=100, prior_distribution=DiscreteUniform(DIMENSIONS, -2, 4))
 rw.reset()
+
+samplers = [ISSampler(), ABCSampler(), MCSampler(), RVISampler() ]
+
 print('True Starting Position is:{}'.format(rw.x0))
 # run importance sampling
 iss = ISSampler(SimonsProposal)
