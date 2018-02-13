@@ -99,14 +99,19 @@ class MCSampler(Sampler):
 
 class ISSampler(Sampler):
     _name = 'ISSampler'
-    def __init__(self, proposal, log_prob_tolerance=-10**4, seed=0):
+    def __init__(self, proposal, seed=0):
         super().__init__(seed)
         self.proposal = proposal
-        self.log_prob_tolerance = log_prob_tolerance
+        self.soft = proposal._soft
 
     def solve(self, stochastic_process, mc_samples):
         results = SamplingResults('ISSampler', stochastic_process.true_trajectory)
-        proposal = self.proposal(stochastic_process.x0, stochastic_process.step_sizes, rng=self.rng)
+
+        push_toward_argument = [0] if not self.soft else [-stochastic_process.prior.start, stochastic_process.prior.start]
+
+        proposal = self.proposal(push_toward=push_toward_argument,
+                                 step_sizes=stochastic_process.step_sizes,
+                                 rng=self.rng)
         trajectories = []
         posterior_particles = []
         posterior_weights = []

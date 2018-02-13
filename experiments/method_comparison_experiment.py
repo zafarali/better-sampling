@@ -7,7 +7,7 @@ import torch.nn as nn
 import seaborn as sns
 from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler, RVISampler
 from rvi_sampling.StochasticProcess import RandomWalk, PyTorchWrap
-from rvi_sampling.distributions.proposal_distributions import SimonsProposal
+from rvi_sampling.distributions.proposal_distributions import SimonsProposal, SimonsSoftProposal
 from rvi_sampling.distributions.prior_distributions import DiscreteUniform
 from rvi_sampling.plotting import determine_panel_size
 from rvi_sampling.distributions.analytic_posterior import TwoStepRandomWalkPosterior
@@ -15,15 +15,16 @@ from pg_methods.utils.baselines import MovingAverageBaseline
 from pg_methods.utils.policies import MultinomialPolicy, RandomPolicy
 from pg_methods.utils.networks import MLP_factory
 
+
 if __name__=='__main__':
     sns.set_style('white')
-
+    FEED_TIME = True
     MC_SAMPLES = 1000
     POSSIBLE_STEPS = [[-1], [+1]]
     STEP_PROBS = np.ones(2)/2
     DIMENSIONS = 1
-    T = 100
-    DISC_UNIFORM_WIDTH = 2
+    T = 50
+    DISC_UNIFORM_WIDTH = 5
     # first simulate a random walk
     rw = RandomWalk(DIMENSIONS,
                     STEP_PROBS,
@@ -34,7 +35,7 @@ if __name__=='__main__':
     rw.reset()
 
     # create a policy for the RVI sampler
-    fn_approximator = MLP_factory(DIMENSIONS,
+    fn_approximator = MLP_factory(DIMENSIONS+int(FEED_TIME),
                                   hidden_sizes=[32, 32],
                                   output_size=len(POSSIBLE_STEPS),
                                   hidden_non_linearity=nn.ReLU)
@@ -42,10 +43,10 @@ if __name__=='__main__':
     policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=0.001)
 
 
-    samplers = [ISSampler(SimonsProposal),
+    samplers = [ISSampler(SimonsSoftProposal),
                 ABCSampler(0),
                 MCSampler(),
-                RVISampler(policy, policy_optimizer, baseline=MovingAverageBaseline(0.99), feed_time=True) ]
+                RVISampler(policy, policy_optimizer, baseline=MovingAverageBaseline(0.99), feed_time=FEED_TIME) ]
 
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))
