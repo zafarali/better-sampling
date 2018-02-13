@@ -1,3 +1,5 @@
+import sys
+sys.path.append('..')
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -97,3 +99,5 @@ if __name__=='__main__':
 
     fig_traj_evol.tight_layout()
     fig_traj_evol.savefig('trajectory_evolution.pdf')
+
+torch.save(policy, 'rvi_policy.pyt')
