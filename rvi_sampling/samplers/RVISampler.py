@@ -13,19 +13,35 @@ class RVISampler(Sampler):
     Reinforced Variational Inference Sampler
     """
     _name = 'RVISampler'
-    def __init__(self, policy, policy_optimizer, baseline=None,  log_prob_tolerance=-10**10, seed=0, use_cuda=False):
+    def __init__(self, policy,
+                 policy_optimizer,
+                 baseline=None,
+                 feed_time=False,
+                 seed=0,
+                 use_cuda=False):
+        """
+        The reinforced variational inference sampler
+        :param policy: the policy to use
+        :param policy_optimizer: the optimizer for the policy
+        :param baseline: a baseline function
+        :param feed_time: a boolean indicating if we should or
+                          should not feed time into the proposal
+        :param seed: the seed to use
+        :param use_cuda: uses cuda (currently not working)
+        """
         Sampler.__init__(self, seed)
         self.policy = policy
         self.policy_optimizer = policy_optimizer
         self.baseline = baseline
         self.use_cuda = use_cuda
-        self.log_prob_tolerance = log_prob_tolerance
         self._training = True
+        self.feed_time = feed_time
     def train_mode(self, mode):
         self._training = mode
         logging.warning('Train mode has been changed to {}. Make sure to also update the PyTorchWrap train_mode as well..'.format(self._training))
 
-    def solve(self, stochastic_process, mc_samples, verbose=False, feed_time=False):
+    def solve(self, stochastic_process, mc_samples, verbose=False):
+        feed_time = self.feed_time
         assert stochastic_process._pytorch, 'Your stochastic process must be pytorch wrapped.'
         results = RLSamplingResults('RVISampler', stochastic_process.true_trajectory)
         trajectories = []

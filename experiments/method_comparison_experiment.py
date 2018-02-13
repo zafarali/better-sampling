@@ -45,7 +45,7 @@ if __name__=='__main__':
     samplers = [ISSampler(SimonsProposal),
                 ABCSampler(0),
                 MCSampler(),
-                RVISampler(policy, policy_optimizer, baseline=MovingAverageBaseline(0.99)) ]
+                RVISampler(policy, policy_optimizer, baseline=MovingAverageBaseline(0.99), feed_time=True) ]
 
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))
