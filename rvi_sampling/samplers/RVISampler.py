@@ -12,6 +12,7 @@ class RVISampler(Sampler):
     """
     Reinforced Variational Inference Sampler
     """
+    _name = 'RVISampler'
     def __init__(self, policy, policy_optimizer, baseline=None,  log_prob_tolerance=-10**10, seed=0, use_cuda=False):
         Sampler.__init__(self, seed)
         self.policy = policy
