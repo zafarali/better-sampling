@@ -83,7 +83,10 @@ def conduct_draws(sp_, x, t, n_draws=100):
     return float(a)
 
 
-def visualize_proposal(list_of_sps, timesteps, xranges, neural_network=True):
+def visualize_proposal(list_of_proposals,
+                       timesteps,
+                       xranges,
+                       neural_network=True):
     """
     Takes a list of policies and returns the components needed to visualize using plt.quiver.
 
@@ -93,7 +96,7 @@ def visualize_proposal(list_of_sps, timesteps, xranges, neural_network=True):
     plt.quiver(t, x, x_arrows, y_arrows_list[0])
     plt.quiver(t, x, x_arrows, y_arrows_list[1])
     ```
-    :param list_of_sps:
+    :param list_of_proposals:
     :param timesteps:
     :param xranges:
     :return:
@@ -101,20 +104,34 @@ def visualize_proposal(list_of_sps, timesteps, xranges, neural_network=True):
     t, x = np.meshgrid(range(0, timesteps), range(-xranges, xranges + 1))
     vector_grid_arrows_x = np.zeros_like(t)
 
-    vector_grid_y_arrows = [[] for _ in list_of_sps]
+    vector_grid_y_arrows = [[] for _ in list_of_proposals]
     for x_ in x[:, 0]:
-        vector_grid_y_arrows_t = [[] for _ in list_of_sps]
+        vector_grid_y_arrows_t = [[] for _ in list_of_proposals]
         for t_ in t[0, :]:
-            for sp, vector_grid_y_arrows_t_i in zip(list_of_sps, vector_grid_y_arrows_t):
+            for proposal, vector_grid_y_arrows_t_i in zip(list_of_proposals, vector_grid_y_arrows_t):
                 if neural_network:
-                    feed_time = sp.fn_approximator.Input.weight.size()[1] == 2
-                    vector_grid_y_arrows_t_i.append(conduct_draws_nn(sp, float(x_), t_ / timesteps, feed_time=feed_time))
+                    feed_time = proposal.fn_approximator.Input.weight.size()[1] == 2
+                    vector_grid_y_arrows_t_i.append(conduct_draws_nn(proposal, float(x_), t_ / timesteps, feed_time=feed_time))
                 else:
-                    vector_grid_y_arrows_t_i.append(conduct_draws(sp, float(x_), t_))
+                    vector_grid_y_arrows_t_i.append(conduct_draws(proposal, float(x_), t_))
         for i in range(len(vector_grid_y_arrows_t)):
             vector_grid_y_arrows[i].append(vector_grid_y_arrows_t[i])
     return t, x, vector_grid_arrows_x, vector_grid_y_arrows
 
+
+def visualize_penalties(list_of_proposals,
+                        timesteps,
+                        xranges,
+                        neural_network=True):
+    """
+    Takes a list of proposals and plots the penalties (i.e.
+    :param list_of_proposals:
+    :param timesteps:
+    :param xranges:
+    :param neural_network:
+    :return:
+    """
+    raise NotImplementedError('Not implemented yet.')
 
 def determine_panel_size(n_panels):
     """
