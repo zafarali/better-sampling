@@ -12,6 +12,7 @@ class Sampler(object):
 
 
 class ABCSampler(Sampler):
+    _name = 'ABCSampler'
     """
     Approximate bayesian computation sampling from the posterior.
     It uses the .simulate() method of the StochasticProcess object
@@ -44,6 +45,7 @@ class ABCSampler(Sampler):
 
 
 class MCSampler(Sampler):
+    _name = 'MCSampler'
     def __init__(self, log_prob_tolerance=-10**10, seed=0):
         super().__init__(seed)
         # self.start_state = start_state
@@ -96,6 +98,7 @@ class MCSampler(Sampler):
 
 
 class ISSampler(Sampler):
+    _name = 'ISSampler'
     def __init__(self, proposal, log_prob_tolerance=-10**4, seed=0):
         super().__init__(seed)
         self.proposal = proposal
