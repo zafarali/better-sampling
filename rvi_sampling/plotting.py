@@ -56,7 +56,7 @@ def plot_trajectory_time_evolution(trajectories, dimension=0, step=5, ax=None):
     ax.set_title('Evolution of Trajectories over time\n (lighter color is more recent)')
     return ax
 
-def conduct_draws_nn(sp_, x, t, n_draws=100):
+def conduct_draws_nn(sp_, x, t, n_draws=100, feed_time=False):
     """
     Conducts draws from a neural network policy and takes the average.
     :param sp_:
@@ -64,7 +64,10 @@ def conduct_draws_nn(sp_, x, t, n_draws=100):
     :param t:
     :return:
     """
-    a = np.mean([2*sp_(Variable(torch.FloatTensor([[x, t]]), volatile=True))[0].data[0]-1 for i in range(n_draws)])
+    if feed_time:
+        a = np.mean([2*sp_(Variable(torch.FloatTensor([[x, t]]), volatile=True))[0].data[0]-1 for i in range(n_draws)])
+    else:
+        a = np.mean([2*sp_(Variable(torch.FloatTensor([[x]]), volatile=True))[0].data[0]-1 for i in range(n_draws)])
     return a
 
 def conduct_draws(sp_, x, t, n_draws=100):
@@ -104,7 +107,8 @@ def visualize_proposal(list_of_sps, timesteps, xranges, neural_network=True):
         for t_ in t[0, :]:
             for sp, vector_grid_y_arrows_t_i in zip(list_of_sps, vector_grid_y_arrows_t):
                 if neural_network:
-                    vector_grid_y_arrows_t_i.append(conduct_draws_nn(sp, float(x_), t_ / timesteps))
+                    feed_time = sp.fn_approximator.Input.weight.size()[1] == 2
+                    vector_grid_y_arrows_t_i.append(conduct_draws_nn(sp, float(x_), t_ / timesteps, feed_time=feed_time))
                 else:
                     vector_grid_y_arrows_t_i.append(conduct_draws(sp, float(x_), t_))
         for i in range(len(vector_grid_y_arrows_t)):
