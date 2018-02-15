@@ -4,34 +4,69 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn
+import argparse
+import os
+import time
 import seaborn as sns
 from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler, RVISampler
 from rvi_sampling.StochasticProcess import RandomWalk, PyTorchWrap
 from rvi_sampling.distributions.proposal_distributions import SimonsProposal, SimonsSoftProposal
 from rvi_sampling.distributions.prior_distributions import DiscreteUniform
-from rvi_sampling.plotting import determine_panel_size
+from rvi_sampling.plotting import determine_panel_size, visualize_proposal, multi_quiver_plot
 from rvi_sampling.distributions.analytic_posterior import TwoStepRandomWalkPosterior
 from pg_methods.utils.baselines import MovingAverageBaseline
 from pg_methods.utils.policies import MultinomialPolicy, RandomPolicy
 from pg_methods.utils.networks import MLP_factory
+from pg_methods.utils.objectives import PolicyGradientObjective
 
+create_folder = lambda f: [os.makedirs(os.path.join('./', f)) if not os.path.exists(os.path.join('./', f)) else False]
+def touch(path):
+    with open(path, 'a'):
+        os.utime(path, None)
 
 if __name__=='__main__':
+
+    parser = argparse.ArgumentParser('Comparison of Methods')
+    parser.add_argument('-entropy', '--entropy', default=0, type=float, help='entropy coefficient')
+    parser.add_argument('-s', '--samples', default=1000, type=int, help='number of mc steps')
+    parser.add_argument('-t', '--rw_time', default=50, type=int, help='Length of the random walk')
+    parser.add_argument('-seed', '--seed', default=0, type=int, help='The seed to use')
+    parser.add_argument('-width', '--rw_width', default=5, type=int,
+                        help='width of the discrete uniform in the random walk')
+    parser.add_argument('-notime', '--notime', default=True, action='store_false',
+                        help='Do not feed time into the neural network proposal')
+    parser.add_argument('-baseline_decay', '--baseline_decay', default=0.99, type=float,
+                        help='Moving Average baseline decay')
+    parser.add_argument('-lr', '--learning_rate', default=0.001, type=float,
+                        help='Learning rate')
+    parser.add_argument('-name', '--name', default='', type=str,
+                        help='append name')
+    parser.add_argument('--only_rvi', default=False, action='store_true',
+                        help='does only the RVI experiments')
+
+    args = parser.parse_args()
+
+    if args.name != '':
+        folder_name = '{}_{}'.format(args.name, time.strftime('%a-%d-%m-%Y__%H-%M-%s'))
+    else:
+        folder_name = 'results_{}'.format(time.strftime('%a-%d-%m-%Y__%H-%M-%s'))
+
     sns.set_style('white')
-    FEED_TIME = True
-    MC_SAMPLES = 1000
+    FEED_TIME = args.notime
+    MC_SAMPLES = args.samples
     POSSIBLE_STEPS = [[-1], [+1]]
     STEP_PROBS = np.ones(2)/2
     DIMENSIONS = 1
-    T = 50
-    DISC_UNIFORM_WIDTH = 5
+    T = args.rw_time
+    DISC_UNIFORM_WIDTH = args.rw_width
     # first simulate a random walk
     rw = RandomWalk(DIMENSIONS,
                     STEP_PROBS,
                     POSSIBLE_STEPS,
                     n_agents=1,
                     T=T,
-                    prior_distribution=DiscreteUniform(DIMENSIONS, -DISC_UNIFORM_WIDTH, 2*DISC_UNIFORM_WIDTH))
+                    prior_distribution=DiscreteUniform(DIMENSIONS, -DISC_UNIFORM_WIDTH, 2*DISC_UNIFORM_WIDTH, seed=args.seed+2),
+                    seed=args.seed+1)
     rw.reset()
 
     # create a policy for the RVI sampler
@@ -40,13 +75,21 @@ if __name__=='__main__':
                                   output_size=len(POSSIBLE_STEPS),
                                   hidden_non_linearity=nn.ReLU)
     policy = MultinomialPolicy(fn_approximator)
-    policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=0.001)
+    policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=args.learning_rate)
 
 
-    samplers = [ISSampler(SimonsSoftProposal),
-                ABCSampler(0),
-                MCSampler(),
-                RVISampler(policy, policy_optimizer, baseline=MovingAverageBaseline(0.99), feed_time=FEED_TIME) ]
+    samplers = [ISSampler(SimonsSoftProposal, seed=args.seed),
+                ABCSampler(0,seed=args.seed),
+                MCSampler(seed=args.seed),
+                RVISampler(policy,
+                           policy_optimizer,
+                           baseline=MovingAverageBaseline(args.baseline_decay),
+                           objective=PolicyGradientObjective(entropy=args.entropy),
+                           feed_time=FEED_TIME,
+                           seed=args.seed) ]
+
+    if args.only_rvi:
+        samplers = [samplers[-1]]
 
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))
@@ -68,7 +111,9 @@ if __name__=='__main__':
     analytic = TwoStepRandomWalkPosterior(DISC_UNIFORM_WIDTH, 0.5, T)
 
     panel_size = determine_panel_size(len(sampler_results))
-
+    create_folder(folder_name)
+    touch(os.path.join(folder_name, 'start={}'.format(rw.x0)))
+    touch(os.path.join(folder_name, 'end={}'.format(rw.xT)))
     fig_dists = plt.figure(figsize=(8, 9))
     fig_traj = plt.figure(figsize=(9,9))
     fig_traj_evol = plt.figure(figsize=(9,9))
@@ -89,16 +134,28 @@ if __name__=='__main__':
         ax = fig_traj_evol.add_subplot(panel_size+str(i+1))
         ax = sampler_result.plot_all_trajectory_evolution(ax=ax)
         ax.set_title('Evolution of Trajectories\nfor {}'.format(sampler_result.sampler_name))
+        sampler_result.save_results(folder_name)
 
-
-    fig_dists.suptitle('MC_SAMPLES: {}, Analytic Mean: {:3g}'.format(MC_SAMPLES, analytic.expectation(rw.xT[0])))
+    fig_dists.suptitle('MC_SAMPLES: {}, Analytic mean: {:3g}, Start {}, End {}'.format(MC_SAMPLES,
+                                                                                       analytic.expectation(rw.xT[0]),
+                                                                                       rw.x0,
+                                                                                       rw.xT),
+                       x=0.5,
+                       y=1.01)
     fig_dists.tight_layout()
-    fig_dists.savefig('ending_distribution.pdf')
+    fig_dists.savefig(os.path.join(folder_name, 'ending_distribution.pdf'))
 
     fig_traj.tight_layout()
-    fig_traj.savefig('trajectory_distribution.pdf')
+    fig_traj.savefig(os.path.join(folder_name, 'trajectory_distribution.pdf'))
 
     fig_traj_evol.tight_layout()
-    fig_traj_evol.savefig('trajectory_evolution.pdf')
+    fig_traj_evol.savefig(os.path.join(folder_name, 'trajectory_evolution.pdf'))
 
-torch.save(policy, 'rvi_policy.pyt')
+    torch.save(policy, os.path.join(folder_name, 'rvi_policy.pyt'))
+
+    t, x, x_arrows, y_arrows_nn = visualize_proposal([policy], 50, 20, neural_network=True)
+    f = multi_quiver_plot(t, x, x_arrows,
+                          [y_arrows_nn],
+                          ['Neural Network Proposal'],
+                          figsize=(10, 5))
+    f.savefig(os.path.join(folder_name, 'visualized_proposal.pdf'))

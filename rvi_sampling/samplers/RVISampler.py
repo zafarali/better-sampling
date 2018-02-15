@@ -3,6 +3,7 @@ from torch.nn.utils import clip_grad_norm
 import torch
 from torch.autograd import Variable
 from pg_methods.utils.data import MultiTrajectory
+from pg_methods.utils.objectives import PolicyGradientObjective
 import numpy as np
 from .Samplers import Sampler
 from ..results import RLSamplingResults
@@ -17,6 +18,7 @@ class RVISampler(Sampler):
                  policy_optimizer,
                  baseline=None,
                  feed_time=False,
+                 objective=PolicyGradientObjective(),
                  seed=0,
                  use_cuda=False):
         """
@@ -36,6 +38,8 @@ class RVISampler(Sampler):
         self.use_cuda = use_cuda
         self._training = True
         self.feed_time = feed_time
+        self.objective = objective
+
     def train_mode(self, mode):
         self._training = mode
         logging.warning('Train mode has been changed to {}. Make sure to also update the PyTorchWrap train_mode as well..'.format(self._training))
@@ -130,8 +134,8 @@ class RVISampler(Sampler):
                                                   advantages,
                                                   policy_gradient_trajectory_info.values)
 
-                loss = gradients.calculate_policy_gradient_terms(policy_gradient_trajectory_info.log_probs, advantages)
-                loss = loss.sum(dim=0).mean()
+                loss = self.objective(advantages, policy_gradient_trajectory_info)
+
                 if self.use_cuda:
                     loss = loss.cuda()
 

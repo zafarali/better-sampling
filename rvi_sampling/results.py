@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from .plotting import plot_trajectory_time_evolution, plot_mean_trajectories
@@ -152,6 +153,17 @@ class SamplingResults(object):
 
         return plot_mean_trajectories(trajectories, ts, self.true_trajectory, ax=ax)
 
+    def save_results(self, path):
+        results_dict = dict(sampler_name=self.sampler_name,
+                            true_trajectory=self.true_trajectory.tolist(),
+                            all_trejctories=[traj.tolist() for traj in self._all_trajectories],
+                            trajectories=[traj.tolist() for traj in self._trajectories],
+                            posterior_particles= [float(p) for p in self._posterior_particles] if self._posterior_particles is not None else None,
+                            posterior_weights= [ float(w) for w in self._posterior_particles] if self._posterior_weights is not None else None)
+
+        import json
+        with open(os.path.join(path, 'trajectory_results_{}'.format(self.sampler_name)), 'w') as f:
+            json.dump(results_dict, f)
 
 class RLSamplingResults(SamplingResults):
     pass
