@@ -1,5 +1,5 @@
 import numpy as np
-from ..results import SamplingResults
+from ..results import SamplingResults, ImportanceSamplingResults
 
 class Sampler(object):
     """
@@ -105,7 +105,7 @@ class ISSampler(Sampler):
         self.soft = proposal._soft
 
     def solve(self, stochastic_process, mc_samples):
-        results = SamplingResults('ISSampler', stochastic_process.true_trajectory)
+        results = ImportanceSamplingResults('ISSampler', stochastic_process.true_trajectory)
 
         push_toward_argument = [0] if not self.soft else [-stochastic_process.prior.start, stochastic_process.prior.start]
 

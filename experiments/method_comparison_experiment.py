@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import argparse
 import os
+import multiprocessing
 import time
 import seaborn as sns
 from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler, RVISampler
@@ -14,6 +15,7 @@ from rvi_sampling.distributions.proposal_distributions import SimonsProposal, Si
 from rvi_sampling.distributions.prior_distributions import DiscreteUniform
 from rvi_sampling.plotting import determine_panel_size, visualize_proposal, multi_quiver_plot
 from rvi_sampling.distributions.analytic_posterior import TwoStepRandomWalkPosterior
+from rvi_sampling.results import ImportanceSamplingResults
 from pg_methods.utils.baselines import MovingAverageBaseline
 from pg_methods.utils.policies import MultinomialPolicy, RandomPolicy
 from pg_methods.utils.networks import MLP_factory
@@ -23,6 +25,12 @@ create_folder = lambda f: [os.makedirs(os.path.join('./', f)) if not os.path.exi
 def touch(path):
     with open(path, 'a'):
         os.utime(path, None)
+def run_sampler(args):
+    sampler, rw, MC_samples = args
+    if isinstance(sampler, RVISampler):
+        return sampler.solve(PyTorchWrap(rw), MC_SAMPLES)
+    else:
+        return sampler.solve(rw, MC_SAMPLES)
 
 if __name__=='__main__':
 
@@ -43,6 +51,8 @@ if __name__=='__main__':
                         help='append name')
     parser.add_argument('--only_rvi', default=False, action='store_true',
                         help='does only the RVI experiments')
+    parser.add_argument('-n_cpus', '--n_cpus', default=3, type=float,
+                        help='CPUs to use when doing the work')
 
     args = parser.parse_args()
 
@@ -94,18 +104,21 @@ if __name__=='__main__':
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))
 
-    sampler_results = []
-    for sampler in samplers:
-        if isinstance(sampler, RVISampler):
-            sampler_result = sampler.solve(PyTorchWrap(rw), MC_SAMPLES)
-        else:
-            sampler_result = sampler.solve(rw, MC_SAMPLES)
-        print('*'*45)
-        print('Sampler: {}'.format(sampler._name))
-        weighted = True if isinstance(sampler, (RVISampler, ISSampler)) else False
-        print('Starting Position Estimate: {:3g}, variance: {:3g}'.format(sampler_result.expectation(weighted),
-                                                                    sampler_result.variance(weighted)))
-        sampler_results.append(sampler_result)
+    pool = multiprocessing.Pool(args.n_cpus)
+    solver_arguments = [(sampler, rw, MC_SAMPLES) for sampler in samplers]
+
+    sampler_results = pool.map(run_sampler, solver_arguments)
+
+    # for sampler in samplers:
+    #     if isinstance(sampler, RVISampler):
+    #         sampler_result = sampler.solve(PyTorchWrap(rw), MC_SAMPLES)
+    #     else:
+    #         sampler_result = sampler.solve(rw, MC_SAMPLES)
+    #     print('*'*45)
+    #     print('Sampler: {}'.format(sampler._name))
+    #     print('Starting Position Estimate: {:3g}, variance: {:3g}'.format(sampler_result.expectation(),
+    #                                                                 sampler_result.variance()))
+    #     sampler_results.append(sampler_result)
 
 
     analytic = TwoStepRandomWalkPosterior(DISC_UNIFORM_WIDTH, 0.5, T)
@@ -119,14 +132,20 @@ if __name__=='__main__':
     fig_traj_evol = plt.figure(figsize=(9,9))
 
     for i, sampler_result in enumerate(sampler_results):
+        print(sampler_result.summary())
         ax = fig_dists.add_subplot(panel_size+str(i+1))
         ax = sampler_result.plot_distribution(DISC_UNIFORM_WIDTH, ax, alpha=0.7)
         ax = analytic.plot(rw.xT, ax, label='analytic', color='r')
-        weighted = True if isinstance(sampler, (RVISampler, ISSampler)) else False
-        ax.set_title('{}, mean={:3g},\n var={:3g}, prop success={}'.format(sampler_result.sampler_name,
-                                                                           sampler_result.expectation(weighted),
-                                                                           sampler_result.variance(weighted),
-                                                                           len(sampler_result.trajectories())/len(sampler_result.all_trajectories())))
+
+        title_string = '{}, mean={:3g},\n var={:3g}, %succ={}'.format(sampler_result.sampler_name,
+                                                                           sampler_result.expectation(),
+                                                                           sampler_result.variance(),
+                                                                           len(sampler_result.trajectories())/len(sampler_result.all_trajectories()))
+        if isinstance(sampler_result, ImportanceSamplingResults):
+            title_string += ' ESS={}'.format(sampler_result.effective_sample_size())
+
+        ax.set_title(title_string)
+
         ax = fig_traj.add_subplot(panel_size+str(i+1))
         ax = sampler_result.plot_mean_trajectory(ax=ax)
         ax.set_title('Trajectory Distribution\nfor {}'.format(sampler_result.sampler_name))

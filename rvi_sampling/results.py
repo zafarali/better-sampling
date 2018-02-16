@@ -165,5 +165,47 @@ class SamplingResults(object):
         with open(os.path.join(path, 'trajectory_results_{}'.format(self.sampler_name)), 'w') as f:
             json.dump(results_dict, f)
 
-class RLSamplingResults(SamplingResults):
+    def prop_success(self):
+        return len(self.trajectories())/len(self.all_trajectories())
+
+    def summary_builder(self):
+        return 'Start Estimate: {:3g}, Variance: {:3g}, Prop Success: {:3g}'.format(self.expectation(), self.variance(), self.prop_success())
+
+    def summary(self):
+        template_string = '\n'
+        template_string += '*' * 45
+        template_string += '\nSampler: {}\n'.format(self.sampler_name)
+        template_string += str(self.summary_builder()) +'\n'
+        template_string += '*'*45
+        template_string += '\n'
+
+        return template_string
+
+class ImportanceSamplingResults(SamplingResults):
+    def effective_sample_size(self):
+        """
+        A diagnostic for the quality of the importance sampling scheme.
+        The variance in the estimate of the expectation is equal to
+        that if we had done `effective_sample_size` number of monte carlo
+        estimates.
+        :return:
+        """
+        posterior_weights = np.array(self._posterior_weights).reshape(-1)
+        denominator = np.sum(posterior_weights**2)
+        numerator = np.sum(posterior_weights)**2
+        return numerator/denominator
+
+    def variance(self, weighted=True):
+        return super().variance(weighted)
+
+    def expectation(self, weighted=True):
+        return super().expectation(weighted)
+
+    def summary_builder(self):
+        template = super().summary_builder()
+        ess_string = ' ESS: {:3g}'.format(self.effective_sample_size())
+        template += ess_string
+        return template
+
+class RLSamplingResults(ImportanceSamplingResults):
     pass
