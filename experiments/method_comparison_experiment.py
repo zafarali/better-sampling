@@ -70,15 +70,19 @@ if __name__=='__main__':
     T = args.rw_time
     DISC_UNIFORM_WIDTH = args.rw_width
     # first simulate a random walk
-    rw = RandomWalk(DIMENSIONS,
-                    STEP_PROBS,
-                    POSSIBLE_STEPS,
-                    n_agents=1,
-                    T=T,
-                    prior_distribution=DiscreteUniform(DIMENSIONS, -DISC_UNIFORM_WIDTH, 2*DISC_UNIFORM_WIDTH, seed=args.seed+2),
-                    seed=args.seed+1)
-    rw.reset()
 
+    def create_rw():
+        rw = RandomWalk(DIMENSIONS,
+                        STEP_PROBS,
+                        POSSIBLE_STEPS,
+                        n_agents=1,
+                        T=T,
+                        prior_distribution=DiscreteUniform(DIMENSIONS, -DISC_UNIFORM_WIDTH, 2*DISC_UNIFORM_WIDTH, seed=args.seed+2),
+                        seed=args.seed+1)
+        rw.reset()
+        return rw
+
+    rw = create_rw()
     # create a policy for the RVI sampler
     fn_approximator = MLP_factory(DIMENSIONS+int(FEED_TIME),
                                   hidden_sizes=[32, 32],
@@ -105,7 +109,7 @@ if __name__=='__main__':
     print('True Ending Position is: {}'.format(rw.xT))
 
     pool = multiprocessing.Pool(args.n_cpus)
-    solver_arguments = [(sampler, rw, MC_SAMPLES) for sampler in samplers]
+    solver_arguments = [(sampler, create_rw(), MC_SAMPLES) for sampler in samplers]
 
     sampler_results = pool.map(run_sampler, solver_arguments)
 
@@ -136,15 +140,7 @@ if __name__=='__main__':
         ax = fig_dists.add_subplot(panel_size+str(i+1))
         ax = sampler_result.plot_distribution(DISC_UNIFORM_WIDTH, ax, alpha=0.7)
         ax = analytic.plot(rw.xT, ax, label='analytic', color='r')
-
-        title_string = '{}, mean={:3g},\n var={:3g}, %succ={}'.format(sampler_result.sampler_name,
-                                                                           sampler_result.expectation(),
-                                                                           sampler_result.variance(),
-                                                                           len(sampler_result.trajectories())/len(sampler_result.all_trajectories()))
-        if isinstance(sampler_result, ImportanceSamplingResults):
-            title_string += ' ESS={}'.format(sampler_result.effective_sample_size())
-
-        ax.set_title(title_string)
+        ax.set_title(sampler_result.summary_title())
 
         ax = fig_traj.add_subplot(panel_size+str(i+1))
         ax = sampler_result.plot_mean_trajectory(ax=ax)
@@ -158,10 +154,8 @@ if __name__=='__main__':
     fig_dists.suptitle('MC_SAMPLES: {}, Analytic mean: {:3g}, Start {}, End {}'.format(MC_SAMPLES,
                                                                                        analytic.expectation(rw.xT[0]),
                                                                                        rw.x0,
-                                                                                       rw.xT),
-                       x=0.5,
-                       y=1.01)
-    fig_dists.tight_layout()
+                                                                                       rw.xT))
+    fig_dists.tight_layout(rect=[0, 0.03, 1, 0.97])
     fig_dists.savefig(os.path.join(folder_name, 'ending_distribution.pdf'))
 
     fig_traj.tight_layout()
