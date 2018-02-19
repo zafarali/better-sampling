@@ -134,6 +134,9 @@ if __name__=='__main__':
     fig_dists = plt.figure(figsize=(8, 9))
     fig_traj = plt.figure(figsize=(9,9))
     fig_traj_evol = plt.figure(figsize=(9,9))
+    fig_weight_hists = plt.figure(figsize=(9,4))
+
+    hist_colors = zip(['r', 'g', 'b'], [1, 2, 3])
 
     for i, sampler_result in enumerate(sampler_results):
         print(sampler_result.summary())
@@ -151,6 +154,16 @@ if __name__=='__main__':
         ax.set_title('Evolution of Trajectories\nfor {}'.format(sampler_result.sampler_name))
         sampler_result.save_results(folder_name)
 
+
+        if sampler_result._importance_sampled:
+            c, j = next(hist_colors)
+            ax = fig_weight_hists.add_subplot('12'+str(j))
+            sampler_result.plot_posterior_weight_histogram(ax, color=c, label='{}'.format(sampler_result.sampler_name))
+            ax.legend()
+
+    fig_weight_hists.tight_layout()
+    fig_weight_hists.savefig(os.path.join(folder_name, 'weight_distribution.pdf'))
+
     fig_dists.suptitle('MC_SAMPLES: {}, Analytic mean: {:3g}, Start {}, End {}'.format(MC_SAMPLES,
                                                                                        analytic.expectation(rw.xT[0]),
                                                                                        rw.x0,
@@ -164,6 +177,7 @@ if __name__=='__main__':
     fig_traj_evol.tight_layout()
     fig_traj_evol.savefig(os.path.join(folder_name, 'trajectory_evolution.pdf'))
 
+    fig_weight_hists.tight_layout()
     torch.save(policy, os.path.join(folder_name, 'rvi_policy.pyt'))
 
     t, x, x_arrows, y_arrows_nn = visualize_proposal([policy], 50, 20, neural_network=True)

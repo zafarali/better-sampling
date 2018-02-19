@@ -7,6 +7,7 @@ class SamplingResults(object):
     """
     An abstraction on the results obtained
     """
+    _importance_sampled = False
     def __init__(self, sampler_name, true_trajectory, histbin_range=None):
         self.sampler_name = sampler_name
         self.true_trajectory = true_trajectory
@@ -49,7 +50,7 @@ class SamplingResults(object):
             self._posterior_particles = posterior_particles
             return self._posterior_particles
         else:
-            self._posterior_particles = posterior_particles
+            return self._posterior_particles
 
     def posterior_weights(self, posterior_weights=None):
         """
@@ -62,7 +63,7 @@ class SamplingResults(object):
             self._posterior_weights = posterior_weights
             return self._posterior_weights
         else:
-            self._posterior_weights = posterior_weights
+            return self._posterior_weights
 
     def create_posterior(self):
         """
@@ -188,6 +189,7 @@ class SamplingResults(object):
         return '{} Mean: {:3g}\nVar:{:3g} Prop: {:3g}'.format(self.sampler_name, *self.summary_statistics())
 
 class ImportanceSamplingResults(SamplingResults):
+    _importance_sampled = True
     def effective_sample_size(self):
         """
         A diagnostic for the quality of the importance sampling scheme.
@@ -218,6 +220,19 @@ class ImportanceSamplingResults(SamplingResults):
 
     def summary_title(self):
         return '{} Mean: {:3g}\nVar:{:3g}Prop: {:3g} ESS: {:3g}'.format(self.sampler_name, *self.summary_statistics())
+
+    def plot_posterior_weight_histogram(self, ax=None, **kwargs):
+        if ax is None:
+            f = plt.figure()
+            ax = f.add_subplot(111)
+
+        weights = np.array(self._posterior_weights).reshape(-1)
+        ax.hist(weights, bins=np.linspace(0, 0.5, 100), **kwargs)
+        ax.set_ylabel('Count')
+        ax.set_xlabel('Weight')
+        ax.set_title('Min: {:3g}, Max: {:3g}, Mean: {:3g}'.format(np.min(weights), np.max(weights), np.mean(weights)))
+        return ax
+
 
 class RLSamplingResults(ImportanceSamplingResults):
     pass
