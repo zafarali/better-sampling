@@ -168,6 +168,9 @@ class SamplingResults(object):
     def prop_success(self):
         return len(self.trajectories())/len(self.all_trajectories())
 
+    def summary_statistics(self):
+        return [self.expectation(), self.variance(), self.prop_success()]
+
     def summary_builder(self):
         return 'Start Estimate: {:3g}, Variance: {:3g}, Prop Success: {:3g}'.format(self.expectation(), self.variance(), self.prop_success())
 
@@ -180,6 +183,9 @@ class SamplingResults(object):
         template_string += '\n'
 
         return template_string
+
+    def summary_title(self):
+        return '{} Mean: {:3g}\nVar:{:3g} Prop: {:3g}'.format(self.sampler_name, *self.summary_statistics())
 
 class ImportanceSamplingResults(SamplingResults):
     def effective_sample_size(self):
@@ -206,6 +212,12 @@ class ImportanceSamplingResults(SamplingResults):
         ess_string = ' ESS: {:3g}'.format(self.effective_sample_size())
         template += ess_string
         return template
+
+    def summary_statistics(self):
+        return super().summary_statistics() + [self.effective_sample_size()]
+
+    def summary_title(self):
+        return '{} Mean: {:3g}\nVar:{:3g}Prop: {:3g} ESS: {:3g}'.format(self.sampler_name, *self.summary_statistics())
 
 class RLSamplingResults(ImportanceSamplingResults):
     pass
