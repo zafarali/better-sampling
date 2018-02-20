@@ -182,6 +182,10 @@ class PyTorchWrap(object):
     def reset(self):
         return self.variable_wrap(torch.from_numpy(self.stochastic_process.reset()))
 
+    def prior_pdf(self, x_t):
+        x_t = x_t.cpu().data.numpy()
+        return self.stochastic_process.prior.pdf(x_t)
+
     def new_task(self):
         delayed_to_return = self.stochastic_process.new_task()
         self.xT = self.stochastic_process.xT
