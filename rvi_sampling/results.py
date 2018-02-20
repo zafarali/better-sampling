@@ -227,7 +227,7 @@ class ImportanceSamplingResults(SamplingResults):
             ax = f.add_subplot(111)
 
         weights = np.array(self._posterior_weights).reshape(-1)
-        ax.hist(weights, bins=np.linspace(0, 0.5, 100), **kwargs)
+        ax.hist(weights, bins=np.linspace(0, 0.3, 200), **kwargs)
         ax.set_ylabel('Count')
         ax.set_xlabel('Weight')
         ax.set_title('Min: {:3g}, Max: {:3g}, Mean: {:3g}'.format(np.min(weights), np.max(weights), np.mean(weights)))

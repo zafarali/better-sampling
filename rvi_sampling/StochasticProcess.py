@@ -116,7 +116,7 @@ class RandomWalk(StochasticProcess):
         self.xT = self.true_trajectory[-1]
         return self.reset()
 
-    def step(self, actions, reverse=True):
+    def step(self, actions, reverse=False):
         """
         This will allow the agents to execute the actions in the stochastic process.
         :param actions: the array with the actions to be executed by each agent

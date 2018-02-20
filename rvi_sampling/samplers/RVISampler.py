@@ -84,11 +84,11 @@ class RVISampler(Sampler):
                 # print('proposal_log_prob step:',log_prob_proposal_step)
                 x_t, path_log_prob, done, _ = stochastic_process.step(action, reverse=False)
 
-                if t != 0: # until we reach time 0
-                    # provide an "instant reward"
-                    reward_ = path_log_prob.float() - log_prob_action.data.float().view(-1, 1)
+                if stochastic_process.global_time != stochastic_process.T:
+                    # as long as this is not the first transition provide an "instant reward"
+                    reward_ = path_log_prob.float().view(-1,1) - log_prob_action.data.float().view(-1, 1)
                 else:
-                    reward_ = path_log_prob.float()
+                    reward_ = path_log_prob.float().view(-1, 1)
 
                 # print(reward)
                 reward = torch.zeros_like(reward_)
@@ -98,7 +98,7 @@ class RVISampler(Sampler):
                 value_estimate = self.baseline(x_t) if self.baseline is not None else torch.FloatTensor([[0]*stochastic_process.n_agents])
 
                 # probability of the path gets updated:
-                log_path_prob += path_log_prob.numpy()
+                log_path_prob += path_log_prob.numpy().reshape(-1, 1)
                 log_proposal_prob += log_prob_action.data.cpu().float().numpy().reshape(-1, 1)
                 # take the reverse step:
                 # if isinstance()

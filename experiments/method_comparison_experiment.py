@@ -6,18 +6,19 @@ import torch
 import torch.nn as nn
 import argparse
 import os
+import random
 import multiprocessing
 import time
+import pickle
 import seaborn as sns
 from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler, RVISampler
 from rvi_sampling.StochasticProcess import RandomWalk, PyTorchWrap
-from rvi_sampling.distributions.proposal_distributions import SimonsProposal, SimonsSoftProposal
+from rvi_sampling.distributions.proposal_distributions import SimonsSoftProposal
 from rvi_sampling.distributions.prior_distributions import DiscreteUniform
 from rvi_sampling.plotting import determine_panel_size, visualize_proposal, multi_quiver_plot
 from rvi_sampling.distributions.analytic_posterior import TwoStepRandomWalkPosterior
-from rvi_sampling.results import ImportanceSamplingResults
 from pg_methods.utils.baselines import MovingAverageBaseline
-from pg_methods.utils.policies import MultinomialPolicy, RandomPolicy
+from pg_methods.utils.policies import MultinomialPolicy
 from pg_methods.utils.networks import MLP_factory
 from pg_methods.utils.objectives import PolicyGradientObjective
 
@@ -38,7 +39,9 @@ if __name__=='__main__':
     parser.add_argument('-entropy', '--entropy', default=0, type=float, help='entropy coefficient')
     parser.add_argument('-s', '--samples', default=1000, type=int, help='number of mc steps')
     parser.add_argument('-t', '--rw_time', default=50, type=int, help='Length of the random walk')
-    parser.add_argument('-seed', '--seed', default=0, type=int, help='The seed to use')
+    parser.add_argument('-rwseed', '--rw_seed', default=0, type=int, help='The seed to use for the random walk')
+    parser.add_argument('-samseed', '--sampler_seed', default=0, type=int, help='The seed to use for the samplers')
+
     parser.add_argument('-width', '--rw_width', default=5, type=int,
                         help='width of the discrete uniform in the random walk')
     parser.add_argument('-notime', '--notime', default=True, action='store_false',
@@ -56,6 +59,9 @@ if __name__=='__main__':
 
     args = parser.parse_args()
 
+    torch.manual_seed(args.sampler_seed)
+    np.random.seed(args.sampler_seed)
+    random.seed(args.sampler_seed)
     if args.name != '':
         folder_name = '{}_{}'.format(args.name, time.strftime('%a-%d-%m-%Y__%H-%M-%s'))
     else:
@@ -77,8 +83,8 @@ if __name__=='__main__':
                         POSSIBLE_STEPS,
                         n_agents=1,
                         T=T,
-                        prior_distribution=DiscreteUniform(DIMENSIONS, -DISC_UNIFORM_WIDTH, 2*DISC_UNIFORM_WIDTH, seed=args.seed+2),
-                        seed=args.seed+1)
+                        prior_distribution=DiscreteUniform(DIMENSIONS, -DISC_UNIFORM_WIDTH, 2*DISC_UNIFORM_WIDTH, seed=args.rw_seed+2),
+                        seed=args.rw_seed+1)
         rw.reset()
         return rw
 
@@ -92,15 +98,15 @@ if __name__=='__main__':
     policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=args.learning_rate)
 
 
-    samplers = [ISSampler(SimonsSoftProposal, seed=args.seed),
-                ABCSampler(0,seed=args.seed),
-                MCSampler(seed=args.seed),
+    samplers = [ISSampler(SimonsSoftProposal, seed=args.sampler_seed),
+                ABCSampler(0,seed=args.sampler_seed),
+                MCSampler(seed=args.sampler_seed),
                 RVISampler(policy,
                            policy_optimizer,
                            baseline=MovingAverageBaseline(args.baseline_decay),
                            objective=PolicyGradientObjective(entropy=args.entropy),
                            feed_time=FEED_TIME,
-                           seed=args.seed) ]
+                           seed=args.sampler_seed) ]
 
     if args.only_rvi:
         samplers = [samplers[-1]]
@@ -137,6 +143,7 @@ if __name__=='__main__':
     fig_weight_hists = plt.figure(figsize=(9,4))
 
     hist_colors = zip(['r', 'g', 'b'], [1, 2, 3])
+
 
     for i, sampler_result in enumerate(sampler_results):
         print(sampler_result.summary())
@@ -186,3 +193,5 @@ if __name__=='__main__':
                           ['Neural Network Proposal'],
                           figsize=(10, 5))
     f.savefig(os.path.join(folder_name, 'visualized_proposal.pdf'))
+
+    pickle.dump(args, open(os.path.join(folder_name, 'args.pkl'), 'wb'))
