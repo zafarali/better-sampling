@@ -123,7 +123,7 @@ class SimonsSoftProposal(SimonsProposal):
     _soft = True
     def __init__(self, push_toward=[-5, 5], step_sizes=None, seed=0, rng=None):
         assert len(push_toward) == 2, 'push toward expects a window range'
-        super().__init__(step_sizes=step_sizes, seed=seed)
+        super().__init__(step_sizes=step_sizes, seed=seed, rng=rng)
         self.push_toward = np.array(push_toward)
 
 

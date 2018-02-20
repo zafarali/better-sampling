@@ -76,3 +76,26 @@ class TwoStepRandomWalkPosterior(AnalyticPosterior):
         pdf = np.array([self.pdf(x, observed_d) for x in np.arange(-self.c, self.c+1)])
         pdf /= pdf.sum()
         return np.sum(np.arange(-self.c, self.c+1) * pdf)
+
+    def kl_divergence(self, estimated_dist, observed_d):
+        KL_true_est = 0
+        KL_est_true = 0
+
+        analytic_probs = np.array([float(self.pdf(i, observed_d)) for i in estimated_dist.keys()])
+        analytic_probs /= analytic_probs.sum()
+        analytic_probs = dict(zip(estimated_dist.keys(), analytic_probs))
+        # KL is only defined when p>0 and q>0 or both zero
+        support_check = [ (p>0 and q>0) or (p==0 and q==0) for p, q in zip(analytic_probs.values(), estimated_dist.values())]
+
+        if not all(support_check):
+            return (np.nan, np.nan)
+
+        for k in estimated_dist.keys():
+            value = analytic_probs[k]*np.log(analytic_probs[k]/estimated_dist[k])
+            if not np.isnan(value):
+                KL_true_est += value
+            value = estimated_dist[k]*np.log(estimated_dist[k]/analytic_probs[k])
+            if not np.isnan(value):
+                KL_est_true += value
+
+        return KL_true_est, KL_est_true

@@ -39,6 +39,8 @@ class SamplingResults(object):
         else:
             self._trajectories = trajectories
 
+    def posterior_particles(self, posterior_particles=None):
+        return self.posterior(posterior_particles)
     def posterior(self, posterior_particles=None):
         """
         Used to set the values in the posterior
@@ -47,7 +49,7 @@ class SamplingResults(object):
         """
         if posterior_particles is not None:
             assert self._posterior_particles is None
-            self._posterior_particles = posterior_particles
+            self._posterior_particles = np.array(posterior_particles).reshape(-1)
             return self._posterior_particles
         else:
             return self._posterior_particles
@@ -60,7 +62,7 @@ class SamplingResults(object):
         """
         if posterior_weights is not None:
             assert self._posterior_weights is None
-            self._posterior_weights = posterior_weights
+            self._posterior_weights = np.array(posterior_weights).reshape(-1)
             return self._posterior_weights
         else:
             return self._posterior_weights
@@ -78,15 +80,17 @@ class SamplingResults(object):
             self._posterior_particles.append(trajectory[0])
             self._posterior_weights.append(1)
 
+        self._posterior_weights = np.array(self._posterior_weights).reshape(-1)
+        self._posterior_particles = np.array(self._posterior_particles).reshape(-1)
+
     def expectation(self, weighted=False):
         """
         The expected value of the posterior.
         :param weighted: Will be weighted by the likelihood ratios
         :return:
         """
-        posterior_particles = np.array(self._posterior_particles).reshape(-1)
-        posterior_weights = np.array(self._posterior_weights).reshape(-1)
-
+        posterior_particles = self.posterior_particles()
+        posterior_weights = self.posterior_weights()
 
         numerator = np.sum(posterior_particles * posterior_weights)
 
@@ -104,8 +108,8 @@ class SamplingResults(object):
         :param weighted:
         :return:
         """
-        posterior_particles = np.array(self._posterior_particles).reshape(-1)
-        posterior_weights = np.array(self._posterior_weights).reshape(-1)
+        posterior_particles = self.posterior_particles()
+        posterior_weights = self.posterior_weights()
 
         expected_value = self.expectation(weighted)
 
@@ -122,10 +126,10 @@ class SamplingResults(object):
 
         _histbin_range = self._histbin_range if not histbin_range else histbin_range
 
-        ax.hist(np.array(self._posterior_particles).reshape(-1),
+        ax.hist(self.posterior_particles(),
                 normed=True,
-                bins=np.arange(-_histbin_range-1, _histbin_range+2)+0.5,
-                weights=np.array(self._posterior_weights).reshape(-1),
+                bins=np.arange(-_histbin_range-2, _histbin_range+2)+0.5,
+                weights=self.posterior_weights(),
                 **kwargs)
         ax.set_xlabel('x_0')
         ax.set_ylabel('Frequency')
@@ -160,7 +164,7 @@ class SamplingResults(object):
                             all_trejctories=[traj.tolist() for traj in self._all_trajectories],
                             trajectories=[traj.tolist() for traj in self._trajectories],
                             posterior_particles= [float(p) for p in self._posterior_particles] if self._posterior_particles is not None else None,
-                            posterior_weights= [ float(w) for w in self._posterior_particles] if self._posterior_weights is not None else None)
+                            posterior_weights= [ float(w) for w in self._posterior_weights] if self._posterior_weights is not None else None)
 
         import json
         with open(os.path.join(path, 'trajectory_results_{}'.format(self.sampler_name)), 'w') as f:
@@ -175,18 +179,28 @@ class SamplingResults(object):
     def summary_builder(self):
         return 'Start Estimate: {:3g}, Variance: {:3g}, Prop Success: {:3g}'.format(self.expectation(), self.variance(), self.prop_success())
 
-    def summary(self):
+    def summary(self, extra=''):
         template_string = '\n'
         template_string += '*' * 45
         template_string += '\nSampler: {}\n'.format(self.sampler_name)
         template_string += str(self.summary_builder()) +'\n'
+        if extra != '': template_string += '{}\n'.format(extra)
         template_string += '*'*45
         template_string += '\n'
 
         return template_string
 
     def summary_title(self):
-        return '{} Mean: {:3g}\nVar:{:3g} Prop: {:3g}'.format(self.sampler_name, *self.summary_statistics())
+        return '{} Mean: {:3g} Var:{:3g}\nProp: {:3g}'.format(self.sampler_name, *self.summary_statistics())
+
+    def empirical_distribution(self, histbin_range=None):
+        _histbin_range = self._histbin_range if not histbin_range else histbin_range
+        hist_range = np.arange(-_histbin_range- 2, _histbin_range+2) + 0.5
+
+        probs, vals = np.histogram(self.posterior_particles(), bins=hist_range, density=True,
+                                   weights=self.posterior_weights())
+        estimated_dist = dict(zip(vals+0.5, probs))
+        return estimated_dist
 
 class ImportanceSamplingResults(SamplingResults):
     _importance_sampled = True
@@ -219,7 +233,7 @@ class ImportanceSamplingResults(SamplingResults):
         return super().summary_statistics() + [self.effective_sample_size()]
 
     def summary_title(self):
-        return '{} Mean: {:3g}\nVar:{:3g}Prop: {:3g} ESS: {:3g}'.format(self.sampler_name, *self.summary_statistics())
+        return '{} Mean: {:3g} Var:{:3g}\nProp: {:3g} ESS: {:3g}'.format(self.sampler_name, *self.summary_statistics())
 
     def plot_posterior_weight_histogram(self, ax=None, **kwargs):
         if ax is None:

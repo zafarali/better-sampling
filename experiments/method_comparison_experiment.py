@@ -146,12 +146,14 @@ if __name__=='__main__':
 
 
     for i, sampler_result in enumerate(sampler_results):
-        print(sampler_result.summary())
         ax = fig_dists.add_subplot(panel_size+str(i+1))
         ax = sampler_result.plot_distribution(DISC_UNIFORM_WIDTH, ax, alpha=0.7)
         ax = analytic.plot(rw.xT, ax, label='analytic', color='r')
-        ax.set_title(sampler_result.summary_title())
 
+        empirical_distribution = sampler_result.empirical_distribution(DISC_UNIFORM_WIDTH)
+        kl_divergence = analytic.kl_divergence(empirical_distribution, rw.xT[0])
+        ax.set_title(sampler_result.summary_title() + '\nKL(true|est)={:3g}, KL(est|true)={:3g}'.format(*kl_divergence))
+        print(sampler_result.summary('KL(true|est)={:3g}, KL(obs|est)={:3g}'.format(*kl_divergence)))
         ax = fig_traj.add_subplot(panel_size+str(i+1))
         ax = sampler_result.plot_mean_trajectory(ax=ax)
         ax.set_title('Trajectory Distribution\nfor {}'.format(sampler_result.sampler_name))
