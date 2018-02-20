@@ -188,3 +188,26 @@ class SimonsSoftProposal(SimonsProposal):
         choice_prob = probs[choice_index]
 
         return choice_index, choice_step, np.log(choice_prob)[0]
+
+
+class RandomProposal(ProposalDistribution):
+    _soft = False
+    """
+    A random proposal for the 1D random walk.
+    Only works for two possible steps: -1 and +1
+    """
+    def __init__(self, push_toward=[0], step_sizes=None, seed=0, rng=None):
+        assert len(push_toward) == 1, 'This proposal only works in 1D'
+        super().__init__(seed)
+        if rng:
+            self.rng = rng
+
+
+    def draw(self, x, time_left):
+        random_step = np.array([2 * self.rng.randint(0, 2) - 1])
+        if random_step == -1:
+            index = 0
+        else:
+            index = 1
+        return np.array([index]), random_step, np.log(1 / 2)
+
