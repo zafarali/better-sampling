@@ -66,17 +66,15 @@ class RVISampler(Sampler):
                 # so that the learner has access to it.
                 x_with_time = torch.zeros(stochastic_process.n_agents, x_tm1.size()[-1]+1)
                 x_with_time[:, :x_tm1.size()[-1]].copy_(x_tm1.data)
-                x_with_time[:, x_tm1.size()[-1]].copy_(torch.ones(stochastic_process.n_agents))
+                x_with_time[:, x_tm1.size()[-1]].copy_(torch.ones(stochastic_process.n_agents)) # 100% of the time is left
                 x_tm1 = Variable(x_with_time)
 
             log_path_prob = np.zeros((stochastic_process.n_agents, 1))
             log_proposal_prob = np.zeros((stochastic_process.n_agents, 1))
             policy_gradient_trajectory_info = MultiTrajectory(stochastic_process.n_agents)
-            # go in reverse time:
-            # for t in reversed(range(0, stochastic_process.T-1)):
-            t = stochastic_process.T
-            while True:
-                if stochastic_process.global_time == 0: break
+
+            done = torch.IntTensor([0])
+            while not np.all(done.numpy()):
                 # draw a reverse step
                 # this is p(w_{t} | w_{t+1})
                 assert len(x_tm1.size()) == 2
@@ -84,13 +82,9 @@ class RVISampler(Sampler):
                 # print('proposal_log_prob step:',log_prob_proposal_step)
                 x_t, path_log_prob, done, _ = stochastic_process.step(action, reverse=False)
 
-                if stochastic_process.global_time != stochastic_process.T:
-                    # as long as this is not the first transition provide an "instant reward"
-                    reward_ = path_log_prob.float().view(-1,1) - log_prob_action.data.float().view(-1, 1)
-                else:
-                    reward_ = path_log_prob.float().view(-1, 1)
 
-                # print(reward)
+                reward_ = path_log_prob.float().view(-1,1) - log_prob_action.data.float().view(-1, 1)
+
                 reward = torch.zeros_like(reward_)
                 reward.copy_(reward_)
                 reward[reward <= -np.inf] = -100000. # throw away infinite negative rewards
@@ -112,7 +106,7 @@ class RVISampler(Sampler):
                     # so that the learner has access to it.
                     x_with_time = torch.zeros(stochastic_process.n_agents, x_tm1.size()[-1])
                     x_with_time[:, :x_tm1.size()[-1]-1].copy_(x_t.data)
-                    x_with_time[:, x_tm1.size()[-1]-1].copy_((t/stochastic_process.T) * torch.ones(stochastic_process.n_agents))
+                    x_with_time[:, x_tm1.size()[-1]-1].copy_((stochastic_process.transitions_left/(stochastic_process.T-1)) * torch.ones(stochastic_process.n_agents))
                     x_t = Variable(x_with_time)
                     assert x_tm1.size() == x_t.size(), 'State sizes must match, but they dont. {} != {}'.format(x_tm1.size(), x_t.size())
                     policy_gradient_trajectory_info.append(x_tm1[:, :-1], action, reward, value_estimate,
@@ -121,11 +115,12 @@ class RVISampler(Sampler):
                     policy_gradient_trajectory_info.append(x_tm1, action, reward, value_estimate, log_prob_action, x_t, done)
 
                 x_tm1 = x_t
-                t -= 1
+
                 # endwhile loop
 
             policy_gradient_trajectory_info.torchify()
 
+            # update the proposal distribution
             if self._training:
                 returns = gradients.calculate_returns(policy_gradient_trajectory_info.rewards, 1, None)
                 advantages = returns - policy_gradient_trajectory_info.values
@@ -154,13 +149,15 @@ class RVISampler(Sampler):
 
 
             if feed_time:
-                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T+1,
+                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T,
                                                                x_t.size()[-1]-1)
             else:
-                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T+1,
+                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T,
                                                                x_t.size()[-1])
+
+            # select paths for storage
             likelihood_ratios = log_path_prob - log_proposal_prob
-            selected_trajectories = np.where(log_path_prob > -np.inf) # TODO: find a way to make it less excplicit to throw away
+            selected_trajectories = np.where(log_path_prob > -np.inf)
             for traj_idx in selected_trajectories[0]:
                     trajectories.append(trajectory_i[traj_idx, ::-1, :stochastic_process.dimensions])
                     posterior_particles.append(trajectories[-1][0])

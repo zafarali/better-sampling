@@ -87,7 +87,8 @@ class RandomWalk(StochasticProcess):
         if rng is None:
             rng = self.rng
         x0 = self.prior.rvs()
-        steps_idx = rng.multinomial(1, self.step_probs, self.T).argmax(axis=1)
+        # T steps is T-1 transitions
+        steps_idx = rng.multinomial(1, self.step_probs, self.T-1).argmax(axis=1)
         steps_taken = np.take(self.step_sizes, steps_idx, axis=0)
         steps_taken = np.vstack([x0, steps_taken])
         return steps_taken.cumsum(axis=0)
@@ -97,7 +98,7 @@ class RandomWalk(StochasticProcess):
         This will reset the locations of all the agents who are currently interacting with
         the stochastic process
         """
-        self.global_time = self.T
+        self.transitions_left = self.T-1
         self.x_agent = np.repeat(self.xT.reshape(1, self.dimensions), self.n_agents, axis=0)
 
     def reset(self):
@@ -122,7 +123,7 @@ class RandomWalk(StochasticProcess):
         :param actions: the array with the actions to be executed by each agent
         :param reverse: defines if the step execution is going in reverse or not
         """
-        if self.global_time == 0:
+        if self.transitions_left == 0:
             #TODO return a custom error here to not conflate it with builtin types.
             raise TimeoutError('You have already reached the end of the episode. Use reset()')
 
@@ -131,11 +132,13 @@ class RandomWalk(StochasticProcess):
 
         reversal_param = -1 if reverse else +1
         self.x_agent = self.x_agent + (steps_taken * reversal_param)
-        self.global_time -= 1
-        if self.global_time == 0:
-            step_log_probs = np.log(self.prior.pdf(self.x_agent))
+        self.transitions_left -= 1
+        if self.transitions_left == 0:
+            # if there are no more transitions left, also add the "final reward"
+            # to the step_log_probs
+            step_log_probs += np.log(self.prior.pdf(self.x_agent))
 
-        return (self.x_agent, step_log_probs.reshape(-1, 1), self.global_time == 0, {})
+        return (self.x_agent, step_log_probs.reshape(-1, 1), self.transitions_left == 0, {})
 
 
 class PyTorchWrap(object):
@@ -147,7 +150,6 @@ class PyTorchWrap(object):
         self.dimensions = stochastic_process.dimensions
         self.step_sizes = stochastic_process.step_sizes
         self.x0 = stochastic_process.x0
-        # self.state = stochastic_process.state
         self.state_space = stochastic_process.state_space
         self.action_space = stochastic_process.action_space
         self.use_cuda = use_cuda
@@ -160,8 +162,8 @@ class PyTorchWrap(object):
     def train_mode(self, mode):
         self._training = mode
     @property
-    def global_time(self):
-        return self.stochastic_process.global_time
+    def transitions_left(self):
+        return self.stochastic_process.transitions_left
 
     def variable_wrap(self, tensor):
         if not isinstance(tensor, Variable):
