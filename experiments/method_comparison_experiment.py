@@ -97,7 +97,7 @@ if __name__=='__main__':
     policy = MultinomialPolicy(fn_approximator)
     policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=args.learning_rate)
 
-
+    print('length of trajectory: {}'.format(rw.true_trajectory.shape))
     samplers = [ISSampler(SimonsSoftProposal, seed=args.sampler_seed),
                 ABCSampler(0,seed=args.sampler_seed),
                 MCSampler(seed=args.sampler_seed),
@@ -119,20 +119,8 @@ if __name__=='__main__':
 
     sampler_results = pool.map(run_sampler, solver_arguments)
 
-    # for sampler in samplers:
-    #     if isinstance(sampler, RVISampler):
-    #         sampler_result = sampler.solve(PyTorchWrap(rw), MC_SAMPLES)
-    #     else:
-    #         sampler_result = sampler.solve(rw, MC_SAMPLES)
-    #     print('*'*45)
-    #     print('Sampler: {}'.format(sampler._name))
-    #     print('Starting Position Estimate: {:3g}, variance: {:3g}'.format(sampler_result.expectation(),
-    #                                                                 sampler_result.variance()))
-    #     sampler_results.append(sampler_result)
-
-
     analytic = TwoStepRandomWalkPosterior(DISC_UNIFORM_WIDTH, 0.5, T)
-
+    print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
     panel_size = determine_panel_size(len(sampler_results))
     create_folder(folder_name)
     touch(os.path.join(folder_name, 'start={}'.format(rw.x0)))
