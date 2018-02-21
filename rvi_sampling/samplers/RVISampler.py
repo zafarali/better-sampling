@@ -89,7 +89,6 @@ class RVISampler(Sampler):
                 reward.copy_(reward_)
                 reward[reward <= -np.inf] = -100000. # throw away infinite negative rewards
                 # if t==0: print(reward)
-                value_estimate = self.baseline(x_t) if self.baseline is not None else torch.FloatTensor([[0]*stochastic_process.n_agents])
 
                 # probability of the path gets updated:
                 log_path_prob += path_log_prob.numpy().reshape(-1, 1)
@@ -109,10 +108,9 @@ class RVISampler(Sampler):
                     x_with_time[:, x_tm1.size()[-1]-1].copy_((stochastic_process.transitions_left/(stochastic_process.T-1)) * torch.ones(stochastic_process.n_agents))
                     x_t = Variable(x_with_time)
                     assert x_tm1.size() == x_t.size(), 'State sizes must match, but they dont. {} != {}'.format(x_tm1.size(), x_t.size())
-                    policy_gradient_trajectory_info.append(x_tm1[:, :-1], action, reward, value_estimate,
-                                                           log_prob_action, x_t[:, :-1], done)
-                else:
-                    policy_gradient_trajectory_info.append(x_tm1, action, reward, value_estimate, log_prob_action, x_t, done)
+
+                value_estimate = self.baseline(x_t) if self.baseline is not None else torch.FloatTensor([[0]*stochastic_process.n_agents])
+                policy_gradient_trajectory_info.append(x_tm1, action, reward, value_estimate, log_prob_action, x_t, done)
 
                 x_tm1 = x_t
 

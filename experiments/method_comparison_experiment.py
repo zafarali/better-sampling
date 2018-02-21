@@ -17,7 +17,7 @@ from rvi_sampling.distributions.proposal_distributions import SimonsSoftProposal
 from rvi_sampling.distributions.prior_distributions import DiscreteUniform
 from rvi_sampling.plotting import determine_panel_size, visualize_proposal, multi_quiver_plot
 from rvi_sampling.distributions.analytic_posterior import TwoStepRandomWalkPosterior
-from pg_methods.utils.baselines import MovingAverageBaseline
+from pg_methods.utils.baselines import MovingAverageBaseline, NeuralNetworkBaseline
 from pg_methods.utils.policies import MultinomialPolicy
 from pg_methods.utils.networks import MLP_factory
 from pg_methods.utils.objectives import PolicyGradientObjective
@@ -56,6 +56,8 @@ if __name__=='__main__':
                         help='does only the RVI experiments')
     parser.add_argument('-n_cpus', '--n_cpus', default=3, type=float,
                         help='CPUs to use when doing the work')
+
+    parser.add_argument('-baseline', '--baseline_type', default='moving_average')
 
     args = parser.parse_args()
 
@@ -97,13 +99,31 @@ if __name__=='__main__':
     policy = MultinomialPolicy(fn_approximator)
     policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=args.learning_rate)
 
+    if args.baseline_type == 'moving_average':
+        baseline = MovingAverageBaseline(args.baseline_decay)
+    elif args.baseline_type == 'neural_network':
+
+        value_fn_approximator = MLP_factory(DIMENSIONS+int(FEED_TIME),
+                                            hidden_sizes=[16, 16],
+                                            output_size=1,
+                                            hidden_non_linearity=nn.ReLU)
+
+        value_fn_optimizer = torch.optim.RMSprop(fn_approximator.parameters(), lr=args.learning_rate)
+
+        baseline = NeuralNetworkBaseline(value_fn_approximator,
+                                         value_fn_optimizer)
+
+    else:
+        raise KeyError('Unknown baseline type')
+
+
     print('length of trajectory: {}'.format(rw.true_trajectory.shape))
     samplers = [ISSampler(SimonsSoftProposal, seed=args.sampler_seed),
                 ABCSampler(0,seed=args.sampler_seed),
                 MCSampler(seed=args.sampler_seed),
                 RVISampler(policy,
                            policy_optimizer,
-                           baseline=MovingAverageBaseline(args.baseline_decay),
+                           baseline=baseline,
                            objective=PolicyGradientObjective(entropy=args.entropy),
                            feed_time=FEED_TIME,
                            seed=args.sampler_seed) ]
