@@ -91,7 +91,7 @@ if __name__=='__main__':
     rw = create_rw()
     # create a policy for the RVI sampler
     fn_approximator = MLP_factory(DIMENSIONS+int(FEED_TIME),
-                                  hidden_sizes=[32, 32],
+                                  hidden_sizes=[16, 16],
                                   output_size=len(POSSIBLE_STEPS),
                                   hidden_non_linearity=nn.ReLU)
     policy = MultinomialPolicy(fn_approximator)

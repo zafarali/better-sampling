@@ -125,9 +125,7 @@ class RVISampler(Sampler):
                 returns = gradients.calculate_returns(policy_gradient_trajectory_info.rewards, 1, None)
                 advantages = returns - policy_gradient_trajectory_info.values
                 if self.baseline is not None:
-                    self.baseline.update_baseline(policy_gradient_trajectory_info.rewards,
-                                                  advantages,
-                                                  policy_gradient_trajectory_info.values)
+                    self.baseline.update_baseline(policy_gradient_trajectory_info, returns)
 
                 loss = self.objective(advantages, policy_gradient_trajectory_info)
 
