@@ -139,7 +139,6 @@ class ISSampler(Sampler):
 
                 trajectory_i.append(x_t)
 
-            log_proposal_prob += np.log(stochastic_process.prior.pdf(x_t))
             likelihood_ratio = log_path_prob - log_proposal_prob
 
             if log_path_prob > -np.inf:

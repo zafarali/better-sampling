@@ -152,7 +152,6 @@ class RVISampler(Sampler):
                                                                x_t.size()[-1])
 
             # select paths for storage
-            log_proposal_prob += np.log(stochastic_process.prior_pdf(x_t))
             likelihood_ratios = log_path_prob - log_proposal_prob
             selected_trajectories = np.where(log_path_prob > -np.inf)
             for traj_idx in selected_trajectories[0]:
