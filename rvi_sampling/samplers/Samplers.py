@@ -1,5 +1,6 @@
 import numpy as np
 from ..results import SamplingResults, ImportanceSamplingResults
+from ..utils import diagnostics
 
 class Sampler(object):
     """
@@ -7,9 +8,20 @@ class Sampler(object):
     """
     def __init__(self, seed=0):
         self.rng = np.random.RandomState(seed)
+        self.diagnostic = None
     def solve(self, stochastic_process, mc_samples):
         raise NotImplementedError
 
+    def run_diagnostic(self, results, other_information=None):
+        if self.diagnostic is not None:
+            result = self.diagnostic(results, other_information)
+            if result == diagnostics.NO_RETURN:
+                pass
+            else:
+                print(result)
+
+    def set_diagnostic(self, diagnostic):
+        self.diagnostic = diagnostic
 
 class ABCSampler(Sampler):
     _name = 'ABCSampler'
@@ -37,6 +49,9 @@ class ABCSampler(Sampler):
             if np.sum(np.abs(observed_ending_location - final_position)) <= self.tolerance:
                 trajectories.append(trajectory)
             all_trajectories.append(trajectory)
+
+            if self.diagnostic is not None:
+                self.run_diagnostic(SamplingResults.from_information(self._name, all_trajectories, trajectories))
 
         results.all_trajectories(all_trajectories)
         results.trajectories(trajectories)
@@ -88,6 +103,9 @@ class MCSampler(Sampler):
                 trajectories.append(np.vstack(list(reversed(trajectory_i))))
 
             all_trajectories.append(np.vstack(list(reversed(trajectory_i))))
+
+            if self.diagnostic is not None:
+                self.run_diagnostic(SamplingResults.from_information(self._name, all_trajectories, trajectories))
 
         results.all_trajectories(all_trajectories)
         results.trajectories(trajectories)
@@ -146,6 +164,13 @@ class ISSampler(Sampler):
                 posterior_particles.append(trajectories[-1][0])
                 posterior_weights.append(np.exp(likelihood_ratio))
             all_trajectories.append(np.vstack(list(reversed(trajectory_i))))
+
+            if self.diagnostic is not None:
+                self.run_diagnostic(ImportanceSamplingResults.from_information(self._name,
+                                                                     all_trajectories,
+                                                                     trajectories,
+                                                                     posterior_particles,
+                                                                     posterior_weights))
 
         results.all_trajectories(all_trajectories)
         results.trajectories(trajectories)
