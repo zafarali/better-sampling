@@ -1,3 +1,5 @@
+import numpy as np
+import torch
 NO_RETURN = 'NORETURN'
 
 class Diagnostic(object):
@@ -51,6 +53,12 @@ class KLDivergenceDiagnostic(Diagnostic):
         KL_true_est, _ = self.kl_function(empirical_distribution)
         return self.format_float(KL_true_est)
 
+class ProportionSuccessDiagnostic(Diagnostic):
+    _handle = 'prop'
+    def _call(self, results, other_information=None):
+        return self.format_float(len(results.trajectories()) / len(results.all_trajectories()))
+
+
 class DiagnosticHandler(Diagnostic):
     def __init__(self, diagnostics, sampler_name=None, verbose=False):
         super().__init__(1) # logging frequency is 1
@@ -93,9 +101,27 @@ class DiagnosticHandler(Diagnostic):
 class TensorBoardHandler(DiagnosticHandler):
     def __init__(self, diagnostics, log_dir=None, sampler_name='', verbose=False):
         super().__init__(diagnostics, sampler_name, verbose)
-        from tensorboardX import SummaryWriter
-        self.writer = SummaryWriter(log_dir, sampler_name)
+        self.initialized = False
+        self.log_dir = log_dir
+
+    def initialize(self):
+        # extra abstraction so that it can work in the multiprocessing case.
+        try:
+            from tensorboardX import SummaryWriter
+        except ImportError:
+            raise Exception('You do not have tensorboardX installed. Therefore you cannot use this.')
+        self.writer = SummaryWriter(self.log_dir, self.sampler_name)
+
+        def log_to_tensorboard(text, to_log, count):
+            if isinstance(to_log, (np.ndarray, torch.Tensor, list)):
+                self.writer.add_histogram(text, to_log, count)
+            else:
+                self.writer.add_scalar(text, to_log, count)
+
+        self.log_to_tensorboard = log_to_tensorboard
+        self.initialized = True
 
     def _call(self, results, other_information=None):
-        tmpstr, _  = self._call_all_diagnostics(results, other_information, optional_fn=self.writer.add_scalar)
+        if not self.initialized: self.initialize()
+        tmpstr, _  = self._call_all_diagnostics(results, other_information, optional_fn=self.log_to_tensorboard)
         return tmpstr
