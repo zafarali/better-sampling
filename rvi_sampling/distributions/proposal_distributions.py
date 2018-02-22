@@ -1,4 +1,5 @@
 import random
+import logging
 from scipy.spatial.distance import cosine
 import numpy as np
 
@@ -11,6 +12,7 @@ class ProposalDistribution(object):
 
 class MinimalProposal(ProposalDistribution):
     def __init__(self, push_toward, step_sizes, bias=0, seed=0, rng=None):
+        logging.warning('This proposal is not tested.')
         self.push_toward = push_toward
         self.bias = bias
         self.step_sizes = step_sizes
@@ -51,6 +53,7 @@ class MinimalProposal(ProposalDistribution):
         return chosen_step_idx, chosen_step, np.log(step_prob)
 
 class SimonsProposal(ProposalDistribution):
+    _soft = False
     """
     A proposal for the 1D random walk.
     Only works for two possible steps: -1 and +1
@@ -116,4 +119,95 @@ class SimonsProposal(ProposalDistribution):
 
         return choice_index, choice_step, np.log(choice_prob)[0]
 
-#
+class SimonsSoftProposal(SimonsProposal):
+    _soft = True
+    def __init__(self, push_toward=[-5, 5], step_sizes=None, seed=0, rng=None):
+        assert len(push_toward) == 2, 'push toward expects a window range'
+        super().__init__(step_sizes=step_sizes, seed=seed, rng=rng)
+        self.push_toward = np.array(push_toward)
+
+
+    def draw(self, w, time_left):
+        """
+        :param w: the current position
+        :param time_left: the number of time steps until we reach the start
+        :return:
+        """
+        # w is kept for historical reasons, it is actually x
+        #     print('pos:',w)
+        #     print('toward:',push_toward)
+
+        # We want to push slightly, such that the average step is d/T, where d is distance to
+        # the acceptable position, and T is the number of generations left.
+        bias = np.array([[0]])
+        STEP_SIZE = 1
+
+        sign = w / np.abs(w)
+        #
+        if np.abs(w) > np.abs(self.push_toward[0]):
+            # bias = (sign * np.abs(self.push_toward[0]) - w) * 1. / time_left
+            if w < self.push_toward[0]: # x < -c
+                bias = (self.push_toward[0] - w) * 1. / time_left
+                # distance to acceptable position is c - w. Average steps needed is c-w/T
+            elif w > self.push_toward[1]: # x > c
+                 bias = (self.push_toward[1] - w) * 1. / time_left
+            else:
+                # this conditional will never get executed for now.
+                bias = (sign*np.abs(self.push_toward[1]) - w) * 1./time_left
+
+
+        bias = bias[0][0]
+        # print('time: {}, w: {}, bias: {} '.format(time_left, w, bias))
+
+        # if the bias needed is more than the actual steps per time that you can take
+        # we're basically never going to make it so we skip this
+        if np.abs(bias) > STEP_SIZE:
+            # print("will fail, might as well stop now.")
+            random_step = np.array([2*self.rng.randint(0,2)-1])
+            if random_step == -1:
+                index = 0
+            else:
+                index = 1
+            return np.array([index]), random_step, np.log(1/2)
+
+        # with probability p, pick uniform sampling; with probability 1-p, pick a step in the bias direction.
+        # expected bias is (1-p) * step_size
+        p = 1 - np.abs(bias) / STEP_SIZE
+        bias_prob_term = np.array([0, 0])
+        if bias > 0:
+            bias_prob_term[1] = 1
+        if bias < 0:
+            bias_prob_term[0] = 1
+        choices = np.array([[-STEP_SIZE], [STEP_SIZE]])
+
+        probs = np.array([p / 2., p / 2.]) + (1 - p) * bias_prob_term
+        # probs = np.exp(probs)
+        # probs /= probs.sum()
+        choice_index = np.array([self.rng.multinomial(1, probs, 1).argmax()])
+        choice_step = choices[choice_index]
+        choice_prob = probs[choice_index]
+
+        return choice_index, choice_step, np.log(choice_prob)[0]
+
+
+class RandomProposal(ProposalDistribution):
+    _soft = False
+    """
+    A random proposal for the 1D random walk.
+    Only works for two possible steps: -1 and +1
+    """
+    def __init__(self, push_toward=[0], step_sizes=None, seed=0, rng=None):
+        assert len(push_toward) == 1, 'This proposal only works in 1D'
+        super().__init__(seed)
+        if rng:
+            self.rng = rng
+
+
+    def draw(self, x, time_left):
+        random_step = np.array([2 * self.rng.randint(0, 2) - 1])
+        if random_step == -1:
+            index = 0
+        else:
+            index = 1
+        return np.array([index]), random_step, np.log(1 / 2)
+

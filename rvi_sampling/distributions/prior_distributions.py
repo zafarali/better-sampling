@@ -26,7 +26,7 @@ class DiscreteUniform(object):
         self.start = start
         self.n_numbers = n_numbers
         self.rng = np.random.RandomState(seed)
-        self.support = np.arange(start, start+n_numbers)
+        self.support = np.arange(start, start+n_numbers+1)
 
 
     def rvs(self):

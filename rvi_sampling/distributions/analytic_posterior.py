@@ -42,7 +42,7 @@ class TwoStepRandomWalkPosterior(AnalyticPosterior):
         """
         self.c = c
         self.p = p
-        self.T = T
+        self.T = T-1 # T steps is T-1 transitions
 
     def pdf(self, x, d):
         """
@@ -76,3 +76,33 @@ class TwoStepRandomWalkPosterior(AnalyticPosterior):
         pdf = np.array([self.pdf(x, observed_d) for x in np.arange(-self.c, self.c+1)])
         pdf /= pdf.sum()
         return np.sum(np.arange(-self.c, self.c+1) * pdf)
+
+    def kl_divergence(self, estimated_dist, observed_d, verbose=False):
+        KL_true_est = 0
+        KL_est_true = 0
+
+        analytic_probs = np.array([float(self.pdf(i, observed_d)) for i in estimated_dist.keys()])
+        analytic_probs /= analytic_probs.sum()
+        analytic_probs = dict(zip(estimated_dist.keys(), analytic_probs))
+
+        # check if the same values are there in the support
+        support_check = [set(analytic_probs.keys()) == set(estimated_dist.keys())]
+
+        # KL is only defined when p>0 and q>0 or both zero
+        support_check += [ (analytic_probs[k]>0 and estimated_dist[k]>0) or (analytic_probs[k]==0 and estimated_dist[k]==0) for k in analytic_probs.keys() ]
+
+        if verbose: print('analytic:',analytic_probs)
+        if verbose: print('estimated',estimated_dist)
+        if verbose: print('support check',support_check)
+        if not all(support_check):
+            return (np.nan, np.nan)
+
+        for k in estimated_dist.keys():
+            value = analytic_probs[k]*np.log(analytic_probs[k]/estimated_dist[k])
+            if not np.isnan(value):
+                KL_true_est += value
+            value = estimated_dist[k]*np.log(estimated_dist[k]/analytic_probs[k])
+            if not np.isnan(value):
+                KL_est_true += value
+
+        return KL_true_est, KL_est_true
