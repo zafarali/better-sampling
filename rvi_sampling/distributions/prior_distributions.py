@@ -42,3 +42,26 @@ class DiscreteUniform(object):
         else:
             return probs.prod(axis=1)
 
+
+class TwoWindowDiscreteUniform(object):
+    def __init__(self, dimensions, window_ranges=[(-5, 5)], seed=2017):
+        self.rng = np.random.RandomState(seed)
+        self.dimensions = dimensions
+        self.window_ranges = window_ranges
+        self.support = []
+        for (l,r) in self.window_ranges:
+            self.support.extend(range(l, r+1))
+
+    def rvs(self):
+        return np.array([self.rng.choice(self.support) for _ in range(self.dimensions)])
+
+    def draw(self):
+        return self.rvs()
+
+    def pdf(self, x):
+        probs = np.isin(x, self.support)/len(self.support)
+        if len(x.shape) == 1:
+            return probs.prod()
+        else:
+            return probs.prod(axis=1)
+
