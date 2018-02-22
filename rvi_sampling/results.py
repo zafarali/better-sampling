@@ -22,7 +22,7 @@ class SamplingResults(object):
                          sampler_name,
                          all_trajectories,
                          trajectories,
-                         particles,
+                         particles='auto',
                          weights='auto'):
         """
         Quick constructor class for Results
@@ -36,10 +36,12 @@ class SamplingResults(object):
         result = ResultClass(sampler_name)
         result.all_trajectories(all_trajectories)
         result.trajectories(trajectories)
-        result.posterior_particles(particles)
-        if weights == 'auto':
+        if weights == 'auto' and particles == 'auto':
            result.create_posterior()
+        elif weights == 'auto' or particles == 'auto':
+            raise KeyError('Both weights and particles must be auto.')
         else:
+            result.posterior_particles(particles)
             result.posterior_weights(weights)
 
         return result
