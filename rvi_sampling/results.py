@@ -8,7 +8,7 @@ class SamplingResults(object):
     An abstraction on the results obtained
     """
     _importance_sampled = False
-    def __init__(self, sampler_name, true_trajectory, histbin_range=None):
+    def __init__(self, sampler_name, true_trajectory=None, histbin_range=None):
         self.sampler_name = sampler_name
         self.true_trajectory = true_trajectory
         self._all_trajectories = None
@@ -16,6 +16,33 @@ class SamplingResults(object):
         self._posterior_particles = None
         self._posterior_weights = None
         self._histbin_range = histbin_range
+
+    @classmethod
+    def from_information(ResultClass,
+                         sampler_name,
+                         all_trajectories,
+                         trajectories,
+                         particles,
+                         weights='auto'):
+        """
+        Quick constructor class for Results
+        :param sampler_name: name of sampler
+        :param all_trajectories: all trajectories
+        :param trajectories: trajectories that were successful
+        :param particles: particles in the posterior
+        :param weights: weights of each particle.
+        :return:
+        """
+        result = ResultClass(sampler_name)
+        result.all_trajectories(all_trajectories)
+        result.trajectories(trajectories)
+        result.posterior_particles(particles)
+        if weights == 'auto':
+           result.create_posterior()
+        else:
+            result.posterior_weights(weights)
+
+        return result
 
     def all_trajectories(self, trajectories=None):
         """
