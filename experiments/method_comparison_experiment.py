@@ -37,7 +37,6 @@ def run_sampler(args):
     else:
         return sampler.solve(rw, MC_SAMPLES)
 
-
 if __name__=='__main__':
 
     parser = argparse.ArgumentParser('Comparison of Methods')
@@ -116,6 +115,7 @@ if __name__=='__main__':
         return diagnostic_handler
 
     print(create_diagnostic('bla'))
+
     # create a policy for the RVI sampler
     fn_approximator = MLP_factory(DIMENSIONS+int(FEED_TIME),
                                   hidden_sizes=[16, 16],
@@ -153,11 +153,11 @@ if __name__=='__main__':
                            feed_time=FEED_TIME,
                            seed=args.sampler_seed) ]
 
-
     if args.only_rvi:
         samplers = [samplers[-1]]
 
     _ = [sampler.set_diagnostic(create_diagnostic(sampler._name)) for sampler in samplers]
+
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))
 
@@ -166,8 +166,12 @@ if __name__=='__main__':
 
     sampler_results = pool.map(run_sampler, solver_arguments)
 
+
     print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
     panel_size = determine_panel_size(len(sampler_results))
+    create_folder(folder_name)
+    touch(os.path.join(folder_name, 'start={}'.format(rw.x0)))
+    touch(os.path.join(folder_name, 'end={}'.format(rw.xT)))
 
     fig_dists = plt.figure(figsize=(8, 9))
     fig_traj = plt.figure(figsize=(9,9))
