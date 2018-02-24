@@ -118,7 +118,7 @@ if __name__=='__main__':
 
 
     print('length of trajectory: {}'.format(rw.true_trajectory.shape))
-    samplers = [ISSampler(SimonsSoftProposal, seed=args.sampler_seed),
+    samplers = [ISSampler(SimonsSoftProposal(push_toward=[-DISC_UNIFORM_WIDTH, DISC_UNIFORM_WIDTH]), seed=args.sampler_seed),
                 ABCSampler(0,seed=args.sampler_seed),
                 MCSampler(seed=args.sampler_seed),
                 RVISampler(policy,

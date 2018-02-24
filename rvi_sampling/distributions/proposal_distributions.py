@@ -10,6 +10,9 @@ class ProposalDistribution(object):
     def draw(self, x: object, time_left: object) -> object:
         raise NotImplementedError
 
+    def set_rng(self, rng):
+        self.rng = rng
+
 class MinimalProposal(ProposalDistribution):
     def __init__(self, push_toward, step_sizes, bias=0, seed=0, rng=None):
         logging.warning('This proposal is not tested.')
