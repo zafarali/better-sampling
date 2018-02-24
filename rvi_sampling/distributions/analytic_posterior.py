@@ -106,3 +106,52 @@ class TwoStepRandomWalkPosterior(AnalyticPosterior):
                 KL_est_true += value
 
         return KL_true_est, KL_est_true
+
+
+class MultiWindowTwoStepRandomwWalkPosterior(TwoStepRandomWalkPosterior):
+    def __init__(self, window_ranges, p, T):
+        """
+        A multiwindow two step random walk posterior.
+        :param window_ranges: the boundaries of each window
+        :param p: the step probabilities
+        :param T: the length  of time the stochastic process has been run
+        """
+        self.window_ranges = window_ranges
+        self.support = []
+        for (l,r) in self.window_ranges:
+            self.support.extend(range(l, r+1))
+        self.T = T - 1 # number of transitions
+        self.p = p
+
+
+    def pdf(self, x, d):
+        """
+        Obtain the posterior for the two step random walk
+        :param x: the starting position
+        :param d: the ending position
+        :return: 0 <= float <= 1
+        """
+        T, p = self.T, self.p
+        c = len(self.support)
+        term = 0.5 * (d-x+T)
+        if not (x in self.support and term in range(0, T+1)):
+            return 0
+        else:
+            return (1/(2*c))*comb(T, term)*(p**term)*((1-p)**(T-term))
+
+    def plot(self, observed_d, ax=None, **kwargs):
+        if ax is None:
+            ax = plt.gca()
+        pdf = np.array([self.pdf(x, observed_d) for x in self.support])
+        pdf /= pdf.sum()
+        ax.scatter(self.support, pdf, **kwargs)
+        ax.set_xlabel(r"$x_0$")
+        ax.set_ylabel('Probability')
+        ax.set_title('Posterior Distribution')
+        return ax
+
+    def expectation(self, observed_d):
+        pdf = np.array([self.pdf(x, observed_d) for x in self.support])
+        pdf /= pdf.sum()
+        return np.sum(np.array(self.support) * pdf)
+

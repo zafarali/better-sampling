@@ -43,7 +43,7 @@ class DiscreteUniform(object):
             return probs.prod(axis=1)
 
 
-class TwoWindowDiscreteUniform(object):
+class MultiWindowDiscreteUniform(object):
     def __init__(self, dimensions, window_ranges=[(-5, 5)], seed=2017):
         self.rng = np.random.RandomState(seed)
         self.dimensions = dimensions
