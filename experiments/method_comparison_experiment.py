@@ -21,6 +21,10 @@ from pg_methods.utils.baselines import MovingAverageBaseline, NeuralNetworkBasel
 from pg_methods.utils.policies import MultinomialPolicy
 from pg_methods.utils.networks import MLP_factory
 from pg_methods.utils.objectives import PolicyGradientObjective
+from rvi_sampling.utils.diagnostics import (KLDivergenceDiagnostic,
+                                            TensorBoardHandler,
+                                            ProportionSuccessDiagnostic,
+                                            DiagnosticHandler)
 
 create_folder = lambda f: [os.makedirs(os.path.join('./', f)) if not os.path.exists(os.path.join('./', f)) else False]
 def touch(path):
@@ -56,7 +60,8 @@ if __name__=='__main__':
                         help='does only the RVI experiments')
     parser.add_argument('-n_cpus', '--n_cpus', default=3, type=float,
                         help='CPUs to use when doing the work')
-
+    parser.add_argument('-notb', '--no_tensorboard', action='store_true',
+                        help='Disables tensorboard')
     parser.add_argument('-baseline', '--baseline_type', default='moving_average')
 
     args = parser.parse_args()
@@ -91,6 +96,26 @@ if __name__=='__main__':
         return rw
 
     rw = create_rw()
+    analytic = TwoStepRandomWalkPosterior(DISC_UNIFORM_WIDTH, 0.5, T)
+    create_folder(folder_name)
+    touch(os.path.join(folder_name, 'start={}'.format(rw.x0)))
+    touch(os.path.join(folder_name, 'end={}'.format(rw.xT)))
+
+    def kl_function(estimated_distribution):
+        return analytic.kl_divergence(estimated_distribution, rw.xT)
+
+    def create_diagnostic(sampler_name):
+        diagnostics = [KLDivergenceDiagnostic(kl_function, DISC_UNIFORM_WIDTH, 5), ProportionSuccessDiagnostic(5)]
+        if args.no_tensorboard:
+            diagnostic_handler = DiagnosticHandler(diagnostics)
+        else:
+            print('Tensorboard Logging at: {}'.format(os.path.join(folder_name, sampler_name)))
+            diagnostic_handler = TensorBoardHandler(diagnostics,log_dir=os.path.join(folder_name, sampler_name))
+
+        return diagnostic_handler
+
+    print(create_diagnostic('bla'))
+
     # create a policy for the RVI sampler
     fn_approximator = MLP_factory(DIMENSIONS+int(FEED_TIME),
                                   hidden_sizes=[16, 16],
@@ -131,6 +156,8 @@ if __name__=='__main__':
     if args.only_rvi:
         samplers = [samplers[-1]]
 
+    _ = [sampler.set_diagnostic(create_diagnostic(sampler._name)) for sampler in samplers]
+
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))
 
@@ -139,12 +166,13 @@ if __name__=='__main__':
 
     sampler_results = pool.map(run_sampler, solver_arguments)
 
-    analytic = TwoStepRandomWalkPosterior(DISC_UNIFORM_WIDTH, 0.5, T)
+
     print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
     panel_size = determine_panel_size(len(sampler_results))
     create_folder(folder_name)
     touch(os.path.join(folder_name, 'start={}'.format(rw.x0)))
     touch(os.path.join(folder_name, 'end={}'.format(rw.xT)))
+
     fig_dists = plt.figure(figsize=(8, 9))
     fig_traj = plt.figure(figsize=(9,9))
     fig_traj_evol = plt.figure(figsize=(9,9))
