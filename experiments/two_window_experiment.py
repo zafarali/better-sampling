@@ -50,6 +50,8 @@ if __name__=='__main__':
                         help='Moving Average baseline decay')
     parser.add_argument('-lr', '--learning_rate', default=0.001, type=float,
                         help='Learning rate')
+    parser.add_argument('-gamma', '--gamma', default=1, type=float,
+                        help='discount factor')
     parser.add_argument('-name', '--name', default='', type=str,
                         help='append name')
     parser.add_argument('--only_rvi', default=False, action='store_true',

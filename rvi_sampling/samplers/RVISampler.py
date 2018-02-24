@@ -20,6 +20,7 @@ class RVISampler(Sampler):
                  feed_time=False,
                  objective=PolicyGradientObjective(),
                  seed=0,
+                 discount_factor=1,
                  use_cuda=False):
         """
         The reinforced variational inference sampler
@@ -39,6 +40,7 @@ class RVISampler(Sampler):
         self._training = True
         self.feed_time = feed_time
         self.objective = objective
+        self.discount_factor = discount_factor
 
     def train_mode(self, mode):
         self._training = mode
@@ -120,7 +122,7 @@ class RVISampler(Sampler):
 
             # update the proposal distribution
             if self._training:
-                returns = gradients.calculate_returns(policy_gradient_trajectory_info.rewards, 1, None)
+                returns = gradients.calculate_returns(policy_gradient_trajectory_info.rewards, self.discount_factor, None)
                 advantages = returns - policy_gradient_trajectory_info.values
                 if self.baseline is not None:
                     self.baseline.update_baseline(policy_gradient_trajectory_info, returns)
