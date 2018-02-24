@@ -13,7 +13,7 @@ import pickle
 import seaborn as sns
 from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler, RVISampler
 from rvi_sampling.StochasticProcess import RandomWalk, PyTorchWrap
-from rvi_sampling.distributions.proposal_distributions import SimonsSoftProposal
+from rvi_sampling.distributions.proposal_distributions import SimonsSoftProposal, FunnelProposal
 from rvi_sampling.distributions.prior_distributions import DiscreteUniform
 from rvi_sampling.plotting import determine_panel_size, visualize_proposal, multi_quiver_plot
 from rvi_sampling.distributions.analytic_posterior import TwoStepRandomWalkPosterior
@@ -143,8 +143,8 @@ if __name__=='__main__':
 
 
     print('length of trajectory: {}'.format(rw.true_trajectory.shape))
-    samplers = [ISSampler(SimonsSoftProposal, seed=args.sampler_seed),
-                ABCSampler(0,seed=args.sampler_seed),
+    samplers = [ISSampler(FunnelProposal, seed=args.sampler_seed),
+                ABCSampler('slacked',seed=args.sampler_seed),
                 MCSampler(seed=args.sampler_seed),
                 RVISampler(policy,
                            policy_optimizer,

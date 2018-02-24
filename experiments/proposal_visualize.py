@@ -2,7 +2,7 @@ import sys
 sys.path.append('..')
 import matplotlib.pyplot as plt
 import torch
-from rvi_sampling.distributions.proposal_distributions import SimonsProposal, SimonsSoftProposal
+from rvi_sampling.distributions.proposal_distributions import SimonsProposal, SimonsSoftProposal, FunnelProposal
 from rvi_sampling.plotting import visualize_proposal, multi_quiver_plot
 import argparse
 
@@ -13,7 +13,7 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     if args.other == 'soft':
-        sp1 = SimonsSoftProposal()
+        sp1 = FunnelProposal()
     else:
         sp1 = SimonsProposal()
 
@@ -22,7 +22,7 @@ if __name__=='__main__':
 
 to_plot = []
 titles = []
-t, x, x_arrows, y_arrows_normal = visualize_proposal([sp1], 50, 20, neural_network=False)
+t, x, x_arrows, y_arrows_normal = visualize_proposal([sp1], 50, 40, neural_network=False)
 to_plot.append(y_arrows_normal)
 titles.append('Hand Crafted')
 # print(y_arrows_normal)
