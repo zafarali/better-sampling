@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import torch
 NO_RETURN = 'NORETURN'
@@ -125,3 +126,35 @@ class TensorBoardHandler(DiagnosticHandler):
         if not self.initialized: self.initialize()
         tmpstr, _  = self._call_all_diagnostics(results, other_information, optional_fn=self.log_to_tensorboard)
         return tmpstr
+
+
+def make_kl_function(analytic, estimated_distribution, xT):
+    """
+    Turns the analytic.kl_divergence function into one that can be used
+    in multiprocessing
+    :param analytic:
+    :param estimated_distribution:
+    :param xT:
+    :return:
+    """
+    return analytic.kl_divergence(estimated_distribution, xT)
+
+def create_diagnostic(sampler_name, args, folder_name, kl_function=None):
+    """
+    Creates diagnostics for our experiments
+    :param sampler_name: Name of the sampler
+    :param args: arguments for the sampler
+    :param folder_name: the name of the folder to save things into (only for tensorboard)
+    :param kl_function: The KL divergence function to use
+    :return:
+    """
+    diagnostics = [ProportionSuccessDiagnostic(5)]
+    if kl_function is not None: diagnostics += [KLDivergenceDiagnostic(kl_function, args.rw_width, 5)]
+
+    if args.no_tensorboard:
+        diagnostic_handler = DiagnosticHandler(diagnostics)
+    else:
+        print('Tensorboard Logging at: {}'.format(os.path.join(folder_name, sampler_name)))
+        diagnostic_handler = TensorBoardHandler(diagnostics,log_dir=os.path.join(folder_name, sampler_name))
+
+    return diagnostic_handler
