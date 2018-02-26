@@ -37,6 +37,8 @@ if __name__=='__main__':
 
     parser = argparse.ArgumentParser('Two Window Experiment')
     parser.add_argument('-entropy', '--entropy', default=0, type=float, help='entropy coefficient')
+    parser.add_argument('-gamma', '--gamma', default=1, type=float, help='discount factor')
+
     parser.add_argument('-s', '--samples', default=1000, type=int, help='number of mc steps')
     parser.add_argument('-t', '--rw_time', default=50, type=int, help='Length of the random walk')
     parser.add_argument('-rwseed', '--rw_seed', default=0, type=int, help='The seed to use for the random walk')
@@ -126,7 +128,8 @@ if __name__=='__main__':
                            baseline=baseline,
                            objective=PolicyGradientObjective(entropy=args.entropy),
                            feed_time=FEED_TIME,
-                           seed=args.sampler_seed) ]
+                           seed=args.sampler_seed,
+                           gamma=args.gamma) ]
 
     if args.only_rvi:
         samplers = [samplers[-1]]
@@ -149,6 +152,7 @@ if __name__=='__main__':
     fig_traj = plt.figure(figsize=(9,9))
     fig_traj_evol = plt.figure(figsize=(9,9))
     fig_weight_hists = plt.figure(figsize=(9,4))
+    fig_traj_evol_succ = plt.figure(figsize=(9, 4))
 
     hist_colors = zip(['r', 'g', 'b'], [1, 2, 3])
 
@@ -171,6 +175,9 @@ if __name__=='__main__':
         ax.set_title('Evolution of Trajectories\nfor {}'.format(sampler_result.sampler_name))
         sampler_result.save_results(folder_name)
 
+        ax = fig_traj_evol_succ.add_subplot((panel_size+str(i+1)))
+        ax = sampler_result.plot_trajectory_evolution(ax=ax)
+        ax.set_title('Successful Trajectories over time\nfor {}'.format(sampler_result.sampler_name))
 
         if sampler_result._importance_sampled:
             c, j = next(hist_colors)
@@ -196,6 +203,9 @@ if __name__=='__main__':
 
     fig_weight_hists.tight_layout()
     torch.save(policy, os.path.join(folder_name, 'rvi_policy.pyt'))
+
+    fig_traj_evol_succ.tight_layout()
+    fig_traj_evol_succ.savefig(os.path.join(folder_name, 'successful_trajectories.pdf'))
 
     t, x, x_arrows, y_arrows_nn = visualize_proposal([policy], 50, 20, neural_network=True)
     f = multi_quiver_plot(t, x, x_arrows,
