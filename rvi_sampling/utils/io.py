@@ -1,0 +1,29 @@
+import os
+import time
+# create a new folder:
+create_folder = lambda f: [os.makedirs(os.path.join('./', f)) if not os.path.exists(os.path.join('./', f)) else False]
+
+
+def touch(path):
+    """
+    Create a new file with title "path"
+    :param path:
+    :return:
+    """
+    with open(path, 'a'):
+        os.utime(path, None)
+
+
+def create_folder_name(experiment_name, alternative='results'):
+    """
+    Returns a standardized folder name
+    :param experiment_name:
+    :param alternative:
+    :return:
+    """
+    if experiment_name != '':
+        folder_name = '{}_{}'.format(experiment_name, time.strftime('%a-%d-%m-%Y__%H-%M-%s'))
+    else:
+        folder_name = '{}_{}'.format(alternative, time.strftime('%a-%d-%m-%Y__%H-%M-%s'))
+
+    return folder_name
