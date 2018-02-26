@@ -4,7 +4,13 @@ Utility script to instantiate the different stochastic procceses
 import numpy as np
 from ..stochastic_processes.random_walk import RandomWalk, DiscreteUniform
 from ..distributions.analytic_posterior import TwoStepRandomWalkPosterior
+from collections import namedtuple
 #### RANDOM WALK
+
+Parameters = namedtuple('Parameters', 'possible_steps', 'step_probs', 'dimensions')
+
+UNBIASED_RW = Parameters([[-1], [+1]], np.ones(2)/2, 1)
+BIASED_RW = Parameters([[-1], [+1]], [3/4, 1/4], 1)
 
 def random_walk_arguments(parser):
     """
@@ -19,15 +25,18 @@ def random_walk_arguments(parser):
                         help='width of the discrete uniform in the random walk')
     return parser
 
-def create_rw(args):
+def create_rw(args, biased=False):
     """
     Creates an unbiased 1D random walk
     :param args:
     :return:
     """
-    POSSIBLE_STEPS = [[-1], [+1]]
-    STEP_PROBS = np.ones(2)/2
-    DIMENSIONS = 1
+    if type(biased) == bool:
+        if biased:
+            POSSIBLE_STEPS, STEP_PROBS, DIMENSIONS = BIASED_RW
+        else:
+            POSSIBLE_STEPS, STEP_PROBS, DIMENSIONS = UNBIASED_RW
+
     T = args.rw_time
     DISC_UNIFORM_WIDTH = args.rw_width
     # first simulate a random walk
