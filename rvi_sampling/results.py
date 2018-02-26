@@ -166,10 +166,18 @@ class SamplingResults(object):
         return ax
 
     def plot_trajectory_evolution(self, dimension=0, step=5, ax=None):
-        return plot_trajectory_time_evolution(self.trajectories(), dimension, step=step, ax=ax)
+        if type(dimension) is list:
+            for dim in dimension:
+                plot_trajectory_time_evolution(self.trajectories(), dim, step=step, ax=ax)
+        else:
+            return plot_trajectory_time_evolution(self.trajectories(), dimension, step=step, ax=ax)
 
     def plot_all_trajectory_evolution(self, dimension=0, step=20, ax=None):
-        return plot_trajectory_time_evolution(self.all_trajectories(), dimension, step=step, ax=ax)
+        if type(dimension) is list:
+            for dim in dimension:
+                plot_trajectory_time_evolution(self.all_trajectories(), dim, step=step, ax=ax)
+        else:
+            return plot_trajectory_time_evolution(self.all_trajectories(), dimension, step=step, ax=ax)
 
     def plot_mean_trajectory(self, label=None, ax=None):
         trajectories = self.trajectories()
