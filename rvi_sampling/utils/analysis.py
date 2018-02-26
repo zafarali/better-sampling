@@ -60,7 +60,7 @@ def analyze_samplers_rw(sampler_results,
         ax = fig_traj_evol_succ.add_subplot((panel_size + str(i + 1)))
         ax = sampler_result.plot_trajectory_evolution(ax=ax)
         ax.set_title('Successful Trajectories over time\nfor {}'.format(sampler_result.sampler_name))
-        
+
         try:
             if sampler_result._importance_sampled:
                 c, j = next(hist_colors)
