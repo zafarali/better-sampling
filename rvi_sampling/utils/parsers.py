@@ -2,7 +2,7 @@ import argparse
 from .stochastic_processes import random_walk_arguments
 
 def create_parser(experiment_name, stochastic_process='random_walk'):
-    parser = argparse.ArgumentParser(experiment_name)
+    parser = argparse.ArgumentParser('Experiment:' + experiment_name)
     parser = rvi_arguments(parser)
     parser = experimental_arguments(parser)
     if stochastic_process == 'random_walk': parser = random_walk_arguments(parser)

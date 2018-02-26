@@ -1,5 +1,4 @@
-from ..samplers.RVISampler import RVISampler
-from ..StochasticProcess import PyTorchWrap
+from ..stochastic_processes.base import PyTorchWrap
 
 def run_sampler(args):
     """
@@ -8,7 +7,7 @@ def run_sampler(args):
     :return:
     """
     sampler, rw, MC_samples = args
-    if isinstance(sampler, RVISampler):
+    if sampler._name == 'RVISampler':
         return sampler.solve(PyTorchWrap(rw), MC_samples)
     else:
         return sampler.solve(rw, MC_samples)

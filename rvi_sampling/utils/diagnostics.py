@@ -127,17 +127,20 @@ class TensorBoardHandler(DiagnosticHandler):
         tmpstr, _  = self._call_all_diagnostics(results, other_information, optional_fn=self.log_to_tensorboard)
         return tmpstr
 
-
-def make_kl_function(analytic, estimated_distribution, xT):
-    """
-    Turns the analytic.kl_divergence function into one that can be used
-    in multiprocessing
-    :param analytic:
-    :param estimated_distribution:
-    :param xT:
-    :return:
-    """
-    return analytic.kl_divergence(estimated_distribution, xT)
+#
+# def make_kl_function(analytic, xT):
+#     """
+#     Turns the analytic.kl_divergence function into one that can be used
+#     in multiprocessing
+#     :param analytic:
+#     :param estimated_distribution:
+#     :param xT:
+#     :return:
+#     """
+#     def f(estimated_distribution):
+#         return analytic.kl_divergence(estimated_distribution, xT)
+#
+#     return f
 
 def create_diagnostic(sampler_name, args, folder_name, kl_function=None):
     """

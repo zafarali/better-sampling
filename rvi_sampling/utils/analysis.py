@@ -1,10 +1,9 @@
-from . import plotting
-import matplotlib
 import pickle
 import torch
-matplotlib.use('Agg')
 import os
 import matplotlib.pyplot as plt
+from . import plotting
+
 
 def analyze_samplers_rw(sampler_results,
                         args,
@@ -38,7 +37,7 @@ def analyze_samplers_rw(sampler_results,
         ax = sampler_result.plot_distribution(args.rw_width, ax, alpha=0.7) # TODO: change this hard coding of args.rw_width!
         if analytic is not None: ax = analytic.plot(stochastic_process.xT, ax, label='analytic', color='r')
 
-        empirical_distribution = sampler_result.empirical_distribution()
+        empirical_distribution = sampler_result.empirical_distribution(histbin_range=args.rw_width) ## TODO: Here as well
 
 
         if analytic is not None: kl_divergence = analytic.kl_divergence(empirical_distribution, stochastic_process.xT[0])
