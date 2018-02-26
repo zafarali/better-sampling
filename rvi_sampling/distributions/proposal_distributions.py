@@ -179,17 +179,17 @@ class FunnelProposal(ProposalDistribution):
         # print(w)
 
         # assuming symmetric window
-        steps_left = STEP_SIZE * time_left
+        steps_left = STEP_SIZE * (time_left)
 
-        if np.abs(w) > np.abs(self.push_toward[0]):
+        if np.abs(w - self.push_toward[0]) > steps_left:
             # we are not near the window boundary
             # we now check how far, if based on the time available
             # we cannot ever move into the window, we push hard toward the window.
-            if np.sign(w) == -1 and self.push_toward[0] - w >= steps_left:
+            if np.sign(w) == -1 and self.push_toward[0] - w > steps_left:
                 # too much in the negative direction
                 return np.array([1]), +1, np.log(1 - np.finfo(float).eps)
 
-            elif np.sign(w) == +1 and w - self.push_toward[1] >= steps_left:
+            elif np.sign(w) == +1 and w - self.push_toward[1] > steps_left:
                 # too much in the positive direction so push in the negative
                 return np.array([0]), -1, np.log(1-np.finfo(float).eps)
 

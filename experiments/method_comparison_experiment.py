@@ -177,7 +177,7 @@ if __name__=='__main__':
     fig_traj = plt.figure(figsize=(9,9))
     fig_traj_evol = plt.figure(figsize=(9,9))
     fig_weight_hists = plt.figure(figsize=(9,4))
-
+    fig_traj_evol_succ = plt.figure(figsize=(9, 4))
     hist_colors = zip(['r', 'g', 'b'], [1, 2, 3])
 
 
@@ -196,9 +196,12 @@ if __name__=='__main__':
 
         ax = fig_traj_evol.add_subplot(panel_size+str(i+1))
         ax = sampler_result.plot_all_trajectory_evolution(ax=ax)
-        ax.set_title('Evolution of Trajectories\nfor {}'.format(sampler_result.sampler_name))
+        ax.set_title('Evolution of All Trajectories\nfor {}'.format(sampler_result.sampler_name))
         sampler_result.save_results(folder_name)
 
+        ax = fig_traj_evol_succ.add_subplot((panel_size+str(i+1)))
+        ax = sampler_result.plot_trajectory_evolution(ax=ax)
+        ax.set_title('Successful Trajectories over time\nfor {}'.format(sampler_result.sampler_name))
 
         if sampler_result._importance_sampled:
             c, j = next(hist_colors)
@@ -222,7 +225,9 @@ if __name__=='__main__':
     fig_traj_evol.tight_layout()
     fig_traj_evol.savefig(os.path.join(folder_name, 'trajectory_evolution.pdf'))
 
-    fig_weight_hists.tight_layout()
+    fig_traj_evol_succ.tight_layout()
+    fig_traj_evol_succ.savefig(os.path.join(folder_name, 'successful_trajectories.pdf'))
+
     torch.save(policy, os.path.join(folder_name, 'rvi_policy.pyt'))
 
     t, x, x_arrows, y_arrows_nn = visualize_proposal([policy], 50, 20, neural_network=True)

@@ -12,8 +12,10 @@ if __name__=='__main__':
     parser.add_argument('-o', '--other', type=str, help='other proposal you want to visualize')
     args = parser.parse_args()
 
-    if args.other == 'soft':
+    if args.other == 'funnel':
         sp1 = FunnelProposal()
+    elif args.other == 'soft':
+        sp1 = SimonsSoftProposal()
     else:
         sp1 = SimonsProposal()
 
@@ -22,7 +24,7 @@ if __name__=='__main__':
 
 to_plot = []
 titles = []
-t, x, x_arrows, y_arrows_normal = visualize_proposal([sp1], 50, 40, neural_network=False)
+t, x, x_arrows, y_arrows_normal = visualize_proposal([sp1], 50, 20, neural_network=False)
 to_plot.append(y_arrows_normal)
 titles.append('Hand Crafted')
 # print(y_arrows_normal)
