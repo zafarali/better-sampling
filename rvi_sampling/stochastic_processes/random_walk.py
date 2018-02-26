@@ -1,6 +1,9 @@
 import numpy as np
 from .base import StochasticProcess
 from ..distributions.prior_distributions import DiscreteUniform
+from collections import namedtuple
+
+RWParameters = namedtuple('RWParameters', 'possible_steps step_probs dimensions')
 
 class RandomWalk(StochasticProcess):
     def __init__(self,
