@@ -1,5 +1,5 @@
 import numpy as np
-from rvi_sampling.StochasticProcess import RandomWalk
+from rvi_sampling.stochastic_processes.random_walk import RandomWalk
 
 POSSIBLE_STEPS = [[-1], [+1]]
 STEP_PROBS = [1/2, 1/2]
