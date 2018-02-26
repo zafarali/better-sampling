@@ -56,6 +56,6 @@ def test_funnel_proposal_2():
 
     assert np.allclose(multi_draw(proposal, ([[-5]], 2)), 0, atol=0.05)
     assert np.allclose(multi_draw(proposal, ([[-4]], 2)), 0, atol=0.05)
-    assert np.allclose(multi_draw(proposal, ([[-6]], 2)), 0, atol=0.05)
-    assert np.allclose(multi_draw(proposal, ([[-7]], 2)), 0, atol=0.05)
+    assert np.allclose(multi_draw(proposal, ([[-6]], 2)), 1, atol=0.05)
+    assert np.allclose(multi_draw(proposal, ([[-7]], 2)), 1, atol=0.05)
 
