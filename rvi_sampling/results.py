@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from .plotting import plot_trajectory_time_evolution, plot_mean_trajectories
+from .utils.plotting import plot_trajectory_time_evolution, plot_mean_trajectories
 
 class SamplingResults(object):
     """

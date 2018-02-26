@@ -15,7 +15,7 @@ from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler, RVISampler
 from rvi_sampling.StochasticProcess import RandomWalk, PyTorchWrap
 from rvi_sampling.distributions.proposal_distributions import SimonsSoftProposal
 from rvi_sampling.distributions.prior_distributions import DiscreteUniform
-from rvi_sampling.plotting import determine_panel_size, visualize_proposal, multi_quiver_plot
+from rvi_sampling.utils.plotting import determine_panel_size, visualize_proposal, multi_quiver_plot
 from rvi_sampling.distributions.analytic_posterior import TwoStepRandomWalkPosterior
 from pg_methods.utils.baselines import MovingAverageBaseline, NeuralNetworkBaseline
 from pg_methods.utils.policies import MultinomialPolicy
