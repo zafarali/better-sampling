@@ -2,8 +2,7 @@ import pickle
 import torch
 import os
 import matplotlib.pyplot as plt
-from . import plotting
-
+from . import plotting, io
 
 def analyze_samplers_rw(sampler_results,
                         args,
@@ -31,7 +30,8 @@ def analyze_samplers_rw(sampler_results,
     fig_traj_evol_succ = plt.figure(figsize=(9, 4)) # shows the successful trajectories
 
     hist_colors = zip(['r', 'g', 'b'], [1, 2, 3]) # loop over colors for the histogram
-
+    kl_divergences = []
+    kl_divergence = (100, 100)
     for i, sampler_result in enumerate(sampler_results):
         try:
             ax = fig_dists.add_subplot(panel_size + str(i + 1))
@@ -42,7 +42,7 @@ def analyze_samplers_rw(sampler_results,
 
 
             if analytic is not None: kl_divergence = analytic.kl_divergence(empirical_distribution, stochastic_process.xT[0])
-
+            if analytic is not None: kl_divergences.append('{},{}'.format(sampler_result.sampler_name, kl_divergence[0]))
             ax.set_title(sampler_result.summary_title() + '\nKL(true|est)={:3g}, KL(est|true)={:3g}'.format(*kl_divergence))
             print(sampler_result.summary('KL(true|est)={:3g}, KL(obs|est)={:3g}'.format(*kl_divergence)))
         except Exception as e:
@@ -57,6 +57,10 @@ def analyze_samplers_rw(sampler_results,
         ax.set_title('Evolution of Trajectories\nfor {}'.format(sampler_result.sampler_name))
         sampler_result.save_results(folder_name)
 
+        ax = fig_traj_evol_succ.add_subplot((panel_size + str(i + 1)))
+        ax = sampler_result.plot_trajectory_evolution(ax=ax)
+        ax.set_title('Successful Trajectories over time\nfor {}'.format(sampler_result.sampler_name))
+        
         try:
             if sampler_result._importance_sampled:
                 c, j = next(hist_colors)
@@ -77,12 +81,9 @@ def analyze_samplers_rw(sampler_results,
                                                                                        analytic.expectation(stochastic_process.xT[0]) if analytic is not None else -100,
                                                                                        stochastic_process.x0,
                                                                                        stochastic_process.xT))
+    io.put(os.path.join(folder_name, 'KL'), kl_divergences)
     fig_dists.tight_layout(rect=[0, 0.03, 1, 0.97])
     fig_dists.savefig(os.path.join(folder_name, 'ending_distribution.pdf'))
-
-    ax = fig_traj_evol_succ.add_subplot((panel_size + str(i + 1)))
-    ax = sampler_result.plot_trajectory_evolution(ax=ax)
-    ax.set_title('Successful Trajectories over time\nfor {}'.format(sampler_result.sampler_name))
 
     fig_traj.tight_layout()
     fig_traj.savefig(os.path.join(folder_name, 'trajectory_distribution.pdf'))
@@ -92,6 +93,9 @@ def analyze_samplers_rw(sampler_results,
 
     fig_traj_evol_succ.tight_layout()
     fig_traj_evol_succ.savefig(os.path.join(folder_name, 'successful_trajectories.pdf'))
+
+    # dump the arguments
+    io.argparse_saver(os.path.join(folder_name, 'args'), args)
 
     # if we have given a policy, we should save it
     if policy is not None:
@@ -106,6 +110,4 @@ def analyze_samplers_rw(sampler_results,
             f.savefig(os.path.join(folder_name, 'visualized_proposal.pdf'))
         except Exception as e:
             print('Could not plot proposal distribution {}'.format(e))
-    # dump the arguments
-    pickle.dump(args, open(os.path.join(folder_name, 'args.pkl'), 'wb'))
 

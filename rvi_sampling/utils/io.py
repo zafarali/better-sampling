@@ -13,6 +13,25 @@ def touch(path):
     with open(path, 'a'):
         os.utime(path, None)
 
+def put(path, text):
+    """
+    Saves text into the path
+    (!) the path must not already exist.
+    :param path:
+    :param text:
+    :return:
+    """
+    with open(path, 'w') as f:
+        if type(text) is list:
+            f.write('\n'.join(text))
+        else:
+            f.write(text)
+
+def argparse_saver(path, parser):
+    "saves an argparse object"
+    kwargs = [ '{},{}'.format(k, v) for k,v in parser._get_kwargs()]
+    put(path, kwargs)
+
 
 def create_folder_name(experiment_name, alternative='results'):
     """
@@ -27,3 +46,4 @@ def create_folder_name(experiment_name, alternative='results'):
         folder_name = '{}_{}'.format(alternative, time.strftime('%a-%d-%m-%Y__%H-%M-%s'))
 
     return folder_name
+
