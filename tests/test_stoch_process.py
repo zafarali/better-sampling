@@ -1,6 +1,7 @@
 import numpy as np
-from rvi_sampling.stochastic_processes.random_walk import RandomWalk
-
+from torch.autograd import Variable
+from rvi_sampling.stochastic_processes.random_walk import RandomWalk, RWParameters, DiscreteUniform
+from rvi_sampling.stochastic_processes.base import PyTorchWrap
 POSSIBLE_STEPS = [[-1], [+1]]
 STEP_PROBS = [1/2, 1/2]
 DIMENSIONS = 1
@@ -24,4 +25,13 @@ def test_stochastic_process_step_calls():
         i+= 1
     assert i == 3
 
-# def
+def test_2d_process():
+    rw = RandomWalk(2, [0.4, 0.6], [[-1, 1], [0, 1]], T=4, prior_distribution=DiscreteUniform(2, 0, 2))
+    x = rw.reset()
+    assert x.shape == (1, 2)
+
+    pytrw = PyTorchWrap(rw)
+
+    x = pytrw.reset()
+    assert isinstance(x, Variable)
+    assert tuple(x.size()) == (1, 2)
