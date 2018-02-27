@@ -17,6 +17,7 @@ from pg_methods.utils.objectives import PolicyGradientObjective
 
 DIMENSIONS = 1
 OUTPUT_SIZE = 2
+BIASED = False
 
 if __name__=='__main__':
     args = utils.parsers.create_parser('1D random walk', 'random_walk').parse_args()
@@ -25,7 +26,7 @@ if __name__=='__main__':
     folder_name = utils.io.create_folder_name(args.name)
     utils.io.create_folder(folder_name)
 
-    rw, analytic = utils.stochastic_processes.create_rw(args)
+    rw, analytic = utils.stochastic_processes.create_rw(args, biased=BIASED)
     utils.io.touch(os.path.join(folder_name, 'start={}'.format(rw.x0)))
     utils.io.touch(os.path.join(folder_name, 'end={}'.format(rw.xT)))
 
@@ -63,7 +64,7 @@ if __name__=='__main__':
     print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
 
     pool = multiprocessing.Pool(args.n_cpus)
-    solver_arguments = [(sampler, utils.stochastic_processes.create_rw(args)[0], args.samples) for sampler in samplers]
+    solver_arguments = [(sampler, utils.stochastic_processes.create_rw(args, biased=BIASED)[0], args.samples) for sampler in samplers]
 
     sampler_results = pool.map(utils.multiprocessing_tools.run_sampler, solver_arguments)
 
