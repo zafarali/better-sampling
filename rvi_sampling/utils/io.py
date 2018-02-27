@@ -33,7 +33,7 @@ def argparse_saver(path, parser):
     put(path, kwargs)
 
 
-def create_folder_name(experiment_name, alternative='results'):
+def create_folder_name(outfolder, experiment_name, alternative='results'):
     """
     Returns a standardized folder name
     :param experiment_name:
@@ -45,5 +45,5 @@ def create_folder_name(experiment_name, alternative='results'):
     else:
         folder_name = '{}_{}'.format(alternative, time.strftime('%a-%d-%m-%Y__%H-%M-%s'))
 
-    return folder_name
+    return os.path.join(outfolder, folder_name)
 

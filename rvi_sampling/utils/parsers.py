@@ -19,8 +19,6 @@ def rvi_arguments(parser):
                         help='Moving Average baseline decay')
     parser.add_argument('-lr', '--learning_rate', default=0.001, type=float,
                         help='Learning rate')
-    parser.add_argument('-name', '--name', default='', type=str,
-                        help='append name')
     parser.add_argument('--only_rvi', default=False, action='store_true',
                         help='does only the RVI experiments')
     parser.add_argument('-baseline', '--baseline_type', default='moving_average')
@@ -42,6 +40,9 @@ def experimental_arguments(parser):
                         help='CPUs to use when doing the work')
     parser.add_argument('-notb', '--no_tensorboard', action='store_true',
                         help='Disables tensorboard')
-
+    parser.add_argument('-name', '--name', default='', type=str,
+                        help='append name')
+    parser.add_argument('-outfolder', '--outfolder', default='./', type=str,
+                        help='Where to save things')
     return parser
 
