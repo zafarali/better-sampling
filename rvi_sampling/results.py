@@ -2,7 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from .utils.plotting import plot_trajectory_time_evolution, plot_mean_trajectories
-
+from .utils.stats_utils import empirical_distribution
 class SamplingResults(object):
     """
     An abstraction on the results obtained
@@ -232,12 +232,9 @@ class SamplingResults(object):
 
     def empirical_distribution(self, histbin_range=None):
         _histbin_range = self._histbin_range if not histbin_range else histbin_range
-        hist_range = np.arange(-_histbin_range- 2, _histbin_range+2) + 0.5
 
-        probs, vals = np.histogram(self.posterior_particles(), bins=hist_range, density=True,
-                                   weights=self.posterior_weights())
-        estimated_dist = dict(zip(vals+0.5, probs))
-        return estimated_dist
+        return empirical_distribution(self.posterior_particles(),self. posterior_weights(), histbin_range=histbin_range)
+
 
 class ImportanceSamplingResults(SamplingResults):
     _importance_sampled = True

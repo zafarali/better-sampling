@@ -1,12 +1,19 @@
 """
 Utility to aggregate different experimental runs
 """
+import matplotlib
+matplotlib.use('Agg')
+import seaborn as sns
+import sys
+sys.path.append('..')
 import os
 import argparse
-import numpy as np
+import json
 import pandas as pd
+import numpy as np
 from glob import glob
-
+from rvi_sampling.utils.stats_utils import empirical_distribution, average_estimated_distributions
+from collections import defaultdict
 
 def main(args):
     search_path = os.path.join(args.folder, args.name+'*__*')
@@ -14,8 +21,7 @@ def main(args):
     print('Looking in {}'.format(search_path))
     print('Found {} experimental runs'.format(len(folders)))
 
-    df = pd.DataFrame()
-
+    empirical_distributions = defaultdict(lambda: {'prob_estimates':[], 'support': []})
     dfs = []
     for folder in folders:
         try:
@@ -24,12 +30,14 @@ def main(args):
             print('folder: {} has no information saved'.format(folder))
             continue
 
+        # first gather KL-divergences
         data = dict()
         with open(KL, 'r') as f:
             for line in f.readlines():
                 a, b = line.strip().split(',')
                 data[a+'_KL'] = float(b)
 
+        # now gather the arguments
         with open(args_path, 'r') as f:
             for line in f.readlines():
                 a, b = line.strip().split(',')
@@ -37,9 +45,36 @@ def main(args):
         print(data)
         dfs.append(pd.DataFrame(data, index=[0]))
 
+        # now gather the distributions
+        trajectory_results = glob(os.path.join(folder, 'trajectory_results_*'))
+        for res in trajectory_results:
+            _, sampler_name = res.split('trajectory_results_')
+            with open(res, 'r') as f:
+                results = json.load(f)
+
+            probs, support = empirical_distribution(results['posterior_particles'],
+                                                    results['posterior_weights'],
+                                                    histbin_range=max(results['posterior_particles']),
+                                                    return_numpy=True)
+
+            empirical_distributions[sampler_name]['prob_estimates'].append(probs)
+            empirical_distributions[sampler_name]['support'].append(support)
+
+
 
     df = pd.concat(dfs, ignore_index=True)
-    df.to_csv(os.path.join(args.folder, args.save))
+    if not args.dryrun: df.to_csv(os.path.join(args.folder, args.save))
+
+    for sampler_name in empirical_distributions.keys():
+        support = np.sort(np.unique(empirical_distributions[sampler_name]['support']))
+        df = pd.DataFrame(np.stack(empirical_distributions[sampler_name]['prob_estimates']),
+                          columns=support)
+
+        df.to_csv(os.path.join(args.folder, args.save.replace('.csv', '_histogram_{}.json'.format(sampler_name))))
+
+        # TODO: plot the bar char
+        sns.barplot( color = "salmon", saturation = .5)
+
 
 
 if __name__ == '__main__':
@@ -47,6 +82,7 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--folder', help='Folder with the experimental runs', required=True)
     parser.add_argument('-n', '--name', help='Name appenditure for the experimental runs', required=False, default='')
     parser.add_argument('-s', '--save', help='File to save to', required=False, default='aggregated.csv')
+    parser.add_argument('-dry', '--dryrun', help='Dry run', required=False, action='store_true', default=False)
 
     args = parser.parse_args()
     main(args)
