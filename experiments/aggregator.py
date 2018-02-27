@@ -3,6 +3,7 @@ Utility to aggregate different experimental runs
 """
 import matplotlib
 matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 import seaborn as sns
 import sys
 sys.path.append('..')
@@ -65,16 +66,22 @@ def main(args):
     df = pd.concat(dfs, ignore_index=True)
     if not args.dryrun: df.to_csv(os.path.join(args.folder, args.save))
 
-    for sampler_name in empirical_distributions.keys():
-        support = np.sort(np.unique(empirical_distributions[sampler_name]['support']))
-        df = pd.DataFrame(np.stack(empirical_distributions[sampler_name]['prob_estimates']),
-                          columns=support)
+    if not args.dryrun and args.histogram:
+        for sampler_name in empirical_distributions.keys():
+            support = np.sort(np.unique(empirical_distributions[sampler_name]['support']))
+            stacked_dist = np.stack(empirical_distributions[sampler_name]['prob_estimates'])
+            df = pd.DataFrame(stacked_dist,
+                              columns=support)
 
-        df.to_csv(os.path.join(args.folder, args.save.replace('.csv', '_histogram_{}.json'.format(sampler_name))))
+            df.to_csv(os.path.join(args.folder, args.save.replace('.csv', '_histogram_{}.json'.format(sampler_name))))
 
-        # TODO: plot the bar char
-        sns.barplot( color = "salmon", saturation = .5)
-
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            ax = sns.barplot(data=df, color="salmon", saturation=0.5, ax=ax)
+            ax.set_title('Aggregated histogram for\n{} ({} replicates)'.format(sampler_name, stacked_dist.shape[0]))
+            ax.set_xlabel('Support')
+            ax.set_ylabel('Prob')
+            fig.savefig(os.path.join(args.folder, args.save.replace('.csv', '_histogram_{}.pdf'.format(sampler_name))))
 
 
 if __name__ == '__main__':
@@ -83,6 +90,8 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--name', help='Name appenditure for the experimental runs', required=False, default='')
     parser.add_argument('-s', '--save', help='File to save to', required=False, default='aggregated.csv')
     parser.add_argument('-dry', '--dryrun', help='Dry run', required=False, action='store_true', default=False)
+    parser.add_argument('-histogram', '--histogram', help='Creates histograms from the data', required=False, action='store_true', default=False)
+
 
     args = parser.parse_args()
     main(args)

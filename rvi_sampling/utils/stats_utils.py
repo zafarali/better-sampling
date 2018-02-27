@@ -70,9 +70,9 @@ def empirical_distribution(particles, weights, histbin_range, return_numpy=False
                                weights=weights)
 
     if return_numpy:
-        return probs, vals
+        return probs, (vals + 0.5)[:-1]
 
-    estimated_dist = dict(zip(vals+0.5, probs)) # add 0.5 to shift back
+    estimated_dist = dict(zip((vals + 0.5)[:-1], probs)) # add 0.5 to shift back
     return estimated_dist
 
 
