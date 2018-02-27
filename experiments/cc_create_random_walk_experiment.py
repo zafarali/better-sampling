@@ -51,6 +51,8 @@ class Experiments(object):
 def main(args):
     SCRIPT = parsers.create_slurm_header(args)
     SCRIPT += '\nmodule load python/3.5.2'
+    SCRIPT += '\nmodule load cuda/8.0.44'
+    SCRIPT += '\nmodule load cudnn/7.0'
     SCRIPT += '\nsource $RVI_ENV'
     SCRIPT += '\nRWWIDTH={};'.format(args.rw_width)
     SCRIPT += '\nRWTIME={};'.format(args.rw_time)
@@ -62,10 +64,11 @@ def main(args):
         experiment_constructor = getattr(Experiments, args.experiment)
         SCRIPT += experiment_constructor(args, i)
 
+    #TODO: add aggregator here?
     if args.dryrun:
         print(SCRIPT)
     else:
-        utils.io.put(os.path.join(args.out, 'runnable.sh'))
+        utils.io.put(os.path.join(args.out, 'runnable.sh'), SCRIPT)
 
 
 if __name__ == '__main__':
@@ -84,4 +87,5 @@ if __name__ == '__main__':
     if not args.dryrun: os.mkdir(args.out)
     if not args.dryrun: utils.io.argparse_saver(os.path.join(args.out, 'args'), args)
     args.out =  os.path.abspath(args.out)
+    args.cc_log = args.out
     main(args)
