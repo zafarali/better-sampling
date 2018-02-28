@@ -19,7 +19,7 @@ class Experiments(object):
                       ' --outfolder {folder} -name entropy{name}'
             if args.only_rvi or entropy > 0: script += ' --only_rvi' # since entropy only matters for RVI, save compute.
             script = script.format(entropy=entropy, samples=args.samples, replicate_id=replicate_id,
-                                   folder=args.out, name=entropy, args=args.cc_cpus)
+                                   folder=args.out, name=entropy, cpus=args.cc_cpus)
 
         return script
 
@@ -84,7 +84,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Random Walk Job Creator')
-    parser.add_argument('-out', '--out', help='Output Folder', default='./randomwalk')
+    parser.add_argument('-out', '--out', help='Output Folder', default=None)
     parser.add_argument('-seed', '--seed', help='Seeds for the samplers. Each run will have seed+reps',
                         default=4, type=int)
     parser.add_argument('-exp', '--experiment', help='Name of experiment to run', default='one_window')
@@ -95,6 +95,7 @@ if __name__ == '__main__':
     parser.add_argument('-dryrun', '--dryrun', help='Dry run', default=False, action='store_true')
     parsers.create_slurm_arguments(parser)
     args = parser.parse_args()
+    if args.out is None: args.out = './{}'.format(args.experiment)
     if not args.dryrun: os.mkdir(args.out)
     if not args.dryrun: utils.io.argparse_saver(os.path.join(args.out, 'args'), args)
     args.out =  os.path.abspath(args.out)
