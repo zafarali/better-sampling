@@ -46,8 +46,14 @@ class ABCSampler(Sampler):
             trajectory = stochastic_process.simulate(self.rng)
             final_position = trajectory[-1]
             # only accept this trajectory if it ended close to the final
-            if np.sum(np.abs(observed_ending_location - final_position)) <= self.tolerance:
+
+            if self.tolerance == 'slacked':
+                allowable = np.arange(2*stochastic_process.prior.start, 2*(stochastic_process.prior.start + stochastic_process.prior.n_numbers), 2)
+                if np.sum(np.abs(observed_ending_location - final_position)) in allowable:
+                    trajectories.append(trajectory)
+            elif np.sum(np.abs(observed_ending_location - final_position)) <= self.tolerance:
                 trajectories.append(trajectory)
+
             all_trajectories.append(trajectory)
 
             if self.diagnostic is not None:
@@ -148,7 +154,6 @@ class ISSampler(Sampler):
                 step_idx, step, log_prob_proposal_step = proposal.draw(x_t, stochastic_process.transitions_left)
                 # print('proposal_log_prob step:',log_prob_proposal_step)
                 x_t, path_log_prob, done, _ = stochastic_process.step(step_idx, reverse=False)
-
 
                 # accumulate log probs of the path and the proposal:
                 log_path_prob += path_log_prob
