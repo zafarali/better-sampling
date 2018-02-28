@@ -37,16 +37,13 @@ class Experiments(object):
         return script
 
     @staticmethod
-    def test(args, replicate_id):
-        script = '\npython rw_experiment.py -s {samples} -samseed {replicate_id} ' \
+    def one_window(args, replicate_id):
+        script = '\npython rw_experiment.py -s {samples} -samseed {replicate_id} -n_cpus 3' \
                  '--rw_time $RWTIME --rw_seed $RWSEED --rw_width $RWWIDTH --outfolder {folder}'
         if args.only_rvi: script += ' --only_rvi'
         script = script.format(samples=args.samples, replicate_id=replicate_id, folder=args.out)
         return script
 
-    @staticmethod
-    def one_window(args, replicate_id):
-        script = '\npython rw_experiment.py'
 
 def main(args):
     SCRIPT = parsers.create_slurm_header(args)
@@ -77,7 +74,7 @@ if __name__ == '__main__':
     parser.add_argument('-out', '--out', help='Output Folder', default='./randomwalk')
     parser.add_argument('-seed', '--seed', help='Seeds for the samplers. Each run will have seed+reps',
                         default=4, type=int)
-    parser.add_argument('-exp', '--experiment', help='Name of experiment to run', default='test')
+    parser.add_argument('-exp', '--experiment', help='Name of experiment to run', default='one_window')
     parser = utils.parsers.random_walk_arguments(parser)
     parser.add_argument('-samples', '--samples', default=1000, type=int, help='number of mc steps')
     parser.add_argument('-reps', '--replicates', help='Number of replicates to run', default=2, type=int)
