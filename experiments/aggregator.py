@@ -43,7 +43,7 @@ def main(args):
             for line in f.readlines():
                 a, b = line.strip().split(',')
                 data[a] = b
-        print(data)
+        # print(data)
         dfs.append(pd.DataFrame(data, index=[0]))
 
         # now gather the distributions
