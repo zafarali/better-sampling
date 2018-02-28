@@ -43,7 +43,7 @@ if __name__=='__main__':
     baseline = MovingAverageBaseline(args.baseline_decay)
 
     samplers = [ISSampler(SimonsSoftProposal(push_toward=[-args.rw_width, args.rw_width]), seed=args.sampler_seed),
-                ABCSampler(0,seed=args.sampler_seed),
+                ABCSampler('slacked',seed=args.sampler_seed),
                 MCSampler(seed=args.sampler_seed),
                 RVISampler(policy,
                            policy_optimizer,
