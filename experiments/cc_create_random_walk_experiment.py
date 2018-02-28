@@ -14,12 +14,12 @@ class Experiments(object):
     def entropy_two_window(args, replicate_id):
         script = ''
         for entropy in [0, 0.1, 0.5, 1, 1.5, 2, 2.5, 3]:
-            script += '\npython two_window_experiment.py -entropy {entropy} -n_cpus 3 -s {samples}' \
+            script += '\npython two_window_experiment.py -entropy {entropy} -n_cpus {cpus} -s {samples}' \
                       ' -samseed {replicate_id} --rw_time $RWTIME --rw_seed $RWSEED --rw_width $RWWIDTH'\
                       ' --outfolder {folder} -name entropy{name}'
-            if args.only_rvi: script += ' --only_rvi'
+            if args.only_rvi or entropy > 0: script += ' --only_rvi' # since entropy only matters for RVI, save compute.
             script = script.format(entropy=entropy, samples=args.samples, replicate_id=replicate_id,
-                                   folder=args.out, name=entropy)
+                                   folder=args.out, name=entropy, args=args.cc_cpus)
 
         return script
 
@@ -27,21 +27,34 @@ class Experiments(object):
     def gamma_two_window(args, replicate_id):
         script = ''
         for gamma in [0, 0.0001, 0.001, 0.01, 0.1, 0.5, 1]:
-            script += '\npython two_window_experiment.py -gamma {gamma} -n_cpus 3 -s {samples}' \
+            script += '\npython two_window_experiment.py -gamma {gamma} -n_cpus {cpus} -s {samples}' \
                       ' -samseed {replicate_id} --rw_time $RWTIME --rw_seed $RWSEED --rw_width $RWWIDTH'\
                       ' --outfolder {folder} -name gamma{name}'
-            if args.only_rvi: script += ' --only_rvi'
+            if args.only_rvi or gamma != 1: script += ' --only_rvi' # since gamma only matters for RVI, save compute.
             script = script.format(gamma=gamma, samples=args.samples, replicate_id=replicate_id,
-                                   folder=args.out, name=gamma)
+                                   folder=args.out, name=gamma, cpus=args.cc_cpus)
 
         return script
 
     @staticmethod
     def one_window(args, replicate_id):
-        script = '\npython rw_experiment.py -s {samples} -samseed {replicate_id} -n_cpus 3' \
+        script = '\npython rw_experiment.py -s {samples} -samseed {replicate_id} -n_cpus {cpus}' \
                  '--rw_time $RWTIME --rw_seed $RWSEED --rw_width $RWWIDTH --outfolder {folder}'
         if args.only_rvi: script += ' --only_rvi'
-        script = script.format(samples=args.samples, replicate_id=replicate_id, folder=args.out)
+        script = script.format(samples=args.samples, replicate_id=replicate_id, folder=args.out, cpus=args.cc_cpus)
+        return script
+
+    @staticmethod
+    def entropy_one_window(args, replicate_id):
+        script = ''
+        for entropy in [0, 0.1, 0.5, 1, 1.5, 2, 2.5, 3]:
+            script += '\npython rw_experiment.py -entropy {entropy} -n_cpus {cpus} -s {samples}' \
+                      ' -samseed {replicate_id} --rw_time $RWTIME --rw_seed $RWSEED --rw_width $RWWIDTH'\
+                      ' --outfolder {folder} -name entropy{name}'
+            if args.only_rvi or entropy > 0: script += ' --only_rvi' # since entropy only matters for RVI, save compute.
+            script = script.format(entropy=entropy, samples=args.samples, replicate_id=replicate_id,
+                                   folder=args.out, name=entropy, cpus=args.cc_cpus)
+
         return script
 
 

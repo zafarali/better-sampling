@@ -40,7 +40,7 @@ if __name__=='__main__':
     policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=args.learning_rate)
     baseline = MovingAverageBaseline(args.baseline_decay)
 
-    samplers = [ISSampler(SimonsSoftProposal, seed=args.sampler_seed),
+    samplers = [ISSampler(SimonsSoftProposal(push_toward=[-args.rw_width, args.rw_width]), seed=args.sampler_seed),
                 ABCSampler(0,seed=args.sampler_seed),
                 MCSampler(seed=args.sampler_seed),
                 RVISampler(policy,
