@@ -64,7 +64,8 @@ def main(args):
         experiment_constructor = getattr(Experiments, args.experiment)
         SCRIPT += experiment_constructor(args, i)
 
-    #TODO: add aggregator here?
+
+    SCRIPT += '\npython aggregator.py -f {} -histogram -s ./aggregated.csv'.format(args.out)
     if args.dryrun:
         print(SCRIPT)
     else:
