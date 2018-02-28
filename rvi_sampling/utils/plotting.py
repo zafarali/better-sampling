@@ -35,8 +35,9 @@ def plot_mean_trajectories(trajectories, ts, true_trajectory, label='inferred', 
         ax.fill_between(ts, mean[:, i] + std_err[:, i], mean[:, i] - std_err[:, i], alpha=0.2, color=COLORS[i])
         ax.plot(ts, mean[:, i], '--', label=label + ' mean of $x_{}$'.format(i), color=COLORS[i])
 
-    for i in range(dimensions):
-        ax.plot(ts, true_trajectory[:, i], label='true $x_{}$'.format(i), color=COLORS[i])
+    if true_trajectory is not None:
+        for i in range(dimensions):
+            ax.plot(ts, true_trajectory[:, i], label='true $x_{}$'.format(i), color=COLORS[i])
     ax.legend()
     ax.set_xlabel('Time')
     ax.set_ylabel(r"$x_i$")
@@ -72,7 +73,7 @@ def conduct_draws_nn(sp_, x, t, n_draws=100, feed_time=False):
 
 def conduct_draws(sp_, x, t, n_draws=100):
     """
-    Conducts draws from a regular (non-neural network) policy and takes the average
+    Conducts draws from a regular (non-neural ne twork) policy and takes the average
     :param sp_:
     :param x:
     :param t:

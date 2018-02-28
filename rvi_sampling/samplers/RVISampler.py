@@ -122,6 +122,13 @@ class RVISampler(Sampler):
 
             # update the proposal distribution
             if self._training:
+                returns = gradients.calculate_returns(policy_gradient_trajectory_info.rewards, 1, None)
+                advantages = returns - policy_gradient_trajectory_info.values
+                if self.baseline is not None:
+                    self.baseline.update_baseline(policy_gradient_trajectory_info, returns)
+
+            # update the proposal distribution
+            if self._training:
                 returns = gradients.calculate_returns(policy_gradient_trajectory_info.rewards, self.gamma, None)
                 advantages = returns - policy_gradient_trajectory_info.values
                 if self.baseline is not None:
@@ -163,6 +170,13 @@ class RVISampler(Sampler):
             for m in range(trajectory_i.shape[0]):
                 all_trajectories.append(trajectory_i[m, ::-1, :stochastic_process.dimensions])
 
+
+            if self.diagnostic is not None:
+                self.run_diagnostic(RLSamplingResults.from_information(self._name,
+                                                                     all_trajectories,
+                                                                     trajectories,
+                                                                     posterior_particles,
+                                                                     posterior_weights))
         results.all_trajectories(all_trajectories)
         results.trajectories(trajectories)
         results.posterior(posterior_particles)
