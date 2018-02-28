@@ -41,7 +41,7 @@ def main(args):
         # now gather the arguments
         with open(args_path, 'r') as f:
             for line in f.readlines():
-                a, b = line.strip().split(',')
+                a, b = line.strip().split(',')[:2]
                 data[a] = b
         # print(data)
         dfs.append(pd.DataFrame(data, index=[0]))
@@ -65,7 +65,7 @@ def main(args):
 
     df = pd.concat(dfs, ignore_index=True)
     if not args.dryrun: df.to_csv(os.path.join(args.folder, args.save))
-
+    if not args.dryrun: df.mean().to_csv(os.path.join(args.folder, 'MEANS.csv'))
     if not args.dryrun and args.histogram:
         for sampler_name in empirical_distributions.keys():
             support = np.sort(np.unique(empirical_distributions[sampler_name]['support']))
