@@ -47,7 +47,7 @@ if __name__=='__main__':
         proposal = FunnelProposal(push_toward)
 
     samplers = [ISSampler(proposal, seed=args.sampler_seed),
-                ABCSampler(0,seed=args.sampler_seed),
+                ABCSampler('slacked',seed=args.sampler_seed),
                 MCSampler(seed=args.sampler_seed),
                 RVISampler(policy,
                            policy_optimizer,
