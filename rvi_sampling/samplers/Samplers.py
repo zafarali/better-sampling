@@ -48,6 +48,7 @@ class ABCSampler(Sampler):
             # only accept this trajectory if it ended close to the final
 
             if self.tolerance == 'slacked':
+                # TODO: find a way around this
                 allowable = np.arange(2*stochastic_process.prior.start, 2*(stochastic_process.prior.start + stochastic_process.prior.n_numbers), 2)
                 if np.sum(np.abs(observed_ending_location - final_position)) in allowable:
                     trajectories.append(trajectory)

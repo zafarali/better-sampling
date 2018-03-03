@@ -52,6 +52,11 @@ class MultiWindowDiscreteUniform(object):
         for (l,r) in self.window_ranges:
             self.support.extend(range(l, r+1))
 
+        # for backward compatability
+        # TODO: find a way around this.
+        self.start = np.min(self.support)
+        self.n_numbers = len(self.support)
+
     def rvs(self):
         return np.array([self.rng.choice(self.support) for _ in range(self.dimensions)])
 
