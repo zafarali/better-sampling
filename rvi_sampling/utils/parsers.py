@@ -44,8 +44,6 @@ def experimental_arguments(parser):
                         help='append name')
     parser.add_argument('-IS_proposal', '--IS_proposal', default='funnel', type=str,
                         help='the importance sampling distribution to use (funnel, soft)')
-    parser.add_argument('-name', '--name', default='', type=str,
-                        help='append name')
     parser.add_argument('-outfolder', '--outfolder', default='./', type=str,
                         help='Where to save things')
     return parser
