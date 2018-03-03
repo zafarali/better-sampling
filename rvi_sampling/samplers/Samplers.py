@@ -130,11 +130,9 @@ class ISSampler(Sampler):
     def solve(self, stochastic_process, mc_samples, verbose=False):
         results = ImportanceSamplingResults('ISSampler', stochastic_process.true_trajectory)
 
-        push_toward_argument = [0] if not self.soft else [-stochastic_process.prior.start, stochastic_process.prior.start]
+        proposal = self.proposal
+        proposal.set_rng(self.rng)
 
-        proposal = self.proposal(push_toward=push_toward_argument,
-                                 step_sizes=stochastic_process.step_sizes,
-                                 rng=self.rng)
         trajectories = []
         posterior_particles = []
         posterior_weights = []

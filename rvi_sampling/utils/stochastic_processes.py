@@ -20,6 +20,9 @@ def random_walk_arguments(parser):
 
     parser.add_argument('-width', '--rw_width', default=5, type=int,
                         help='width of the discrete uniform in the random walk')
+
+    parser.add_argument('-IS_proposal', '--IS_proposal', default='soft',
+                        help='proposal distribution to use in IS (soft, funnel)')
     return parser
 
 def create_rw(args, biased=False):

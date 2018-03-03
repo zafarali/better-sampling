@@ -10,6 +10,9 @@ class ProposalDistribution(object):
     def draw(self, x: object, time_left: object) -> object:
         raise NotImplementedError
 
+    def set_rng(self, rng):
+        self.rng = rng
+
 class MinimalProposal(ProposalDistribution):
     def __init__(self, push_toward, step_sizes, bias=0, seed=0, rng=None):
         logging.warning('This proposal is not tested.')
@@ -181,16 +184,19 @@ class FunnelProposal(ProposalDistribution):
         # assuming symmetric window
         steps_left = STEP_SIZE * (time_left)
 
-        if np.abs(w - self.push_toward[0]) > steps_left:
+        if np.abs(w - self.push_toward[0]) > steps_left \
+                or np.abs(w-self.push_toward[1]) > steps_left:
             # we are not near the window boundary
             # we now check how far, if based on the time available
             # we cannot ever move into the window, we push hard toward the window.
-            if np.sign(w) == -1 and self.push_toward[0] - w > steps_left:
+            if np.sign(w) == -1 and self.push_toward[0] - (w -1) > steps_left-1:
                 # too much in the negative direction
                 return np.array([1]), +1, np.log(1 - np.finfo(float).eps)
 
-            elif np.sign(w) == +1 and w - self.push_toward[1] > steps_left:
-                # too much in the positive direction so push in the negative
+            elif np.sign(w) == +1 and (w+1) - self.push_toward[1] > steps_left-1:
+                # we are in the positive area, if we took a step
+                # in the positive direction in the next time step
+                # would we still have enough steps to be in the window?
                 return np.array([0]), -1, np.log(1-np.finfo(float).eps)
 
         choices = np.array([[-STEP_SIZE], [STEP_SIZE]])

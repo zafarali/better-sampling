@@ -3,7 +3,7 @@ sys.path.append('..')
 import matplotlib.pyplot as plt
 import torch
 from rvi_sampling.distributions.proposal_distributions import SimonsProposal, SimonsSoftProposal, FunnelProposal
-from rvi_sampling.plotting import visualize_proposal, multi_quiver_plot
+from rvi_sampling.utils.plotting import visualize_proposal, multi_quiver_plot
 import argparse
 
 if __name__=='__main__':

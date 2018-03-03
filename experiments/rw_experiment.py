@@ -8,7 +8,7 @@ import os
 import multiprocessing
 import seaborn as sns
 from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler, RVISampler
-from rvi_sampling.distributions.proposal_distributions import SimonsSoftProposal
+from rvi_sampling.distributions.proposal_distributions import SimonsSoftProposal, FunnelProposal
 from rvi_sampling import utils
 from pg_methods.utils.baselines import MovingAverageBaseline
 from pg_methods.utils.policies import MultinomialPolicy
@@ -40,7 +40,13 @@ if __name__=='__main__':
     policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=args.learning_rate)
     baseline = MovingAverageBaseline(args.baseline_decay)
 
-    samplers = [ISSampler(SimonsSoftProposal, seed=args.sampler_seed),
+    push_toward = [-args.rw_width, args.rw_width]
+    if args.IS_proposal == 'soft':
+        proposal = SimonsSoftProposal(push_toward)
+    else:
+        proposal = FunnelProposal(push_toward)
+
+    samplers = [ISSampler(proposal, seed=args.sampler_seed),
                 ABCSampler(0,seed=args.sampler_seed),
                 MCSampler(seed=args.sampler_seed),
                 RVISampler(policy,
