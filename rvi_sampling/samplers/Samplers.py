@@ -1,5 +1,6 @@
 import numpy as np
 from ..results import SamplingResults, ImportanceSamplingResults
+from ..utils import diagnostics
 
 class Sampler(object):
     """
@@ -7,9 +8,20 @@ class Sampler(object):
     """
     def __init__(self, seed=0):
         self.rng = np.random.RandomState(seed)
+        self.diagnostic = None
     def solve(self, stochastic_process, mc_samples):
         raise NotImplementedError
 
+    def run_diagnostic(self, results, other_information=None, verbose=False):
+        if self.diagnostic is not None:
+            result = self.diagnostic(results, other_information)
+            if result == diagnostics.NO_RETURN:
+                pass
+            else:
+                if verbose: print(result)
+
+    def set_diagnostic(self, diagnostic):
+        self.diagnostic = diagnostic
 
 class ABCSampler(Sampler):
     _name = 'ABCSampler'
@@ -24,7 +36,7 @@ class ABCSampler(Sampler):
         super().__init__(seed)
         self.tolerance = tolerance
 
-    def solve(self, stochastic_process, mc_samples):
+    def solve(self, stochastic_process, mc_samples, verbose=False):
         results = SamplingResults('ABCSampler', stochastic_process.true_trajectory)
         trajectories = []
         all_trajectories = []
@@ -34,9 +46,18 @@ class ABCSampler(Sampler):
             trajectory = stochastic_process.simulate(self.rng)
             final_position = trajectory[-1]
             # only accept this trajectory if it ended close to the final
-            if np.sum(np.abs(observed_ending_location - final_position)) <= self.tolerance:
+
+            if self.tolerance == 'slacked':
+                allowable = np.arange(2*stochastic_process.prior.start, 2*(stochastic_process.prior.start + stochastic_process.prior.n_numbers), 2)
+                if np.sum(np.abs(observed_ending_location - final_position)) in allowable:
+                    trajectories.append(trajectory)
+            elif np.sum(np.abs(observed_ending_location - final_position)) <= self.tolerance:
                 trajectories.append(trajectory)
+
             all_trajectories.append(trajectory)
+
+            if self.diagnostic is not None:
+                self.run_diagnostic(SamplingResults.from_information(self._name, all_trajectories, trajectories), verbose)
 
         results.all_trajectories(all_trajectories)
         results.trajectories(trajectories)
@@ -57,7 +78,7 @@ class MCSampler(Sampler):
         step_log_probs = np.log(np.take(self.step_probs, steps_idx, axis=0)).sum()
         return steps_idx, steps_taken, step_log_probs
 
-    def solve(self, stochastic_process, mc_samples):
+    def solve(self, stochastic_process, mc_samples, verbose=False):
         results = SamplingResults('MCSampler', stochastic_process.true_trajectory)
         self.step_probs, self.step_sizes = stochastic_process.step_probs, stochastic_process.step_sizes
         trajectories = []
@@ -89,6 +110,10 @@ class MCSampler(Sampler):
 
             all_trajectories.append(np.vstack(list(reversed(trajectory_i))))
 
+            if self.diagnostic is not None:
+                self.run_diagnostic(SamplingResults.from_information(self._name, all_trajectories, trajectories),
+                                    verbose=verbose)
+
         results.all_trajectories(all_trajectories)
         results.trajectories(trajectories)
         results.create_posterior()
@@ -102,7 +127,7 @@ class ISSampler(Sampler):
         self.proposal = proposal
         self.soft = proposal._soft
 
-    def solve(self, stochastic_process, mc_samples):
+    def solve(self, stochastic_process, mc_samples, verbose=False):
         results = ImportanceSamplingResults('ISSampler', stochastic_process.true_trajectory)
 
         proposal = self.proposal
@@ -130,7 +155,6 @@ class ISSampler(Sampler):
                 # print('proposal_log_prob step:',log_prob_proposal_step)
                 x_t, path_log_prob, done, _ = stochastic_process.step(step_idx, reverse=False)
 
-
                 # accumulate log probs of the path and the proposal:
                 log_path_prob += path_log_prob
                 log_proposal_prob += log_prob_proposal_step
@@ -144,6 +168,14 @@ class ISSampler(Sampler):
                 posterior_particles.append(trajectories[-1][0])
                 posterior_weights.append(np.exp(likelihood_ratio))
             all_trajectories.append(np.vstack(list(reversed(trajectory_i))))
+
+            if self.diagnostic is not None:
+                self.run_diagnostic(ImportanceSamplingResults.from_information(self._name,
+                                                                     all_trajectories,
+                                                                     trajectories,
+                                                                     posterior_particles,
+                                                                     posterior_weights),
+                                    verbose)
 
         results.all_trajectories(all_trajectories)
         results.trajectories(trajectories)
