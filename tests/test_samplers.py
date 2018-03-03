@@ -1,5 +1,5 @@
 import numpy as np
-from rvi_sampling.StochasticProcess import RandomWalk
+from rvi_sampling.stochastic_processes.random_walk import RandomWalk
 from rvi_sampling.samplers import MCSampler, ISSampler, RVISampler, ABCSampler
 from rvi_sampling.distributions.analytic_posterior import TwoStepRandomWalkPosterior
 from rvi_sampling.distributions.prior_distributions import DiscreteUniform

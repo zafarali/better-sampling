@@ -73,7 +73,7 @@ def conduct_draws_nn(sp_, x, t, n_draws=100, feed_time=False):
 
 def conduct_draws(sp_, x, t, n_draws=100):
     """
-    Conducts draws from a regular (non-neural network) policy and takes the average
+    Conducts draws from a regular (non-neural ne twork) policy and takes the average
     :param sp_:
     :param x:
     :param t:

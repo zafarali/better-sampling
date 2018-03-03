@@ -1,8 +1,8 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from .plotting import plot_trajectory_time_evolution, plot_mean_trajectories
-
+from .utils.plotting import plot_trajectory_time_evolution, plot_mean_trajectories
+from .utils.stats_utils import empirical_distribution
 class SamplingResults(object):
     """
     An abstraction on the results obtained
@@ -150,6 +150,13 @@ class SamplingResults(object):
             return np.mean((posterior_weights*posterior_particles - expected_value)**2)
 
     def plot_distribution(self, histbin_range=None, ax=None, **kwargs):
+        """
+        Plots the distribution of the posterior
+        :param histbin_range:
+        :param ax:
+        :param kwargs:
+        :return:
+        """
         if ax is None:
             ax = plt.gca()
 
@@ -166,12 +173,40 @@ class SamplingResults(object):
         return ax
 
     def plot_trajectory_evolution(self, dimension=0, step=5, ax=None):
-        return plot_trajectory_time_evolution(self.trajectories(), dimension, step=step, ax=ax)
+        """
+        Plots the evolution of accepted trajectories over time
+        :param dimension:
+        :param step:
+        :param ax:
+        :return:
+        """
+        if type(dimension) is list:
+            for dim in dimension:
+                plot_trajectory_time_evolution(self.trajectories(), dim, step=step, ax=ax)
+        else:
+            return plot_trajectory_time_evolution(self.trajectories(), dimension, step=step, ax=ax)
 
     def plot_all_trajectory_evolution(self, dimension=0, step=20, ax=None):
-        return plot_trajectory_time_evolution(self.all_trajectories(), dimension, step=step, ax=ax)
+        """
+        Plots the evolution all trajectories over time
+        :param dimension:
+        :param step:
+        :param ax:
+        :return:
+        """
+        if type(dimension) is list:
+            for dim in dimension:
+                plot_trajectory_time_evolution(self.all_trajectories(), dim, step=step, ax=ax)
+        else:
+            return plot_trajectory_time_evolution(self.all_trajectories(), dimension, step=step, ax=ax)
 
     def plot_mean_trajectory(self, label=None, ax=None):
+        """
+        Plots the mean successful trajectory
+        :param label:
+        :param ax:
+        :return:
+        """
         trajectories = self.trajectories()
         ts = np.arange(len(trajectories[0]))
         if label is None:
@@ -180,6 +215,12 @@ class SamplingResults(object):
         return plot_mean_trajectories(trajectories, ts, self.true_trajectory, ax=ax)
 
     def plot_mean_all_trajectory(self, label=None, ax=None):
+        """
+        Plots the mean of all trajectories
+        :param label:
+        :param ax:
+        :return:
+        """
         trajectories = self.all_trajectories()
         ts = np.arange(len(trajectories[0]))
         if label is None:
@@ -188,6 +229,11 @@ class SamplingResults(object):
         return plot_mean_trajectories(trajectories, ts, self.true_trajectory, ax=ax)
 
     def save_results(self, path):
+        """
+        Saves results into a json file
+        :param path:
+        :return:
+        """
         results_dict = dict(sampler_name=self.sampler_name,
                             true_trajectory=self.true_trajectory.tolist(),
                             all_trejctories=[traj.tolist() for traj in self._all_trajectories],
@@ -200,15 +246,32 @@ class SamplingResults(object):
             json.dump(results_dict, f)
 
     def prop_success(self):
+        """
+        Calculates the proportion of successful trajectories
+        :return:
+        """
         return len(self.trajectories())/len(self.all_trajectories())
 
     def summary_statistics(self):
+        """
+        Returns all summary statistics that are calculatable
+        :return:
+        """
         return [self.expectation(), self.variance(), self.prop_success()]
 
     def summary_builder(self):
+        """
+        Returns a human readable summary of the statistics calculated.
+        :return:
+        """
         return 'Start Estimate: {:3g}, Variance: {:3g}, Prop Success: {:3g}'.format(self.expectation(), self.variance(), self.prop_success())
 
     def summary(self, extra=''):
+        """
+        Pretty print of the human readable summary
+        :param extra:
+        :return:
+        """
         template_string = '\n'
         template_string += '*' * 45
         template_string += '\nSampler: {}\n'.format(self.sampler_name)
@@ -220,16 +283,22 @@ class SamplingResults(object):
         return template_string
 
     def summary_title(self):
+        """
+        Summary for titling plots.
+        :return:
+        """
         return '{} Mean: {:3g} Var:{:3g}\nProp: {:3g}'.format(self.sampler_name, *self.summary_statistics())
 
     def empirical_distribution(self, histbin_range=None):
+        """
+        Returns an empirical distribution
+        :param histbin_range:
+        :return:
+        """
         _histbin_range = self._histbin_range if not histbin_range else histbin_range
-        hist_range = np.arange(-_histbin_range- 2, _histbin_range+2) + 0.5
 
-        probs, vals = np.histogram(self.posterior_particles(), bins=hist_range, density=True,
-                                   weights=self.posterior_weights())
-        estimated_dist = dict(zip(vals+0.5, probs))
-        return estimated_dist
+        return empirical_distribution(self.posterior_particles(),self. posterior_weights(), histbin_range=_histbin_range)
+
 
 class ImportanceSamplingResults(SamplingResults):
     _importance_sampled = True
@@ -247,9 +316,21 @@ class ImportanceSamplingResults(SamplingResults):
         return numerator/denominator
 
     def variance(self, weighted=True):
+        """
+        Variance of the posterior weighted by
+        importance sampled weights
+        :param weighted:
+        :return:
+        """
         return super().variance(weighted)
 
     def expectation(self, weighted=True):
+        """
+        Excpected value of the posterior weighted by
+        importance sampled weights
+        :param weighted:
+        :return:
+        """
         return super().expectation(weighted)
 
     def summary_builder(self):
@@ -265,6 +346,12 @@ class ImportanceSamplingResults(SamplingResults):
         return '{} Mean: {:3g} Var:{:3g}\nProp: {:3g} ESS: {:3g}'.format(self.sampler_name, *self.summary_statistics())
 
     def plot_posterior_weight_histogram(self, ax=None, **kwargs):
+        """
+        Plots the histogram of importance sampled weights
+        :param ax:
+        :param kwargs:
+        :return:
+        """
         if ax is None:
             f = plt.figure()
             ax = f.add_subplot(111)

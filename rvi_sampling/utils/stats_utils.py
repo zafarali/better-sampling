@@ -56,6 +56,33 @@ def bootstrap_data(particles, weights, hist_range, n_bootstraps, percentile=5):
     vals = (vals + 0.5)[:-1]
     return delta_bottom, delta_top, vals
 
+def empirical_distribution(particles, weights, histbin_range, return_numpy=False):
+    """
+    Calculates the estimated distribution from particles and weights
+    :param particles:
+    :param weights:
+    :param histbin_range:
+    :return:
+    """
+    hist_range = np.arange(-histbin_range- 2, histbin_range+2) + 0.5 # add 0.5 to move into put center of boxes in integers
+
+    probs, vals = np.histogram(particles, bins=hist_range, density=True,
+                               weights=weights)
+
+    if return_numpy:
+        return probs, (vals + 0.5)[:-1]
+
+    estimated_dist = dict(zip((vals + 0.5)[:-1], probs)) # add 0.5 to shift back
+    return estimated_dist
+
+
+def average_estimated_distributions(estimated_distributions):
+    n_estimated_distributions = len(estimated_distributions['prob_estimates'])
+    prob_estimates = np.stack(estimated_distributions['prob_estimates'])
+    avg_prob = np.mean(prob_estimates, axis=0)
+    stderr_prob = np.std(prob_estimates, axis=0)/np.sqrt(n_estimated_distributions)
+    return estimated_distributions['support'][0], avg_prob, stderr_prob
+
 
 if __name__ == '__main__':
     # bootstrap for calculating the confidence interval around the mean
