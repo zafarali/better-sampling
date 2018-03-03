@@ -36,7 +36,7 @@ def experimental_arguments(parser):
     parser.add_argument('-s', '--samples', default=1000, type=int, help='number of mc steps')
     parser.add_argument('-samseed', '--sampler_seed', default=0, type=int, help='The seed to use for the samplers')
 
-    parser.add_argument('-n_cpus', '--n_cpus', default=3, type=float,
+    parser.add_argument('-n_cpus', '--n_cpus', default=3, type=int,
                         help='CPUs to use when doing the work')
     parser.add_argument('-notb', '--no_tensorboard', action='store_true',
                         help='Disables tensorboard')
