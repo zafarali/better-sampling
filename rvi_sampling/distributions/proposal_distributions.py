@@ -74,54 +74,6 @@ class SimonsProposal(ProposalDistribution):
                   'RW step distribution is malformed.'
 
 
-    def draw(self, w, time_left):
-        """
-        :param w: the current position
-        :param time_left: the number of time steps until we reach the start
-        :return:
-        """
-        # w is kept for historical reasons, it is actually x
-        #     print('pos:',w)
-        #     print('toward:',push_toward)
-
-        # We want to push slightly, such that the average step is d/T, where d is distance to
-        # the acceptable position, and T is the number of generations left.
-        bias = np.array([[0]])
-        STEP_SIZE = 1
-
-        sign = w / np.abs(w)
-
-        if np.abs(w) > np.abs(self.push_toward):
-            bias = (sign * self.push_toward - w) * 1. / time_left
-
-        bias = bias[0][0]
-        # with probability p, pick uniform sampling; with probability 1-p, pick a step in the bias direction.
-        # expected bias is (1-p) * step_size
-        if np.abs(bias) > STEP_SIZE:
-            # print("will fail, might as well stop now.")
-            random_step = np.array([2*self.rng.randint(0,2)-1])
-            if random_step == -1:
-                index = 0
-            else:
-                index = 1
-            return np.array([index]), random_step, np.log(1/2)
-
-        p = 1 - np.abs(bias) / STEP_SIZE
-        bias_prob_term = np.array([0, 0])
-        if bias > 0:
-            bias_prob_term[1] = 1
-        if bias < 0:
-            bias_prob_term[0] = 1
-        choices = np.array([[-STEP_SIZE], [STEP_SIZE]])
-
-        probs = np.array([p / 2., p / 2.]) + (1 - p) * bias_prob_term
-        # print(probs)
-        choice_index = np.array([self.rng.multinomial(1, probs, 1).argmax()])
-        choice_step = choices[choice_index]
-        choice_prob = probs[choice_index]
-
-        return choice_index, choice_step, np.log(choice_prob)[0]
-
 class SimonsSoftProposal(SimonsProposal):
     _soft = True
     def __init__(self, push_toward=[-5, 5], step_sizes=None, seed=0, rng=None):
@@ -214,3 +166,45 @@ class RandomProposal(ProposalDistribution):
             index = 1
         return np.array([index]), random_step, np.log(1 / 2)
 
+class FunnelProposal(ProposalDistribution):
+    _soft = True
+    def __init__(self, push_toward=[-5, 5], step_sizes=None, seed=0, rng=None):
+        super().__init__(seed)
+        self.push_toward = push_toward
+        if rng:
+            self.rng = rng
+
+    def draw(self, w, time_left):
+
+        STEP_SIZE = 1
+        # print(w)
+        w = w[0][0]
+        # print(w)
+
+        # assuming symmetric window
+        steps_left = STEP_SIZE * (time_left)
+
+        if np.abs(w - self.push_toward[0]) > steps_left \
+                or np.abs(w-self.push_toward[1]) > steps_left:
+            # we are not near the window boundary
+            # we now check how far, if based on the time available
+            # we cannot ever move into the window, we push hard toward the window.
+            if np.sign(w) == -1 and self.push_toward[0] - (w -1) > steps_left-1:
+                # too much in the negative direction
+                return np.array([1]), +1, np.log(1 - np.finfo(float).eps)
+
+            elif np.sign(w) == +1 and (w+1) - self.push_toward[1] > steps_left-1:
+                # we are in the positive area, if we took a step
+                # in the positive direction in the next time step
+                # would we still have enough steps to be in the window?
+                return np.array([0]), -1, np.log(1-np.finfo(float).eps)
+
+        choices = np.array([[-STEP_SIZE], [STEP_SIZE]])
+
+        probs = np.array([1 / 2., 1 / 2.])
+
+        choice_index = np.array([self.rng.multinomial(1, probs, 1).argmax()])
+        choice_step = choices[choice_index]
+        choice_prob = probs[choice_index]
+
+        return choice_index, choice_step, np.log(choice_prob)[0]
