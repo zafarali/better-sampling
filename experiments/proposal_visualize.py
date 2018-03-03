@@ -2,8 +2,8 @@ import sys
 sys.path.append('..')
 import matplotlib.pyplot as plt
 import torch
-from rvi_sampling.distributions.proposal_distributions import SimonsProposal, SimonsSoftProposal
-from rvi_sampling.plotting import visualize_proposal, multi_quiver_plot
+from rvi_sampling.distributions.proposal_distributions import SimonsProposal, SimonsSoftProposal, FunnelProposal
+from rvi_sampling.utils.plotting import visualize_proposal, multi_quiver_plot
 import argparse
 
 if __name__=='__main__':
@@ -12,7 +12,9 @@ if __name__=='__main__':
     parser.add_argument('-o', '--other', type=str, help='other proposal you want to visualize')
     args = parser.parse_args()
 
-    if args.other == 'soft':
+    if args.other == 'funnel':
+        sp1 = FunnelProposal()
+    elif args.other == 'soft':
         sp1 = SimonsSoftProposal()
     else:
         sp1 = SimonsProposal()
