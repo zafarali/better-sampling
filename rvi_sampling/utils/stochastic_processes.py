@@ -3,7 +3,8 @@ Utility script to instantiate the different stochastic procceses
 """
 import numpy as np
 from ..stochastic_processes.random_walk import RandomWalk, DiscreteUniform, RWParameters
-from ..distributions.analytic_posterior import TwoStepRandomWalkPosterior
+from ..distributions.analytic_posterior import TwoStepRandomWalkPosterior, MultiWindowTwoStepRandomwWalkPosterior
+from ..distributions.prior_distributions import MultiWindowDiscreteUniform
 #### RANDOM WALK
 
 UNBIASED_RW = RWParameters([[-1], [+1]], np.ones(2)/2, 1)
@@ -20,9 +21,6 @@ def random_walk_arguments(parser):
 
     parser.add_argument('-width', '--rw_width', default=5, type=int,
                         help='width of the discrete uniform in the random walk')
-
-    parser.add_argument('-IS_proposal', '--IS_proposal', default='soft',
-                        help='proposal distribution to use in IS (soft, funnel)')
     return parser
 
 def create_rw(args, biased=False):
@@ -57,3 +55,28 @@ def create_rw(args, biased=False):
         analytic = None
     return rw, analytic
 
+def create_rw_two_window(args):
+    """
+    Creates an unbiased 1D random walk
+    with two dinwos
+    :param args:
+    :return:
+    """
+
+    T = args.rw_time
+    DISC_UNIFORM_WIDTH = args.rw_width
+    WINDOWS = args.windows
+    # first simulate a random walk
+
+    POSSIBLE_STEPS, STEP_PROBS, DIMENSIONS = UNBIASED_RW
+
+    rw = RandomWalk(DIMENSIONS,
+                    STEP_PROBS,
+                    POSSIBLE_STEPS,
+                    n_agents=1,
+                    T=T,
+                    prior_distribution=MultiWindowDiscreteUniform(DIMENSIONS, WINDOWS, seed=args.rw_seed+2),
+                    seed=args.rw_seed+1)
+    rw.reset()
+    analytic = MultiWindowTwoStepRandomwWalkPosterior(WINDOWS, 0.5, T)
+    return rw, analytic

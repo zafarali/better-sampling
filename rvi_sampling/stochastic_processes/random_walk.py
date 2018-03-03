@@ -45,6 +45,7 @@ class RandomWalk(StochasticProcess):
         self.prior = prior_distribution
         self.new_task()
 
+    
     def simulate(self, rng=None):
         """
         This simulates a trajectory and stores it in the memory
@@ -53,7 +54,7 @@ class RandomWalk(StochasticProcess):
             rng = self.rng
         x0 = self.prior.rvs()
         # T steps is T-1 transitions
-        steps_idx = rng.multinomial(1, self.step_probs, self.T - 1).argmax(axis=1)
+        steps_idx = rng.multinomial(1, self.step_probs, self.T-1).argmax(axis=1)
         steps_taken = np.take(self.step_sizes, steps_idx, axis=0)
         steps_taken = np.vstack([x0, steps_taken])
         return steps_taken.cumsum(axis=0)
@@ -63,7 +64,7 @@ class RandomWalk(StochasticProcess):
         This will reset the locations of all the agents who are currently interacting with
         the stochastic process
         """
-        self.transitions_left = self.T - 1
+        self.transitions_left = self.T-1
         self.x_agent = np.repeat(self.xT.reshape(1, self.dimensions), self.n_agents, axis=0)
 
     def reset(self):
@@ -104,3 +105,4 @@ class RandomWalk(StochasticProcess):
             step_log_probs += np.log(self.prior.pdf(self.x_agent))
 
         return (self.x_agent, step_log_probs.reshape(-1, 1), self.transitions_left == 0, {})
+
