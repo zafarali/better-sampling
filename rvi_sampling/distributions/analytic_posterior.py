@@ -43,6 +43,7 @@ class TwoStepRandomWalkPosterior(AnalyticPosterior):
         self.c = c
         self.p = p
         self.T = T-1 # T steps is T-1 transitions
+        self.support = np.arange(-self.c, self.c+1)
 
     def pdf(self, x, d):
         """
