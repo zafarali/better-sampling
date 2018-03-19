@@ -38,13 +38,12 @@ class StochasticProcess(gym.Env):
         raise NotImplementedError
 
 
-
 class PyTorchWrap(object):
     _pytorch = True
     _vectorized = True
     def __init__(self, stochastic_process, use_cuda=False):
         self.stochastic_process = stochastic_process
-        self.step_probs = stochastic_process.step_probs
+        # self.step_probs = stochastic_process.step_probs or stochastic_process.transition_prob
         self.dimensions = stochastic_process.dimensions
         self.step_sizes = stochastic_process.step_sizes
         self.x0 = stochastic_process.x0
@@ -100,3 +99,8 @@ class PyTorchWrap(object):
         log_probs = torch.from_numpy(log_probs).float().view(self.n_agents, 1)
         done = torch.IntTensor([[done] * self.n_agents])
         return (position, log_probs, done, info)
+
+
+class StochasticProcessOverError(TimeoutError):
+    def __init__(self, text='Stochastic Process is complete, you must reset()', *args, **kwargs):
+        super().__init__(text, *args, **kwargs)

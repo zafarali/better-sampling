@@ -3,10 +3,12 @@ Utility script to instantiate the different stochastic procceses
 """
 import numpy as np
 from ..stochastic_processes.random_walk import RandomWalk, DiscreteUniform, RWParameters
+from ..stochastic_processes.SIR import SIR, SIRParameters
 from ..distributions.analytic_posterior import TwoStepRandomWalkPosterior, MultiWindowTwoStepRandomwWalkPosterior
 from ..distributions.prior_distributions import MultiWindowDiscreteUniform
-#### RANDOM WALK
+from ..distributions.arbitriary_priors import ArbitriaryPrior
 
+#### RANDOM WALK
 UNBIASED_RW = RWParameters([[-1], [+1]], np.ones(2)/2, 1)
 BIASED_RW = RWParameters([[-1], [+1]], [3/4, 1/4], 1)
 
@@ -80,3 +82,28 @@ def create_rw_two_window(args):
     rw.reset()
     analytic = MultiWindowTwoStepRandomwWalkPosterior(WINDOWS, 0.5, T)
     return rw, analytic
+
+### SIR
+DEFAULT_SIR = SIRParameters(population_size=100, infection_rate=1, recovery_rate=0.3, T=1500, delta_t=0.01)
+
+def create_SIR(args):
+    """
+
+    :param args:
+    :return:
+    """
+    prior = ArbitriaryPrior(np.array([[98, 2]]))
+
+    sir = SIR(DEFAULT_SIR.population_size,
+              DEFAULT_SIR.infection_rate,
+              DEFAULT_SIR.recovery_rate,
+              prior,
+              DEFAULT_SIR.T,
+              DEFAULT_SIR.delta_t,
+              seed=args.sir_seed)
+
+
+    sir.reset()
+
+    return sir, None
+
