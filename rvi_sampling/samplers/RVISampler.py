@@ -1,9 +1,9 @@
-import pg_methods.utils.gradients as gradients
 from torch.nn.utils import clip_grad_norm
 import torch
 from torch.autograd import Variable
-from pg_methods.utils.data import MultiTrajectory
-from pg_methods.utils.objectives import PolicyGradientObjective
+from pg_methods.data import MultiTrajectory
+from pg_methods.objectives import PolicyGradientObjective
+import pg_methods.gradients as gradients
 import numpy as np
 from .Samplers import Sampler
 from ..results import RLSamplingResults
