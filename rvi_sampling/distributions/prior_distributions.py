@@ -10,7 +10,23 @@ def __discrete_unif_pdf(x, start, n_numbers):
 
 _discrete_unif_pdf = np.vectorize(__discrete_unif_pdf)
 
-class DiscreteUniform(object):
+class AbstractPriorDistribution(object):
+    support = None
+    def __init__(self, seed):
+        self.rng = np.random.RandomState(seed)
+
+    def rvs(self):
+        """Draw a random variable"""
+        raise NotImplementedError
+
+    def draw(self):
+        return self.rvs()
+
+    def pdf(self, x):
+        """The probability of observing x"""
+        raise NotImplementedError
+
+class DiscreteUniform(AbstractPriorDistribution):
     """
     A discrete uniform distribution mimic-ing some of
     scipy.stats.uniform methods.
@@ -22,10 +38,10 @@ class DiscreteUniform(object):
         :param start: The start point of the range of allowable numbers
         :param n_numbers: The number of allowable numbers
         """
+        super().__init__(seed)
         self.dimensions = dimensions
         self.start = start
         self.n_numbers = n_numbers
-        self.rng = np.random.RandomState(seed)
         self.support = np.arange(start, start+n_numbers+1)
 
 
@@ -43,9 +59,9 @@ class DiscreteUniform(object):
             return probs.prod(axis=1)
 
 
-class MultiWindowDiscreteUniform(object):
+class MultiWindowDiscreteUniform(AbstractPriorDistribution):
     def __init__(self, dimensions, window_ranges=[(-5, 5)], seed=2017):
-        self.rng = np.random.RandomState(seed)
+        super().__init__(seed)
         self.dimensions = dimensions
         self.window_ranges = window_ranges
         self.support = []
