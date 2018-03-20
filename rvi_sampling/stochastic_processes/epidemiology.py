@@ -83,8 +83,10 @@ class SIR(StochasticProcess):
         # no change:
 
         # prob_no_change = 1 - prob_new_infection - prob_new_susceptible - prob_resusceptible - prob_recovery
-        prob_no_change = 1 - prob_new_infection - prob_recovery
 
+        good_indices = prob_new_infection + prob_recovery < 1
+        prob_no_change = np.zeros(inferred_n_agents)
+        prob_no_change[good_indices] = 1 - prob_new_infection[good_indices] - prob_recovery[good_indices]
 
         # all_probs = np.stack((prob_new_infection, prob_recovery, prob_resusceptible, prob_new_susceptible, prob_no_change))
         all_probs = np.stack((prob_new_infection, prob_recovery, prob_no_change))
@@ -92,8 +94,13 @@ class SIR(StochasticProcess):
         # will occur.
         all_probs = all_probs.reshape(inferred_n_agents, -1)
 
-        assert np.all(all_probs>=0), 'Found probabilities that were negative! {}. The state was {}'.format(all_probs, state_t)
-        return all_probs / all_probs.sum(axis=1).reshape(-1, 1)
+        all_probs = all_probs / all_probs.sum(axis=1).reshape(-1, 1)
+
+        # all_probs = np.exp(all_probs) / np.exp(all_probs).sum(axis=1).reshape(-1, 1)
+
+        # assert np.all(all_probs>=0), 'Found probabilities that were negative! {}. The state was {}'.format(all_probs, state_t)
+
+        return all_probs
 
 
     def simulate(self, rng=None):
@@ -163,15 +170,18 @@ class SIR(StochasticProcess):
         # note that here we have to do some manipulation with the transition probs
         # since each agent has a custom transition prob
 
-        transition_probs = self.transition_prob(self.x_agent)
-
-        step_probs = np.take(transition_probs,
-                                    actions.ravel(), axis=1).reshape(self.n_agents, -1)
-
-        step_log_probs = np.log(step_probs)
         reversal_param = -1 if reverse else +1
         self.x_agent = self.x_agent + (steps_taken * reversal_param)
         self.transitions_left -=1
+
+
+        # we find the probability of going from the x_t'th to x_t+1st step
+        # if we had done the forward process instead.
+        transition_probs = self.transition_prob(self.x_agent)
+
+        step_probs = transition_probs[np.arange(len(transition_probs)), actions]
+        step_log_probs = np.log(step_probs)
+
         if self.transitions_left == 0:
             # add the "final reward"
             step_log_probs += np.log(self.prior.pdf(self.x_agent))
@@ -180,18 +190,20 @@ class SIR(StochasticProcess):
 
 
         # TODO: technically we should return individual "dones" for each agent here
-        if np.any(self.x_agent < 0) or np.any(self.x_agent > self.population_size):
+        if np.any(self.x_agent < 0) or np.any(np.sum(self.x_agent, axis=1) > self.population_size):
             done = True
 
             # send a negative reinforcement signal for paths that should not occur.
             step_log_probs[np.any(self.x_agent < 0, axis=1)] = -np.inf
-            step_log_probs[np.any(self.x_agent > self.population_size, axis=1)] = -np.inf
+            step_log_probs[np.any(np.sum(self.x_agent, axis=1) > self.population_size, axis=0)] = -np.inf
+
+            # print('Ended early. step_log_probs: {} , {}, {}'.format(step_log_probs, , self.x_agent))
 
         elif self.transitions_left == 0:
+            # print('Reached the end! {}'.format(self.x_agent))
             done = True
         else:
             done = False
-
 
         if np.any(np.isnan(step_log_probs)): print(step_log_probs, step_probs, transition_probs, self.x_agent, actions, steps_taken)
         return (self.x_agent, step_log_probs, done, {})

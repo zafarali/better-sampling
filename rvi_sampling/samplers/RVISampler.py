@@ -89,8 +89,11 @@ class RVISampler(Sampler):
 
                 reward = torch.zeros_like(reward_)
                 reward.copy_(reward_)
+
                 reward[reward <= -np.inf] = -100000. # throw away infinite negative rewards
-                # if t==0: print(reward)
+                # however, scale them by how long the trajectory has gone on for
+                # (i.e. longer trajectories should get a "less infinite negative reward". this is clearly a hack
+                # but we may need to find another way to do this?
 
                 # probability of the path gets updated:
                 log_path_prob += path_log_prob.numpy().reshape(-1, 1)
@@ -143,7 +146,12 @@ class RVISampler(Sampler):
             rewards_per_episode.append(reward_summary)
             if self._training: loss_per_episode.append(loss.cpu().data[0])
             if i % 100 == 0 and verbose and self._training:
-                print('MC Sample {}, loss {:3g}, episode_reward {:3g}, trajectory_length {}, successful trajs {}'.format(i, loss.cpu().data[0], reward_summary, len(trajectory_i), len(trajectories)))
+                print('MC Sample {}, loss {:3g}, episode_reward {:3g}, '
+                      'trajectory_length {}, successful trajs {}, '
+                      'path_log_prob: {}, proposal_log_prob: {}'.format(i, loss.cpu().data[0],
+                                                                        reward_summary, len(trajectory_i),
+                                                                        len(trajectories), np.mean(log_path_prob),
+                                                                        np.mean(log_proposal_prob)))
 
 
             if feed_time:
@@ -157,9 +165,9 @@ class RVISampler(Sampler):
             likelihood_ratios = log_path_prob - log_proposal_prob
             selected_trajectories = np.where(log_path_prob > -np.inf)
             for traj_idx in selected_trajectories[0]:
-                    trajectories.append(trajectory_i[traj_idx, ::-1, :stochastic_process.dimensions])
-                    posterior_particles.append(trajectories[-1][0])
-                    posterior_weights.append(np.exp(likelihood_ratios[traj_idx]))
+                trajectories.append(trajectory_i[traj_idx, ::-1, :stochastic_process.dimensions])
+                posterior_particles.append(trajectories[-1][0])
+                posterior_weights.append(np.exp(likelihood_ratios[traj_idx]))
             for m in range(trajectory_i.shape[0]):
                 all_trajectories.append(trajectory_i[m, ::-1, :stochastic_process.dimensions])
 

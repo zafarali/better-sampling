@@ -86,7 +86,7 @@ def create_rw_two_window(args):
 ### SIR
 DEFAULT_SIR = SIRParameters(population_size=100, infection_rate=1, recovery_rate=0.3, T=1500, delta_t=0.01)
 
-def create_SIR(args, sir_params=DEFAULT_SIR, prior=ArbitriaryPrior(np.array([[98, 2]]))):
+def create_SIR(args, sir_params=DEFAULT_SIR, prior=ArbitriaryPrior(np.array([[98, 2]])), n_agents=1):
     """
 
     :param args:
@@ -99,7 +99,8 @@ def create_SIR(args, sir_params=DEFAULT_SIR, prior=ArbitriaryPrior(np.array([[98
               prior,
               sir_params.T,
               sir_params.delta_t,
-              seed=args.sir_seed)
+              seed=args.sir_seed,
+              n_agents=n_agents)
 
 
     sir.reset()
