@@ -82,7 +82,7 @@ class RVISampler(Sampler):
                 assert len(x_tm1.size()) == 2
                 action,  log_prob_action = self.policy(x_tm1)
                 # print('proposal_log_prob step:',log_prob_proposal_step)
-                x_t, path_log_prob, done, _ = stochastic_process.step(action, reverse=False)
+                x_t, path_log_prob, done, _ = stochastic_process.step(action, reverse=True)
 
 
                 reward_ = path_log_prob.float().view(-1,1) - log_prob_action.data.float().view(-1, 1)
@@ -143,14 +143,14 @@ class RVISampler(Sampler):
             rewards_per_episode.append(reward_summary)
             if self._training: loss_per_episode.append(loss.cpu().data[0])
             if i % 100 == 0 and verbose and self._training:
-                print('MC Sample {}, loss {:3g}, episode_reward {:3g}, successful trajs {}'.format(i, loss.cpu().data[0], reward_summary, len(trajectories)))
+                print('MC Sample {}, loss {:3g}, episode_reward {:3g}, trajectory_length {}, successful trajs {}'.format(i, loss.cpu().data[0], reward_summary, len(trajectory_i), len(trajectories)))
 
 
             if feed_time:
-                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T,
+                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, len(trajectory_i),
                                                                x_t.size()[-1]-1)
             else:
-                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T,
+                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, len(trajectory_i),
                                                                x_t.size()[-1])
 
             # select paths for storage

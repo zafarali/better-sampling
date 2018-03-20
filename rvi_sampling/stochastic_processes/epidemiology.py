@@ -91,6 +91,8 @@ class SIR(StochasticProcess):
         # normalization here. If these do not sum to 1, then somewhere down the line an error
         # will occur.
         all_probs = all_probs.reshape(inferred_n_agents, -1)
+
+        assert np.all(all_probs>=0), 'Found probabilities that were negative! {}. The state was {}'.format(all_probs, state_t)
         return all_probs / all_probs.sum(axis=1).reshape(-1, 1)
 
 
@@ -162,7 +164,7 @@ class SIR(StochasticProcess):
         # since each agent has a custom transition prob
 
         transition_probs = self.transition_prob(self.x_agent)
-        assert np.all(transition_probs>=0)
+
         step_probs = np.take(transition_probs,
                                     actions.ravel(), axis=1).reshape(self.n_agents, -1)
 
@@ -172,11 +174,25 @@ class SIR(StochasticProcess):
         self.transitions_left -=1
         if self.transitions_left == 0:
             # add the "final reward"
-            print('adding the log prob of final!!')
             step_log_probs += np.log(self.prior.pdf(self.x_agent))
 
-        # TODO: we can also probably end the trajectory early
-        # if we go over or under the population size.
+        step_log_probs = step_log_probs.reshape(-1, 1)
+
+
+        # TODO: technically we should return individual "dones" for each agent here
+        if np.any(self.x_agent < 0) or np.any(self.x_agent > self.population_size):
+            done = True
+
+            # send a negative reinforcement signal for paths that should not occur.
+            step_log_probs[np.any(self.x_agent < 0, axis=1)] = -np.inf
+            step_log_probs[np.any(self.x_agent > self.population_size, axis=1)] = -np.inf
+
+        elif self.transitions_left == 0:
+            done = True
+        else:
+            done = False
+
+
         if np.any(np.isnan(step_log_probs)): print(step_log_probs, step_probs, transition_probs, self.x_agent, actions, steps_taken)
-        return (self.x_agent, step_log_probs.reshape(-1, 1), self.transitions_left == 0, {})
+        return (self.x_agent, step_log_probs, done, {})
 
