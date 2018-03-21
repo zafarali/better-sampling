@@ -81,6 +81,7 @@ class RVISampler(Sampler):
                 # this is p(w_{t} | w_{t+1})
                 assert len(x_tm1.size()) == 2
                 action,  log_prob_action = self.policy(x_tm1)
+                # print('Action taken: {}'.format(action))
                 # print('proposal_log_prob step:',log_prob_proposal_step)
                 x_t, path_log_prob, done, _ = stochastic_process.step(action, reverse=True)
 
@@ -91,6 +92,7 @@ class RVISampler(Sampler):
                 reward.copy_(reward_)
 
                 reward[reward <= -np.inf] = -100000. # throw away infinite negative rewards
+                # print(path_log_prob[0,0], log_prob_action.data[0], reward[0,0])
                 # however, scale them by how long the trajectory has gone on for
                 # (i.e. longer trajectories should get a "less infinite negative reward". this is clearly a hack
                 # but we may need to find another way to do this?
@@ -125,7 +127,7 @@ class RVISampler(Sampler):
 
             # update the proposal distribution
             if self._training:
-                returns = gradients.calculate_returns(policy_gradient_trajectory_info.rewards, self.gamma, None)
+                returns = gradients.calculate_returns(policy_gradient_trajectory_info.rewards, self.gamma, policy_gradient_trajectory_info.masks)
                 advantages = returns - policy_gradient_trajectory_info.values
                 if self.baseline is not None:
                     self.baseline.update_baseline(policy_gradient_trajectory_info, returns)

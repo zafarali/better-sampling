@@ -182,26 +182,31 @@ class SIR(StochasticProcess):
         step_probs = transition_probs[np.arange(len(transition_probs)), actions]
         step_log_probs = np.log(step_probs)
 
-        if self.transitions_left == 0:
-            # add the "final reward"
-            step_log_probs += np.log(self.prior.pdf(self.x_agent))
-
         step_log_probs = step_log_probs.reshape(-1, 1)
+
+        # do not put this if conditional into the one after this because
+        # it will not run if the agent is out of scope.
+        if self.transitions_left == 0:
+            step_log_probs += np.log(self.prior.pdf(self.x_agent)).reshape(-1, 1)
 
 
         # TODO: technically we should return individual "dones" for each agent here
         if np.any(self.x_agent < 0) or np.any(np.sum(self.x_agent, axis=1) > self.population_size):
-            done = True
+            # done = False
 
             # send a negative reinforcement signal for paths that should not occur.
             step_log_probs[np.any(self.x_agent < 0, axis=1)] = -np.inf
             step_log_probs[np.any(np.sum(self.x_agent, axis=1) > self.population_size, axis=0)] = -np.inf
 
-            # print('Ended early. step_log_probs: {} , {}, {}'.format(step_log_probs, , self.x_agent))
+            # reverse this action backward so that we do not allow the agent to go there
+            # we just let the agent "try again":
+            self.x_agent = self.x_agent + (steps_taken * reversal_param * -1)
 
-        elif self.transitions_left == 0:
-            # print('Reached the end! {}'.format(self.x_agent))
+        if self.transitions_left == 0:
             done = True
+            if not np.isinf(step_log_probs):
+                # print('SUCCESS AT END! {} {}'.format(self.x_agent, step_log_probs))
+                pass
         else:
             done = False
 
