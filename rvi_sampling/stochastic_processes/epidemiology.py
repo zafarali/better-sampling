@@ -167,9 +167,6 @@ class SIR(StochasticProcess):
 
         steps_taken = np.take(self.step_sizes, actions.ravel(), axis=0)
 
-        # note that here we have to do some manipulation with the transition probs
-        # since each agent has a custom transition prob
-
         reversal_param = -1 if reverse else +1
         self.x_agent = self.x_agent + (steps_taken * reversal_param)
         self.transitions_left -=1
@@ -179,6 +176,8 @@ class SIR(StochasticProcess):
         # if we had done the forward process instead.
         transition_probs = self.transition_prob(self.x_agent)
 
+        # note that here we have to do some manipulation with the transition probs
+        # since each agent has a custom transition prob
         step_probs = transition_probs[np.arange(len(transition_probs)), actions]
         step_log_probs = np.log(step_probs)
 

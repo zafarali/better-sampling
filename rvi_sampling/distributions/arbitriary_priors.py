@@ -24,7 +24,7 @@ class ArbitriaryPrior(AbstractPriorDistribution):
             assert len(starting_states) == len(state_probabilities)
             self.probs = state_probabilities
 
-        assert np.sum(self.probs) == 1, 'probabilities must sum to 1'
+        assert np.allclose(np.sum(self.probs), 1.0), 'probabilities must sum to 1'
 
         self.dimensions = starting_states[0].shape[0]
 
