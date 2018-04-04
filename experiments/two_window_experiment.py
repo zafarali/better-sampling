@@ -73,7 +73,10 @@ if __name__=='__main__':
 
 
     pool = multiprocessing.Pool(args.n_cpus)
-    solver_arguments = [(sampler, utils.stochastic_processes.create_rw_two_window(args)[0], args.samples) for sampler in samplers]
+    solver_arguments = [(sampler,
+                         utils.stochastic_processes.create_rw_two_window(args, n_agents=args.n_agents if sampler._name == 'RVISampler' else 1)[0],
+                         args.samples * args.n_agents if sampler._name != 'RVISampler' else args.samples) for sampler in samplers]
+                         # args.samples) for sampler in samplers]
 
     sampler_results = pool.map(utils.multiprocessing_tools.run_sampler, solver_arguments)
     utils.analysis.analyze_samplers_rw(sampler_results, args, folder_name, rw, policy=policy, analytic=analytic)
