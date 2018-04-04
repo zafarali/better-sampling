@@ -101,7 +101,7 @@ class RandomWalk(StochasticProcess):
         if self.transitions_left == 0:
             # if there are no more transitions left, also add the "final reward"
             # to the step_log_probs
-            step_log_probs += np.log(self.prior.pdf(self.x_agent))
+            step_log_probs += np.log(self.prior.pdf(self.x_agent).reshape(-1, 1))
 
         return (self.x_agent, step_log_probs.reshape(-1, 1), self.transitions_left == 0, {})
 

@@ -10,10 +10,10 @@ import seaborn as sns
 from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler, RVISampler
 from rvi_sampling.distributions.proposal_distributions import SimonsSoftProposal, FunnelProposal
 from rvi_sampling import utils
-from pg_methods.utils.baselines import MovingAverageBaseline
-from pg_methods.utils.policies import MultinomialPolicy
-from pg_methods.utils.networks import MLP_factory
-from pg_methods.utils.objectives import PolicyGradientObjective
+from pg_methods.baselines import MovingAverageBaseline
+from pg_methods.policies import MultinomialPolicy
+from pg_methods.networks import MLP_factory
+from pg_methods.objectives import PolicyGradientObjective
 
 DIMENSIONS = 1
 OUTPUT_SIZE = 2

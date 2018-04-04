@@ -91,7 +91,7 @@ class RVISampler(Sampler):
                 reward = torch.zeros_like(reward_)
                 reward.copy_(reward_)
 
-                reward[reward <= -np.inf] = -1000. # throw away infinite negative rewards
+                reward[reward <= -np.inf] = -10. # throw away infinite negative rewards
                 # print(path_log_prob[0,0], log_prob_action.data[0], reward[0,0])
                 # however, scale them by how long the trajectory has gone on for
                 # (i.e. longer trajectories should get a "less infinite negative reward". this is clearly a hack
