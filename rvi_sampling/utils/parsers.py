@@ -27,6 +27,8 @@ def rvi_arguments(parser):
     parser.add_argument('-gamma', '--gamma', default=1, type=float, help='discount factor')
     parser.add_argument('-rewardclip', '--reward_clip', default=-1000, type=float, help='The value to clip negative '
                                                                                         'infinite rewards to')
+    parser.add_argument('-nagents', '--n_agents', default=1, type=int,
+                        help='Number of agents to use')
     return parser
 
 def experimental_arguments(parser):
@@ -44,8 +46,6 @@ def experimental_arguments(parser):
                         help='Disables tensorboard')
     parser.add_argument('-name', '--name', default='', type=str,
                         help='append name')
-    parser.add_argument('-nagents', '--n_agents', default=1, type=int,
-                        help='Number of agents to use')
     parser.add_argument('-IS_proposal', '--IS_proposal', default='funnel', type=str,
                         help='the importance sampling distribution to use (funnel, soft)')
     parser.add_argument('-outfolder', '--outfolder', default='./', type=str,
