@@ -180,8 +180,8 @@ def create_diagnostic(sampler_name, args, folder_name, kl_function=None):
     :param kl_function: The KL divergence function to use
     :return:
     """
-    diagnostics = [ProportionSuccessDiagnostic(5)]
-    if kl_function is not None: diagnostics += [KLDivergenceDiagnostic(kl_function, args.rw_width, 5)]
+    diagnostics = [ProportionSuccessDiagnostic(2)]
+    if kl_function is not None: diagnostics += [KLDivergenceDiagnostic(kl_function, args.rw_width, 2)]
 
     if args.no_tensorboard:
         diagnostic_handler = FileSaverHandler(diagnostics, os.path.join(folder_name), sampler_name)
