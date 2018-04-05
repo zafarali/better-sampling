@@ -66,7 +66,7 @@ def main(args):
         SCRIPT += '\nwait' # wait until all replicates are over so we can aggregate all their information
         SCRIPT += '\npython aggregator.py -f {} --histogram &'.format(location_of_experiment)
         SCRIPT += '\npython KL_summarizer.py -f {} -of {} &'.format(location_of_experiment, location_of_experiment)
-        counter += 2
+        # counter += 2 # these should not count in the runner queue...
 
     SCRIPT += '\nwait' # wait until all tasks are over so we can aggregate all their information
     SCRIPT += '\npython KL_summarizer.py -f {} -of {}'.format(args.out, args.out)
