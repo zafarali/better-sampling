@@ -99,7 +99,7 @@ class MCSampler(Sampler):
                 # draw a reverse step
                 # this is p(w_{t} | w_{t+1})
                 step_idx, step, proposal_log_prob = self.draw_step(x_t)
-                x_t, path_log_prob, done, _ = stochastic_process.step(step_idx, reverse=False)
+                x_t, path_log_prob, done, _ = stochastic_process.step(step_idx, reverse=True)
 
                 # probability of the path gets updated:
                 log_path_prob += path_log_prob
@@ -153,7 +153,9 @@ class ISSampler(Sampler):
                 # draw a reverse step
                 # this is p(w_{t} | w_{t+1})
                 step_idx, step, log_prob_proposal_step = proposal.draw(x_t, stochastic_process.transitions_left)
-                # print('proposal_log_prob step:',log_prob_proposal_step)
+                # The IS proposal is already giving steps that go BACK in time
+                # therefore we don't need to specify the reverse parameter
+                # since it is actually already picking that reversed step.
                 x_t, path_log_prob, done, _ = stochastic_process.step(step_idx, reverse=False)
 
                 # accumulate log probs of the path and the proposal:

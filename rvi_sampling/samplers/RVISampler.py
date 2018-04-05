@@ -1,9 +1,9 @@
-import pg_methods.utils.gradients as gradients
+import pg_methods.gradients as gradients
 from torch.nn.utils import clip_grad_norm
 import torch
 from torch.autograd import Variable
-from pg_methods.utils.data import MultiTrajectory
-from pg_methods.utils.objectives import PolicyGradientObjective
+from pg_methods.data import MultiTrajectory
+from pg_methods.objectives import PolicyGradientObjective
 import numpy as np
 from .Samplers import Sampler
 from ..results import RLSamplingResults
@@ -81,15 +81,17 @@ class RVISampler(Sampler):
                 # this is p(w_{t} | w_{t+1})
                 assert len(x_tm1.size()) == 2
                 action,  log_prob_action = self.policy(x_tm1)
-                # print('proposal_log_prob step:',log_prob_proposal_step)
-                x_t, path_log_prob, done, _ = stochastic_process.step(action, reverse=False)
+                # The RVI proposal doesn't know it's going backward in time, therefore
+                # we set reverse to be True since we want to the RVI sampler
+                # to return indices for actions that are going to go backward in time
+                x_t, path_log_prob, done, _ = stochastic_process.step(action, reverse=True)
 
 
                 reward_ = path_log_prob.float().view(-1,1) - log_prob_action.data.float().view(-1, 1)
 
                 reward = torch.zeros_like(reward_)
                 reward.copy_(reward_)
-                reward[reward <= -np.inf] = -100000. # throw away infinite negative rewards
+                reward[reward <= -np.inf] = -1000. # throw away infinite negative rewards
                 # if t==0: print(reward)
 
                 # probability of the path gets updated:
@@ -147,10 +149,10 @@ class RVISampler(Sampler):
 
 
             if feed_time:
-                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T,
+                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, len(trajectory_i),
                                                                x_t.size()[-1]-1)
             else:
-                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T,
+                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, len(trajectory_i),
                                                                x_t.size()[-1])
 
             # select paths for storage
