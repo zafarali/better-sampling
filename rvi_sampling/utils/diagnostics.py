@@ -33,7 +33,10 @@ class Diagnostic(object):
         return to_format
 
     def format_float(self, to_format):
-        return round(to_format, self.rounding)
+        if self.rounding:
+            return round(to_format, self.rounding)
+        else:
+            return to_format
 
 class KLDivergenceDiagnostic(Diagnostic):
     _handle = 'KL(p||q)'
@@ -47,7 +50,7 @@ class KLDivergenceDiagnostic(Diagnostic):
         """
         self.kl_function = kl_function
         self.histbin_range = histbin_range
-        super().__init__(frequency)
+        super().__init__(frequency, rounding=None)
 
     def _call(self, results, other_information=None):
         empirical_distribution = results.empirical_distribution(self.histbin_range)
