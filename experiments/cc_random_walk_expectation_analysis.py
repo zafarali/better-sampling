@@ -26,7 +26,6 @@ class Experiments(object):
         return script
 
     def two_window(args, replicate_id, rw_seed):
-        # TODO: two window stuff here.
         script = '\npython two_window_experiment.py -s {samples} -samseed {replicate_id} -n_cpus 1 ' \
                  '--rw_time $RWTIME --rw_seed {rw_seed} --rw_width $RWWIDTH --outfolder {folder}/{rw_seed} ' \
                  '--n_agents {n_agents} --reward_clip {reward_clip} --no_tensorboard'
