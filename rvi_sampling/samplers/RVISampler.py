@@ -21,6 +21,7 @@ class RVISampler(Sampler):
                  objective=PolicyGradientObjective(),
                  seed=0,
                  gamma=1,
+                 negative_reward_clip=-1000,
                  use_cuda=False):
         """
         The reinforced variational inference sampler
@@ -41,6 +42,7 @@ class RVISampler(Sampler):
         self.feed_time = feed_time
         self.objective = objective
         self.gamma = gamma
+        self.negative_reward_clip = negative_reward_clip
 
     def train_mode(self, mode):
         self._training = mode
@@ -91,7 +93,7 @@ class RVISampler(Sampler):
 
                 reward = torch.zeros_like(reward_)
                 reward.copy_(reward_)
-                reward[reward <= -np.inf] = -1000. # throw away infinite negative rewards
+                reward[reward <= -np.inf] = float(self.negative_reward_clip) # throw away infinite negative rewards
                 # if t==0: print(reward)
 
                 # probability of the path gets updated:

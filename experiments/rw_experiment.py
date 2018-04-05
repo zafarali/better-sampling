@@ -52,6 +52,7 @@ if __name__=='__main__':
                 RVISampler(policy,
                            policy_optimizer,
                            baseline=baseline,
+                           negative_reward_clip=args.reward_clip,
                            objective=PolicyGradientObjective(entropy=args.entropy),
                            feed_time=args.notime,
                            seed=args.sampler_seed) ]

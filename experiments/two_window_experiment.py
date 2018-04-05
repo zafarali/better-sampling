@@ -55,6 +55,7 @@ if __name__=='__main__':
                            policy_optimizer,
                            baseline=baseline,
                            objective=PolicyGradientObjective(entropy=args.entropy),
+                           negative_reward_clip=args.reward_clip,
                            feed_time=args.notime,
                            seed=args.sampler_seed) ]
 
