@@ -44,7 +44,7 @@ def experimental_arguments(parser):
                         help='CPUs to use when doing the work')
     parser.add_argument('-notb', '--no_tensorboard', action='store_true',
                         help='Disables tensorboard')
-    parser.add_argument('-name', '--name', default='', type=str,
+    parser.add_argument('-name', '--name', default='results', type=str,
                         help='append name')
     parser.add_argument('-IS_proposal', '--IS_proposal', default='funnel', type=str,
                         help='the importance sampling distribution to use (funnel, soft)')

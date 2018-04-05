@@ -21,7 +21,7 @@ OUTPUT_SIZE = 2
 if __name__=='__main__':
     args = utils.parsers.create_parser('1D random walk with two windows', 'random_walk').parse_args()
     utils.common.set_global_seeds(args.sampler_seed)
-    folder_name = utils.io.create_folder_name(args.outfolder, args.name+'_'+args.sampler_seed+'_'+args.rw_seed)
+    folder_name = utils.io.create_folder_name(args.outfolder, args.name+'_'+str(args.sampler_seed)+'_'+str(args.rw_seed))
     utils.io.create_folder(folder_name)
 
     sns.set_style('white')
