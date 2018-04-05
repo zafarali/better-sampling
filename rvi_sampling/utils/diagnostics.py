@@ -54,25 +54,27 @@ class KLDivergenceDiagnostic(Diagnostic):
         KL_true_est, _ = self.kl_function(empirical_distribution)
         return self.format_float(KL_true_est)
 
-# class KLTimeseriesDiagnostic(KLDivergenceDiagnostic):
-#     _hande = 'KL(p||q,t)'
-#     def __init__(self, kl_function, histbin_range, frequency, sampler_name):
-#         super().__init__(kl_function, histbin_range, frequency)
-#         self.sampler_name = sampler_name
-#
-#     def _call(self, results, other_information=None):
-#         KL_value = super()._call(results, other_information)
-#         # TODO: log this into a file
-
 class ProportionSuccessDiagnostic(Diagnostic):
+    """
+    Returns the proportion of trajectories that were sucessful so far
+    """
     _handle = 'prop'
     def _call(self, results, other_information=None):
         return self.format_float(len(results.trajectories()) / len(results.all_trajectories()))
 
 
 class DiagnosticHandler(Diagnostic):
+    """
+    A "meta-diagnositc" that calls a whole bunch of other diagnostic
+    Basically this is a list for `Diagnostic` objects.
+    """
     def __init__(self, diagnostics, sampler_name=None, verbose=False):
-        super().__init__(1) # logging frequency is 1
+        """
+        :param diagnostics: A list of diagnostics
+        :param sampler_name: the name of the sampler
+        :param verbose:
+        """
+        super().__init__(1) # logging frequency is 1, by default `DiagnosticHandler`s should be called every step
         self.sampler_name = sampler_name
         self.diagnostics = diagnostics
         self.diagnostic_information = []
@@ -87,7 +89,9 @@ class DiagnosticHandler(Diagnostic):
         Calls all the diagnostics that are being handled.
         :param results: results to be processed
         :param other_information: other information to be used
-        :param optional_fn: optional printing functions
+        :param optional_fn: optional printing functions, is called with the diagnostic name and the information
+                            returned from it. Useful for printing or saving. (See SimpleFileHandler
+                            and TensorBoardHandler)
         :return:
         """
         tmpstr = '{}: '.format(self.count)
@@ -110,6 +114,9 @@ class DiagnosticHandler(Diagnostic):
 
 
 class TensorBoardHandler(DiagnosticHandler):
+    """
+    TensorBoardHandler
+    """
     def __init__(self, diagnostics, log_dir=None, sampler_name='', verbose=False):
         super().__init__(diagnostics, sampler_name, verbose)
         self.initialized = False
@@ -137,39 +144,32 @@ class TensorBoardHandler(DiagnosticHandler):
         tmpstr, _  = self._call_all_diagnostics(results, other_information, optional_fn=self.log_to_tensorboard)
         return tmpstr
 
-class SimpleBoardHandler(DiagnosticHandler):
+class FileSaverHandler(DiagnosticHandler):
     """
     Something like TensorBoardHandler, but without all the heavy weight stuff
     of saving into TensorBoard. Easier to export data from to do downstream analysis.
-    # TODO: Test this.
     """
     def __init__(self, diagnostics, log_dir, sampler_name, verbose=False):
         super().__init__(diagnostics, sampler_name, verbose)
         self.initialized = False
         self.log_dir = log_dir
+        self.sampler_name = sampler_name
+
+    def initialize(self):
+        # we use this special initialization file so that it is only initialized
+        # once this is within a multiprocessing loop
+        self.initialized = True
         def log_to_file(text, to_log, count):
             text = text.replace(')', '').replace('(', '').replace('|', '') # clean the string for backward compatability
-            with open(os.path.join(log_dir, sampler_name+'_'+text+'.txt'), 'a') as f:
+            with open(os.path.join(self.log_dir, self.sampler_name+'_'+text+'.txt'), 'a') as f:
                 f.write(str(to_log)+','+str(count)+'\n')
 
         self.log_to_file = log_to_file
+
     def _call(self, results, other_information=None):
+        if not self.initialized: self.initialize()
         tmpstr, _ = self._call_all_diagnostics(results, other_information, optional_fn=self.log_to_file)
         return tmpstr
-
-# def make_kl_function(analytic, xT):
-#     """
-#     Turns the analytic.kl_divergence function into one that can be used
-#     in multiprocessing
-#     :param analytic:
-#     :param estimated_distribution:
-#     :param xT:
-#     :return:
-#     """
-#     def f(estimated_distribution):
-#         return analytic.kl_divergence(estimated_distribution, xT)
-#
-#     return f
 
 def create_diagnostic(sampler_name, args, folder_name, kl_function=None):
     """
@@ -184,7 +184,7 @@ def create_diagnostic(sampler_name, args, folder_name, kl_function=None):
     if kl_function is not None: diagnostics += [KLDivergenceDiagnostic(kl_function, args.rw_width, 5)]
 
     if args.no_tensorboard:
-        diagnostic_handler = DiagnosticHandler(diagnostics)
+        diagnostic_handler = FileSaverHandler(diagnostics, os.path.join(folder_name), sampler_name)
     else:
         print('Tensorboard Logging at: {}'.format(os.path.join(folder_name, sampler_name)))
         diagnostic_handler = TensorBoardHandler(diagnostics,log_dir=os.path.join(folder_name, sampler_name))
