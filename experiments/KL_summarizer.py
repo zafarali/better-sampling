@@ -67,8 +67,8 @@ def main(args):
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
-    for sampler_name in kl_values.keys():
-        sns.kdeplot(np.array(kl_values[sampler_name]), shade=True, label=sampler_name, ax=ax)
+    for color, sampler_name in zip(colors, samplers):
+        sns.kdeplot(np.array(kl_values[sampler_name]), shade=True, label=sampler_name, ax=ax, color=color)
     ax.set_xlabel('KL')
     ax.set_ylabel('Density')
     ax.set_xlim(0)
