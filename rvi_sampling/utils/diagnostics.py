@@ -54,6 +54,16 @@ class KLDivergenceDiagnostic(Diagnostic):
         KL_true_est, _ = self.kl_function(empirical_distribution)
         return self.format_float(KL_true_est)
 
+# class KLTimeseriesDiagnostic(KLDivergenceDiagnostic):
+#     _hande = 'KL(p||q,t)'
+#     def __init__(self, kl_function, histbin_range, frequency, sampler_name):
+#         super().__init__(kl_function, histbin_range, frequency)
+#         self.sampler_name = sampler_name
+#
+#     def _call(self, results, other_information=None):
+#         KL_value = super()._call(results, other_information)
+#         # TODO: log this into a file
+
 class ProportionSuccessDiagnostic(Diagnostic):
     _handle = 'prop'
     def _call(self, results, other_information=None):
@@ -127,7 +137,26 @@ class TensorBoardHandler(DiagnosticHandler):
         tmpstr, _  = self._call_all_diagnostics(results, other_information, optional_fn=self.log_to_tensorboard)
         return tmpstr
 
-#
+class SimpleBoardHandler(DiagnosticHandler):
+    """
+    Something like TensorBoardHandler, but without all the heavy weight stuff
+    of saving into TensorBoard. Easier to export data from to do downstream analysis.
+    # TODO: Test this.
+    """
+    def __init__(self, diagnostics, log_dir, sampler_name, verbose=False):
+        super().__init__(diagnostics, sampler_name, verbose)
+        self.initialized = False
+        self.log_dir = log_dir
+        def log_to_file(text, to_log, count):
+            text = text.replace(')', '').replace('(', '').replace('|', '') # clean the string for backward compatability
+            with open(os.path.join(log_dir, sampler_name+'_'+text+'.txt'), 'a') as f:
+                f.write(str(to_log)+','+str(count)+'\n')
+
+        self.log_to_file = log_to_file
+    def _call(self, results, other_information=None):
+        tmpstr, _ = self._call_all_diagnostics(results, other_information, optional_fn=self.log_to_file)
+        return tmpstr
+
 # def make_kl_function(analytic, xT):
 #     """
 #     Turns the analytic.kl_divergence function into one that can be used
