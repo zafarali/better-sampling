@@ -42,6 +42,8 @@ def experimental_arguments(parser):
                         help='Disables tensorboard')
     parser.add_argument('-name', '--name', default='', type=str,
                         help='append name')
+    parser.add_argument('-nagents', '--n_agents', default=1, type=int,
+                        help='Number of agents to use')
     parser.add_argument('-IS_proposal', '--IS_proposal', default='funnel', type=str,
                         help='the importance sampling distribution to use (funnel, soft)')
     parser.add_argument('-outfolder', '--outfolder', default='./', type=str,

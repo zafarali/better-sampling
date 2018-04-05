@@ -23,7 +23,7 @@ def random_walk_arguments(parser):
                         help='width of the discrete uniform in the random walk')
     return parser
 
-def create_rw(args, biased=False):
+def create_rw(args, biased=False, n_agents=1):
     """
     Creates an unbiased 1D random walk
     :param args:
@@ -44,7 +44,7 @@ def create_rw(args, biased=False):
     rw = RandomWalk(DIMENSIONS,
                     STEP_PROBS,
                     POSSIBLE_STEPS,
-                    n_agents=1,
+                    n_agents=n_agents,
                     T=T,
                     prior_distribution=DiscreteUniform(DIMENSIONS, -DISC_UNIFORM_WIDTH, 2*DISC_UNIFORM_WIDTH, seed=args.rw_seed+2),
                     seed=args.rw_seed+1)
@@ -55,7 +55,7 @@ def create_rw(args, biased=False):
         analytic = None
     return rw, analytic
 
-def create_rw_two_window(args):
+def create_rw_two_window(args, n_agents=1):
     """
     Creates an unbiased 1D random walk
     with two dinwos
@@ -73,7 +73,7 @@ def create_rw_two_window(args):
     rw = RandomWalk(DIMENSIONS,
                     STEP_PROBS,
                     POSSIBLE_STEPS,
-                    n_agents=1,
+                    n_agents=n_agents,
                     T=T,
                     prior_distribution=MultiWindowDiscreteUniform(DIMENSIONS, WINDOWS, seed=args.rw_seed+2),
                     seed=args.rw_seed+1)
