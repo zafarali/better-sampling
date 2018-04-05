@@ -91,12 +91,13 @@ def main(args):
     # note that this does not require having time counts to be the same
     time_series_dfs = pd.concat(time_series_dfs, ignore_index=True)
     if not args.dryrun:
-        f = plt.figure()
-        ax = f.add_subplot(1, 1,1)
-        sns.tsplot(time_series_dfs, time='time', unit='repeat_id', condition='sampler_name', value='KL', ax=ax)
-        ax.semilogy()
-        ax.legend(fontsize='x-small')
-        f.savefig(os.path.join(args.folder, 'summarized_KL_timeseries.pdf'))
+        # this time series plotting will be done in KL_summarizer
+        # f = plt.figure()
+        # ax = f.add_subplot(1, 1,1)
+        # sns.tsplot(time_series_dfs, time='time', unit='repeat_id', condition='sampler_name', value='KL', ax=ax)
+        # ax.semilogy()
+        # ax.legend(fontsize='x-small')
+        # f.savefig(os.path.join(args.folder, 'summarized_KL_timeseries.pdf'))
         time_series_dfs.to_csv(os.path.join(args.folder, 'KL_timeseries.csv'))
 
     # do some kind of summarization for the KL series here.
