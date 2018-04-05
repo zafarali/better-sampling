@@ -14,9 +14,9 @@ import argparse
 class Experiments(object):
     @staticmethod
     def one_window(args, replicate_id, rw_seed):
-        script = '\npython rw_experiment.py -s {samples} -samseed {replicate_id} -n_cpus 1' \
+        script = '\npython rw_experiment.py -s {samples} -samseed {replicate_id} -n_cpus 1 ' \
                  '--rw_time $RWTIME --rw_seed {rw_seed} --rw_width $RWWIDTH --outfolder {folder}/{rw_seed} ' \
-                 '--n_agents {n_agents} --reward_clip {reward_clip}'
+                 '--n_agents {n_agents} --reward_clip {reward_clip} --no_tensorboard'
         script = script.format(samples=args.samples,
                                replicate_id=replicate_id,
                                folder=args.out,
@@ -27,9 +27,9 @@ class Experiments(object):
 
     def two_window(args, replicate_id, rw_seed):
         # TODO: two window stuff here.
-        script = '\npython two_window_experiment.py -s {samples} -samseed {replicate_id} -n_cpus 1' \
+        script = '\npython two_window_experiment.py -s {samples} -samseed {replicate_id} -n_cpus 1 ' \
                  '--rw_time $RWTIME --rw_seed {rw_seed} --rw_width $RWWIDTH --outfolder {folder}/{rw_seed} ' \
-                 '--n_agents {n_agents} --reward_clip {reward_clip}'
+                 '--n_agents {n_agents} --reward_clip {reward_clip} --no_tensorboard'
         script = script.format(samples=args.samples,
                                replicate_id=replicate_id,
                                folder=args.out,
@@ -49,26 +49,29 @@ def main(args):
     SCRIPT += '\nRWTIME={};'.format(args.rw_time)
     SCRIPT += '\n'
     ## do setup of the experiment here.
-
+    SCRIPT+='mkdir {}'.format(args.out) # this is only for reproducibility purposes.
     experiment_constructor = getattr(Experiments, args.experiment)
     counter = 0 # counts the number of commands executed so it knows when to wait
     for rw_seed in range(args.n_tasks):
-        if not args.dryrun: os.mkdir(os.path.join(args.out, str(rw_seed)))
+        SCRIPT+='\necho "RWSEED {}"'.format(rw_seed)
+        location_of_experiment = os.path.join(args.out, str(rw_seed))
+        SCRIPT += '\nmkdir {}'.format(location_of_experiment)
         # each task will be saved in their own folders.
         for replicate_id in range(args.n_replicates):
+            SCRIPT += '\necho "REPLICATE ID {}"'.format(replicate_id)
             SCRIPT += experiment_constructor(args, replicate_id, rw_seed) + ' &'
             counter += 1
             if counter % args.cc_cpus == 0:
                 SCRIPT+='\nwait' # wait until these tasks complete so we can use other cpus after
 
         SCRIPT += '\nwait' # wait until all replicates are over so we can aggregate all their information
-        SCRIPT += '\npython SOME KIND OF AGGREGATOR HERE &'
-        counter += 1
-        # TODO: call some kind of aggregator here for per task aggregation?
+        SCRIPT += '\npython aggregator.py -f {} --histogram &'.format(location_of_experiment)
+        SCRIPT += '\npython KL_summarizer.py -f {} -of {} &'.format(location_of_experiment, location_of_experiment)
+        counter += 2
 
     SCRIPT += '\nwait' # wait until all tasks are over so we can aggregate all their information
-    # TODO: call some kind of aggregator here for overall aggregation
-    SCRIPT += '\npython INSERT AGGREGATOR HERE!!'
+    SCRIPT += '\npython KL_summarizer.py -f {} -of {}'.format(args.out, args.out)
+    SCRIPT += '\npython KL_summarizer.py -f {} "{}/*" -of {} --name fine_grain_'.format(args.out, args.out, args.out)
     if args.dryrun:
         print(SCRIPT)
     else:
