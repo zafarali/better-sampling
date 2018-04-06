@@ -27,10 +27,19 @@ def custom_time_series(timeseries_files, ax):
     colors = sns.color_palette('colorblind', 4)
     for color, sampler_name in zip(colors, samplers):
         for y, x in zip(timeseries_files[sampler_name]['KL'], timeseries_files[sampler_name]['time']):
-            ax.plot(x,y, color=color, alpha=0.1)
+            masked = np.isnan(np.array(x))
 
-        ax.plot(np.mean(timeseries_files[sampler_name]['time'], axis=0),
-                np.mean(timeseries_files[sampler_name]['KL'], axis=0), color=color)
+            ax.plot(np.array(x)[masked],np.array(y)[masked], color=color, alpha=0.1)
+
+        yvals = np.array(timeseries_files[sampler_name]['KL'])
+        xvals = np.array(timeseries_files[sampler_name]['time'])
+        # print(yvals.shape)
+        # print(np.isnan(yvals).shape)
+        # print(xvals.shape)
+        # yvals = yvals[~np.isnan(yvals)]
+        # xvals = (xvals.reshape(-1)[~np.isnan(yvals).reshape(-1)]).reshape(250, 1000)
+        ax.plot(np.mean(xvals, axis=0),
+                np.mean(yvals, axis=0), color=color)
 
     from matplotlib.lines import Line2D
     custom_lines = []
@@ -45,8 +54,8 @@ def main(args):
     time_series_dfs = []
 
     for folder in args.folder:
-
         files = glob(os.path.join(folder, '*', 'KL'))
+        print('Number of files: {}'.format(files))
         for file_ in files:
             with open(file_, 'r') as f:
                 for line in f.readlines():
@@ -55,7 +64,6 @@ def main(args):
 
         files = glob(os.path.join(folder, '*', '*_KLpq.txt'))
         for repeat_number, file_ in enumerate(files):
-
             sampler_name = file_.split('_KLpq.txt')[0].split('/')[-1]
             opened_df = pd.read_csv(file_, names=['KL', 'time'])
             opened_df['repeat_id'] = repeat_number
@@ -64,14 +72,16 @@ def main(args):
             time_series[sampler_name]['time'].append(opened_df['time'].values.tolist())
             time_series_dfs.append(opened_df)
 
-
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
     for color, sampler_name in zip(colors, samplers):
-        sns.kdeplot(np.array(kl_values[sampler_name]), shade=True, label=sampler_name, ax=ax, color=color)
+        kl_vals = np.array(kl_values[sampler_name])
+        kl_vals = kl_vals[~np.isnan(kl_vals)]
+        sns.kdeplot(kl_vals, shade=True, label=sampler_name, ax=ax, color=color)
     ax.set_xlabel('KL')
     ax.set_ylabel('Density')
-    ax.set_xlim(0)
+    ax.set_xlim(0, 0.1)
+    # ax.semilogy()
     ax.legend(fontsize='x-small')
     fig.savefig(os.path.join(args.out_folder, args.name+'KL_KDE.pdf'))
 
@@ -86,6 +96,7 @@ def main(args):
     time_series_dfs = pd.concat(time_series_dfs, ignore_index=True)
     f = plt.figure()
     ax = f.add_subplot(1, 1,1)
+    time_series_dfs = time_series_dfs.dropna(axis=0)
     sns.tsplot(time_series_dfs, time='time', unit='repeat_id', condition='sampler_name', value='KL', ax=ax)
     ax.semilogy()
     ax.set_ylim(0)

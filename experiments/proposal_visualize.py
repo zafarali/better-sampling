@@ -5,6 +5,8 @@ import torch
 from rvi_sampling.distributions.proposal_distributions import SimonsProposal, SimonsSoftProposal, FunnelProposal
 from rvi_sampling.utils.plotting import visualize_proposal, multi_quiver_plot
 import argparse
+import seaborn as sns
+sns.set_style('white')
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser('Visualize Proposals')
