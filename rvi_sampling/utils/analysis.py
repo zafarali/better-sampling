@@ -35,10 +35,10 @@ def analyze_samplers_rw(sampler_results,
     for i, sampler_result in enumerate(sampler_results):
         try:
             ax = fig_dists.add_subplot(panel_size + str(i + 1))
-            ax = sampler_result.plot_distribution(args.rw_width, ax, alpha=0.7) # TODO: change this hard coding of args.rw_width!
+            ax = sampler_result.plot_distribution(args.rw_width, ax, alpha=0.7)
             if analytic is not None: ax = analytic.plot(stochastic_process.xT, ax, label='analytic', color='r')
 
-            empirical_distribution = sampler_result.empirical_distribution(histbin_range=args.rw_width) ## TODO: Here as well
+            empirical_distribution = sampler_result.empirical_distribution(histbin_range=args.rw_width)
 
 
             if analytic is not None: kl_divergence = analytic.kl_divergence(empirical_distribution, stochastic_process.xT[0])
