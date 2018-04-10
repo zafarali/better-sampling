@@ -96,9 +96,10 @@ class MCSampler(Sampler):
             done = False
             while not done:
                 x_t = trajectory_i[-1]
-                # draw a reverse step
                 # this is p(w_{t} | w_{t+1})
                 step_idx, step, proposal_log_prob = self.draw_step(x_t)
+                # reverse should be True here
+                # see discussion: ./issues/11#issuecomment-379937140
                 x_t, path_log_prob, done, _ = stochastic_process.step(step_idx, reverse=True)
 
                 # probability of the path gets updated:
