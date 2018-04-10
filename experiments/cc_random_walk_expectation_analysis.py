@@ -16,25 +16,27 @@ class Experiments(object):
     def one_window(args, replicate_id, rw_seed):
         script = '\npython rw_experiment.py -s {samples} -samseed {replicate_id} -n_cpus 1 ' \
                  '--rw_time $RWTIME --rw_seed {rw_seed} --rw_width $RWWIDTH --outfolder {folder}/{rw_seed} ' \
-                 '--n_agents {n_agents} --reward_clip {reward_clip} --no_tensorboard'
+                 '--n_agents {n_agents} --reward_clip {reward_clip} --no_tensorboard -nn {neural_network}'
         script = script.format(samples=args.samples,
                                replicate_id=replicate_id,
                                folder=args.out,
                                rw_seed=rw_seed,
                                n_agents=args.n_agents,
-                               reward_clip=args.reward_clip)
+                               reward_clip=args.reward_clip,
+                               neural_network=args.neural_network_spec)
         return script
 
     def two_window(args, replicate_id, rw_seed):
         script = '\npython two_window_experiment.py -s {samples} -samseed {replicate_id} -n_cpus 1 ' \
                  '--rw_time $RWTIME --rw_seed {rw_seed} --rw_width $RWWIDTH --outfolder {folder}/{rw_seed} ' \
-                 '--n_agents {n_agents} --reward_clip {reward_clip} --no_tensorboard'
+                 '--n_agents {n_agents} --reward_clip {reward_clip} --no_tensorboard -nn {neural_network}'
         script = script.format(samples=args.samples,
                                replicate_id=replicate_id,
                                folder=args.out,
                                rw_seed=rw_seed,
                                n_agents=args.n_agents,
-                               reward_clip=args.reward_clip)
+                               reward_clip=args.reward_clip,
+                               neural_network=args.neural_network_spec)
         return script
 
 
@@ -87,6 +89,8 @@ if __name__ == '__main__':
                         type=int)
     parser.add_argument('-n_tasks', '--n_tasks', help='Number of walks/tasks to run', default=2, type=int)
     parser.add_argument('-dryrun', '--dryrun', help='Dry run', default=False, action='store_true')
+    parser.add_argument('-nnspec', '--neural_network_spec', help='Neural network specification. DO NOT USE -nn for this.',
+                        required=True)
     parser.add_argument_group('Random Walk Arguments')
     utils.parsers.random_walk_arguments(parser)
     parser.add_argument_group('RVI Arguments')
