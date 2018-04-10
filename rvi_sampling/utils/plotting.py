@@ -111,9 +111,11 @@ def visualize_proposal(list_of_proposals,
         for t_ in t[0, :]:
             for proposal, vector_grid_y_arrows_t_i in zip(list_of_proposals, vector_grid_y_arrows_t):
                 if neural_network:
+                    # neural network draw must be "reversed"
                     feed_time = proposal.fn_approximator.Input.weight.size()[1] == 2
-                    vector_grid_y_arrows_t_i.append(conduct_draws_nn(proposal, float(x_), t_ / timesteps, feed_time=feed_time))
+                    vector_grid_y_arrows_t_i.append(-conduct_draws_nn(proposal, float(x_), t_ / timesteps, feed_time=feed_time))
                 else:
+                    # hand designed proposals are already going backward in time.
                     vector_grid_y_arrows_t_i.append(conduct_draws(proposal, float(x_), t_))
         for i in range(len(vector_grid_y_arrows_t)):
             vector_grid_y_arrows[i].append(vector_grid_y_arrows_t[i])

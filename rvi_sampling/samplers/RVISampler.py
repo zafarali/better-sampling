@@ -21,6 +21,7 @@ class RVISampler(Sampler):
                  objective=PolicyGradientObjective(),
                  seed=0,
                  gamma=1,
+                 negative_reward_clip=-1000,
                  use_cuda=False):
         """
         The reinforced variational inference sampler
@@ -41,6 +42,7 @@ class RVISampler(Sampler):
         self.feed_time = feed_time
         self.objective = objective
         self.gamma = gamma
+        self.negative_reward_clip = negative_reward_clip
 
     def train_mode(self, mode):
         self._training = mode
@@ -83,6 +85,9 @@ class RVISampler(Sampler):
                 action,  log_prob_action = self.policy(x_tm1)
                 # print('Action taken: {}'.format(action))
                 # print('proposal_log_prob step:',log_prob_proposal_step)
+                # The RVI proposal doesn't know it's going backward in time, therefore
+                # we set reverse to be True since we want to the RVI sampler
+                # to return indices for actions that are going to go backward in time
                 x_t, path_log_prob, done, _ = stochastic_process.step(action, reverse=True)
 
 
@@ -90,12 +95,8 @@ class RVISampler(Sampler):
 
                 reward = torch.zeros_like(reward_)
                 reward.copy_(reward_)
-
-                reward[reward <= -np.inf] = -100000. # throw away infinite negative rewards
-                # print(path_log_prob[0,0], log_prob_action.data[0], reward[0,0])
-                # however, scale them by how long the trajectory has gone on for
-                # (i.e. longer trajectories should get a "less infinite negative reward". this is clearly a hack
-                # but we may need to find another way to do this?
+                reward[reward <= -np.inf] = float(self.negative_reward_clip) # throw away infinite negative rewards
+                # if t==0: print(reward)
 
                 # probability of the path gets updated:
                 log_path_prob += path_log_prob.numpy().reshape(-1, 1)

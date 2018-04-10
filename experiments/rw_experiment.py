@@ -23,7 +23,7 @@ if __name__=='__main__':
     args = utils.parsers.create_parser('1D random walk', 'random_walk').parse_args()
     utils.common.set_global_seeds(args.sampler_seed)
     sns.set_style('white')
-    folder_name = utils.io.create_folder_name(args.outfolder, args.name)
+    folder_name = utils.io.create_folder_name(args.outfolder, args.name+'_'+str(args.sampler_seed)+'_'+str(args.rw_seed))
     utils.io.create_folder(folder_name)
 
     rw, analytic = utils.stochastic_processes.create_rw(args, biased=BIASED)
@@ -52,6 +52,7 @@ if __name__=='__main__':
                 RVISampler(policy,
                            policy_optimizer,
                            baseline=baseline,
+                           negative_reward_clip=args.reward_clip,
                            objective=PolicyGradientObjective(entropy=args.entropy),
                            feed_time=args.notime,
                            seed=args.sampler_seed) ]
@@ -70,12 +71,12 @@ if __name__=='__main__':
     print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
 
     pool = multiprocessing.Pool(args.n_cpus)
-
-    # handle having the correct number of samples.
     solver_arguments = [(sampler,
-                         utils.stochastic_processes.create_rw(args, biased=BIASED, n_agents=args.n_agents if sampler._name == 'RVISampler' else 1)[0],
-                         args.samples* args.n_agents if sampler._name != 'RVISampler' else args.samples) for sampler in samplers]
-                         # args.samples) for sampler in samplers]
+                         utils.stochastic_processes.create_rw(args,
+                                                              biased=BIASED,
+                                                              n_agents=args.n_agents if sampler._name == 'RVISampler' else 1)[0],
+                         # args.samples * args.n_agents if sampler._name != 'RVISampler' else args.samples) for sampler in samplers]
+                         args.samples) for sampler in samplers]
 
     sampler_results = pool.map(utils.multiprocessing_tools.run_sampler, solver_arguments)
 
