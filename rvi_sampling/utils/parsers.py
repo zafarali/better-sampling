@@ -29,6 +29,8 @@ def rvi_arguments(parser):
                                                                                         'infinite rewards to')
     parser.add_argument('-nagents', '--n_agents', default=1, type=int,
                         help='Number of agents to use')
+    parser.add_argument('-plot-posterior', '--plot_posterior', default=False, action='store_true',
+                        help='Number of agents to use')
     return parser
 
 def experimental_arguments(parser):

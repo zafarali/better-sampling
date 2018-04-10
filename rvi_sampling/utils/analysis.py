@@ -98,16 +98,17 @@ def analyze_samplers_rw(sampler_results,
     io.argparse_saver(os.path.join(folder_name, 'args'), args)
 
     # if we have given a policy, we should save it
-    # if policy is not None:
-    #     try:
-    #         torch.save(policy, os.path.join(folder_name, 'rvi_policy.pyt'))
-    #
-    #         t, x, x_arrows, y_arrows_nn = plotting.visualize_proposal([policy], 50, 20, neural_network=True)
-    #         f = plotting.multi_quiver_plot(t, x, x_arrows,
-    #                                       [y_arrows_nn],
-    #                                       ['Learned Neural Network Proposal'],
-    #                                       figsize=(10, 5))
-    #         f.savefig(os.path.join(folder_name, 'visualized_proposal.pdf'))
-    #     except Exception as e:
-    #         print('Could not plot proposal distribution {}'.format(e))
+    if policy is not None:
+        try:
+            torch.save(policy, os.path.join(folder_name, 'rvi_policy.pyt'))
 
+            if args.plot_posterior:
+                t, x, x_arrows, y_arrows_nn = plotting.visualize_proposal([policy], 50, 20, neural_network=True)
+                f = plotting.multi_quiver_plot(t, x, x_arrows,
+                                              [y_arrows_nn],
+                                              ['Learned Neural Network Proposal'],
+                                              figsize=(10, 5))
+                f.savefig(os.path.join(folder_name, 'visualized_proposal.pdf'))
+        except Exception as e:
+            print('Could not plot proposal distribution {}'.format(e))
+    # 
