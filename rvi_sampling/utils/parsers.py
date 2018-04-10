@@ -50,7 +50,5 @@ def experimental_arguments(parser):
                         help='the importance sampling distribution to use (funnel, soft)')
     parser.add_argument('-outfolder', '--outfolder', default='./', type=str,
                         help='Where to save things')
-    parser.add_argument('-nagents', '--n_agents', default=1, type=int,
-                        help='Number of agents')
     return parser
 
