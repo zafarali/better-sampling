@@ -3,7 +3,7 @@ from rvi_sampling.stochastic_processes.random_walk import RandomWalk
 from rvi_sampling.samplers import MCSampler, ISSampler, RVISampler, ABCSampler
 from rvi_sampling.distributions.analytic_posterior import TwoStepRandomWalkPosterior
 from rvi_sampling.distributions.prior_distributions import DiscreteUniform
-from rvi_sampling.distributions.proposal_distributions import SimonsSoftProposal
+from rvi_sampling.distributions.proposal_distributions import SimonsSoftProposal, FunnelProposal
 POSSIBLE_STEPS = [[-1], [+1]]
 STEP_PROBS = [1/2, 1/2]
 DIMENSIONS = 1
@@ -46,6 +46,10 @@ def test_ABC_sampler():
 
 def test_IS_sampler():
     rw.reset()
-    results = check_sampler(ISSampler(SimonsSoftProposal), rw)
+    results = check_sampler(ISSampler(SimonsSoftProposal()), rw)
+    empirical_dist = results.empirical_distribution(DISC_UNIF_WIDTH)
+    check_kl(empirical_dist, rw, False)
+
+    results = check_sampler(ISSampler(FunnelProposal()), rw)
     empirical_dist = results.empirical_distribution(DISC_UNIF_WIDTH)
     check_kl(empirical_dist, rw, False)

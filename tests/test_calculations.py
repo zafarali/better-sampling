@@ -27,9 +27,9 @@ def test_IS_ratio_math():
     (i.e. there needs to be no correction)
     :return:
     """
-    iss_sampler = ISSampler(RandomProposal)
-    results = iss_sampler.solve(rw, 100)
+    iss_sampler = ISSampler(RandomProposal())
+    results = iss_sampler.solve(rw, 1, verbose=True)
     posterior_weights = results.posterior_weights()
 
-    assert np.allclose(posterior_weights, 1)
+    assert np.allclose(posterior_weights, 1/(2*DISC_UNIF_WIDTH))
 
