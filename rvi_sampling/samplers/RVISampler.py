@@ -128,7 +128,8 @@ class RVISampler(Sampler):
 
             # update the proposal distribution
             if self._training:
-                returns = gradients.calculate_returns(policy_gradient_trajectory_info.rewards, self.gamma, policy_gradient_trajectory_info.masks)
+                returns = gradients.calculate_returns(policy_gradient_trajectory_info.rewards, self.gamma,
+                                                      policy_gradient_trajectory_info.masks)
                 advantages = returns - policy_gradient_trajectory_info.values
                 if self.baseline is not None:
                     self.baseline.update_baseline(policy_gradient_trajectory_info, returns)
