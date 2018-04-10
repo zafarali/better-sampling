@@ -32,7 +32,7 @@ if __name__=='__main__':
 
     # create a policy for the RVI sampler
     fn_approximator = MLP_factory(DIMENSIONS+int(args.notime),
-                                  hidden_sizes=[16, 16],
+                                  hidden_sizes=args.neural_network,
                                   output_size=OUTPUT_SIZE,
                                   hidden_non_linearity=nn.ReLU)
 

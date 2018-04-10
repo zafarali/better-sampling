@@ -31,6 +31,8 @@ def rvi_arguments(parser):
                         help='Number of agents to use')
     parser.add_argument('-plot-posterior', '--plot_posterior', default=False, action='store_true',
                         help='Number of agents to use')
+    parser.add_argument('-nn', '--neural-network', nargs='+', help='neural network specification',
+                        default=[16, 16], type=int)
     return parser
 
 def experimental_arguments(parser):
