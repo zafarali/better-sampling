@@ -104,10 +104,9 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--folder', help='Folder with the experimental runs', required=True, nargs='+')
     parser.add_argument('-of', '--out_folder', help='Folder to save plots in', required=True)
     parser.add_argument('-t', '--title', help='title of plot', required=False, default='')
-    parser.add_argument('-kind', '--kind', help='kind of plot (can only be violin)', required=False, default=None)
+    parser.add_argument('-kind', '--kind', help='kind of plot (can only be violin)', required=False, default='point')
     parser.add_argument('-rvi', '--only_rvi', help='Only plot RVI', required=False, default=False, action='store_true')
     parser.add_argument('-hue', '--hue', help='The hue to use (Sampler or nn)', required=False, default='nn')
     parser.add_argument('-nolegend', '--no_legend', help='Removes the legend', required=False, default=False, action='store_true')
     args = parser.parse_args()
     main(args)
-    
