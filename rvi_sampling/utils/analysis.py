@@ -99,9 +99,8 @@ def analyze_samplers_rw(sampler_results,
 
     # if we have given a policy, we should save it
     if policy is not None:
+        torch.save(policy, os.path.join(folder_name, 'rvi_policy.pyt'))
         try:
-            torch.save(policy, os.path.join(folder_name, 'rvi_policy.pyt'))
-
             if args.plot_posterior:
                 t, x, x_arrows, y_arrows_nn = plotting.visualize_proposal([policy], 50, 20, neural_network=True)
                 f = plotting.multi_quiver_plot(t, x, x_arrows,

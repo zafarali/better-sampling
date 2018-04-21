@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 from torch.autograd import Variable
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -60,16 +61,22 @@ def plot_trajectory_time_evolution(trajectories, dimension=0, step=5, ax=None):
 def conduct_draws_nn(sp_, x, t, n_draws=100, feed_time=False):
     """
     Conducts draws from a neural network policy and takes the average.
-    :param sp_:
-    :param x:
-    :param t:
+    :param sp_: The policy
+    :param x: The position in the random walk
+    :param t: the time in the random walk
     :return:
     """
     if feed_time:
-        a = np.mean([2*sp_(Variable(torch.FloatTensor([[x, t]]), volatile=True))[0].data[0]-1 for i in range(n_draws)])
+        data = Variable(torch.FloatTensor([[x, t]]), volatile=True)
+
     else:
-        a = np.mean([2*sp_(Variable(torch.FloatTensor([[x]]), volatile=True))[0].data[0]-1 for i in range(n_draws)])
-    return a
+        data = Variable(torch.FloatTensor([[x]]), volatile=True)
+
+    log_probs = sp_.fn_approximator(data)
+    probs = F.softmax(log_probs, dim=1).data # convert log probs to probs
+
+    # return the expected step:
+    return torch.mean(probs * torch.FloatTensor([-1, 1]))
 
 def conduct_draws(sp_, x, t, n_draws=100):
     """
@@ -79,9 +86,8 @@ def conduct_draws(sp_, x, t, n_draws=100):
     :param t:
     :return:
     """
-    a = np.mean([sp_.draw([[x]], t)[1] for i in range(n_draws)])
-#     print(a)
-    return float(a)
+
+    return np.mean(sp_.draw([[x]], t, sampling_probs_only=True) * np.array([-1, 1]))
 
 
 def visualize_proposal(list_of_proposals,
