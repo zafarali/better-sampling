@@ -30,14 +30,20 @@ if __name__=='__main__':
     utils.io.touch(os.path.join(folder_name, 'start={}'.format(rw.x0)))
     utils.io.touch(os.path.join(folder_name, 'end={}'.format(rw.xT)))
 
-    # create a policy for the RVI sampler
-    fn_approximator = MLP_factory(DIMENSIONS+int(args.notime),
-                                  hidden_sizes=args.neural_network,
-                                  output_size=OUTPUT_SIZE,
-                                  hidden_non_linearity=nn.ReLU)
+    if args.pretrained is not None:
+        policy = torch.load(args.pretrained)
+        policy_optimizer = torch.optim.RMSprop(policy.fn_approximator.parameters(),lr=args.learning_rate)
 
-    policy = MultinomialPolicy(fn_approximator)
-    policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=args.learning_rate)
+    else:
+        # create a policy for the RVI sampler
+        fn_approximator = MLP_factory(DIMENSIONS+int(args.notime),
+                                      hidden_sizes=args.neural_network,
+                                      output_size=OUTPUT_SIZE,
+                                      hidden_non_linearity=nn.ReLU)
+
+        policy = MultinomialPolicy(fn_approximator)
+        policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=args.learning_rate)
+
     baseline = MovingAverageBaseline(args.baseline_decay)
 
     push_toward = [-args.rw_width, args.rw_width]

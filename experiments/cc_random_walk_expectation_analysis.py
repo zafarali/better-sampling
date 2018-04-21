@@ -24,6 +24,9 @@ class Experiments(object):
                                n_agents=args.n_agents,
                                reward_clip=args.reward_clip,
                                neural_network=args.neural_network_spec)
+
+        if args.pretrained:
+            script += ' --pretrained {}'.format(args.pretrained)
         return script
 
     def two_window(args, replicate_id, rw_seed):
@@ -37,6 +40,8 @@ class Experiments(object):
                                n_agents=args.n_agents,
                                reward_clip=args.reward_clip,
                                neural_network=args.neural_network_spec)
+        if args.pretrained:
+            script += ' --pretrained {}'.format(args.pretrained)
         return script
 
 
