@@ -148,6 +148,7 @@ class RVISampler(Sampler):
 
             reward_summary = torch.sum(policy_gradient_trajectory_info.rewards, dim=0).mean()
             rewards_per_episode.append(reward_summary)
+
             if self._training: loss_per_episode.append(loss.cpu().data[0])
             if i % 100 == 0 and verbose and self._training:
                 print('MC Sample {}, loss {:3g}, episode_reward {:3g}, '

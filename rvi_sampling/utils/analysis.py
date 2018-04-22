@@ -60,7 +60,18 @@ def analyze_samplers_rw(sampler_results,
         ax = fig_traj_evol_succ.add_subplot((panel_size + str(i + 1)))
         ax = sampler_result.plot_trajectory_evolution(ax=ax)
         ax.set_title('Successful Trajectories over time\nfor {}'.format(sampler_result.sampler_name))
-
+        if sampler_result.sampler_name == 'RVISampler':
+            fig_RL = plt.figure(figsize=(8, 4))
+            ax = fig_RL.add_subplot(121)
+            sampler_result.plot_reward_curves(ax)
+            ax = fig_RL.add_subplot(122)
+            sampler_result.plot_loss_curves(ax)
+            fig_RL.tight_layout()
+            fig_RL.savefig(os.path.join(folder_name,'./RL_results.pdf'))
+            torch.save({
+                'rewards_per_episode':sampler_result.rewards_per_episode,
+                'loss_per_episode':sampler_result.loss_per_episode,
+            }, os.path.join(folder_name, './RL_results.pyt'))
         try:
             if sampler_result._importance_sampled:
                 c, j = next(hist_colors)
