@@ -54,7 +54,7 @@ def main(args):
         for file_ in files:
             # print(file_)
             kl_values = defaultdict(lambda: [])
-            nn_size, reward_clip = file_.split('hps_')[-1].split('/')[0].split('-')
+            nn_size, reward_clip = file_.split(args.split)[-1].split('/')[0].split('-')
             with open(file_, 'r') as f:
                 for line in f.readlines():
                     a, b = line.strip().split(',')
@@ -63,16 +63,7 @@ def main(args):
             this_df['reward_clip'] = -float(reward_clip)
             this_df['nn'] = nn_size
             dfs.append(this_df)
-        # print(dfs[-1])
-        # files = glob(os.path.join(folder, '*', '*_KLpq.txt'))
-        # for repeat_number, file_ in enumerate(files):
-        #     sampler_name = file_.split('_KLpq.txt')[0].split('/')[-1]
-        #     opened_df = pd.read_csv(file_, names=['KL', 'time'])
-        #     opened_df['repeat_id'] = repeat_number
-        #     opened_df['sampler_name'] = sampler_name
-        #     time_series[sampler_name]['KL'].append(opened_df['KL'].values.tolist())
-        #     time_series[sampler_name]['time'].append(opened_df['time'].values.tolist())
-        #     time_series_dfs.append(opened_df)
+
     merged_df = pd.concat(dfs)
     melted_df = pd.melt(merged_df, id_vars=['nn', 'reward_clip'], value_vars=samplers,
                         var_name='Sampler', value_name='KL')
@@ -103,6 +94,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser('Aggregate KLs from experimental runs and creates a histogram')
     parser.add_argument('-f', '--folder', help='Folder with the experimental runs', required=True, nargs='+')
     parser.add_argument('-of', '--out_folder', help='Folder to save plots in', required=True)
+    parser.add_argument('-split', '--split', help='Split location for title', default='hps_')
     parser.add_argument('-t', '--title', help='title of plot', required=False, default='')
     parser.add_argument('-kind', '--kind', help='kind of plot (can only be violin)', required=False, default='point')
     parser.add_argument('-rvi', '--only_rvi', help='Only plot RVI', required=False, default=False, action='store_true')
