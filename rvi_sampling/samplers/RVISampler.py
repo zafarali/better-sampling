@@ -86,7 +86,12 @@ class RVISampler(Sampler):
                 assert len(x_tm1.size()) == 2
                 action,  log_prob_action = self.policy(x_tm1)
 
-                x_t, path_log_prob, done, _ = stochastic_process.step(action, reverse=False)
+                """
+                reverse should be True because the RVI learneer doesn't know that it is taking steps in the reverse
+                for the matching. See https://github.com/zafarali/better-sampling/wiki/Reverse-mode-in-RVI for a
+                fullscale comparison
+                """
+                x_t, path_log_prob, done, _ = stochastic_process.step(action, reverse=True)
 
                 """
                 #TODO: We need to experiment with these two options to see what happens 
