@@ -86,5 +86,12 @@ sampler.solve(env, mc_samples=5000) # runs the sampler and obtains 5k MC Samples
 
 `Sampler.solve` returns a `SamplingResults` object for easy visualizations.
 
+### Testing the algorithm
 
- 
+To perform a single evaluation of the algorithm you can look at [`experiments/rw_experiment.py`](./experiments/rw_experiment.py)
+To run a large scale evaluation of the algorithm on a SLURM cluster (like ComputeCanada) you can use [`./experiments/cc_random_walk_expectation_analysis.py`](./experiments/cc_random_walk_expectation_analysis.py) 
+which will create a SLURM script to run the above experiment on 50 different tasks, averaged over 5 seeds.
+You can visualize the results using:
+1. `visualize_proposal.py`: visualize the proposal distribution
+2. `KL_violin.py` Compare the KL values for each algorithm.
+
