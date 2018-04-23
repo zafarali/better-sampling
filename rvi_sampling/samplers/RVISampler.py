@@ -22,7 +22,8 @@ class RVISampler(Sampler):
                  seed=0,
                  gamma=1,
                  negative_reward_clip=-1000,
-                 use_cuda=False):
+                 use_cuda=False,
+                 lr_scheduler=None):
         """
         The reinforced variational inference sampler
         :param policy: the policy to use
@@ -43,6 +44,7 @@ class RVISampler(Sampler):
         self.objective = objective
         self.gamma = gamma
         self.negative_reward_clip = negative_reward_clip
+        self.lr_scheduler=lr_scheduler
 
     def train_mode(self, mode):
         self._training = mode
@@ -153,6 +155,7 @@ class RVISampler(Sampler):
                     loss.backward()
                     clip_grad_norm(self.policy.fn_approximator.parameters(), 40)
                     self.policy_optimizer.step()
+                if self.lr_scheduler is not None: self.lr_scheduler.step()
                 # end training statement.
 
             reward_summary = torch.sum(policy_gradient_trajectory_info.rewards, dim=0).mean()
