@@ -91,11 +91,14 @@ class RVISampler(Sampler):
                 x_t, path_log_prob, done, _ = stochastic_process.step(action, reverse=True)
 
 
-                reward_ = path_log_prob.float().view(-1,1) - log_prob_action.data.float().view(-1, 1)
+                reward_ = path_log_prob.float().view(-1,1)
+                # reward_ = path_log_prob.float().view(-1,1) - log_prob_action.data.float().view(-1, 1)
 
                 reward = torch.zeros_like(reward_)
                 reward.copy_(reward_)
                 reward[reward <= -np.inf] = float(self.negative_reward_clip) # throw away infinite negative rewards
+
+                reward -= log_prob_action.data.float().view(-1, 1)
                 # if t==0: print(reward)
 
                 # probability of the path gets updated:
