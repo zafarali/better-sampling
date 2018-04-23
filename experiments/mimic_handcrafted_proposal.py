@@ -13,8 +13,7 @@ from pg_methods.policies import CategoricalPolicy
 import argparse
 
 def conduct_draws(proposal, x, t):
-    # swap order because NN is in the other direction.
-    return np.flip(proposal.draw([[x]], t, sampling_probs_only=True), 0)
+    return proposal.draw([[x]], t, sampling_probs_only=True)
 
 def generate_data(proposal, timesteps, xranges):
     t, x = np.meshgrid(range(0, timesteps), range(-xranges, xranges + 1))
