@@ -8,6 +8,6 @@ def run_sampler(args):
     """
     sampler, rw, MC_samples = args
     if sampler._name == 'RVISampler':
-        return sampler.solve(PyTorchWrap(rw), MC_samples)
+        return sampler.solve(PyTorchWrap(rw), MC_samples, verbose=True)
     else:
         return sampler.solve(rw, MC_samples)

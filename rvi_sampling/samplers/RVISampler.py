@@ -83,23 +83,29 @@ class RVISampler(Sampler):
                 # this is p(w_{t} | w_{t+1})
                 assert len(x_tm1.size()) == 2
                 action,  log_prob_action = self.policy(x_tm1)
-                # print('Action taken: {}'.format(action))
-                # print('proposal_log_prob step:',log_prob_proposal_step)
-                # The RVI proposal doesn't know it's going backward in time, therefore
-                # we set reverse to be True since we want to the RVI sampler
-                # to return indices for actions that are going to go backward in time
-                x_t, path_log_prob, done, _ = stochastic_process.step(action, reverse=True)
 
+                x_t, path_log_prob, done, _ = stochastic_process.step(action, reverse=False)
 
+                """
+                #TODO: We need to experiment with these two options to see what happens 
+                Explanation of the different options below. There are two ways to do reward clipping:
+                A. Clip the log prob from the environment and then minus the log prob of the proposal
+                B. Clip the reward directly: ie minus the log prob from the environment and then minus the log 
+                                            prob of the path. After this clip the reward.
+                """
+
+                # OPTION A:
                 reward_ = path_log_prob.float().view(-1,1)
+
+                # OPTION B:
                 # reward_ = path_log_prob.float().view(-1,1) - log_prob_action.data.float().view(-1, 1)
 
                 reward = torch.zeros_like(reward_)
                 reward.copy_(reward_)
                 reward[reward <= -np.inf] = float(self.negative_reward_clip) # throw away infinite negative rewards
 
+                # OPTION A:
                 reward -= log_prob_action.data.float().view(-1, 1)
-                # if t==0: print(reward)
 
                 # probability of the path gets updated:
                 log_path_prob += path_log_prob.numpy().reshape(-1, 1)
