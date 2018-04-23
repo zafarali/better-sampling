@@ -62,7 +62,10 @@ if __name__=='__main__':
                            objective=PolicyGradientObjective(entropy=args.entropy),
                            feed_time=args.notime,
                            seed=args.sampler_seed) ]
-    samplers[-1].train_mode(False)
+
+    if args.notrain:
+        samplers[-1].train_mode(False)
+
     if args.only_rvi:
         samplers = [samplers[-1]]
 

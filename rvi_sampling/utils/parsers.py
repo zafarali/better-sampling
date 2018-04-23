@@ -21,7 +21,12 @@ def rvi_arguments(parser):
                         help='Learning rate')
     parser.add_argument('--only_rvi', default=False, action='store_true',
                         help='does only the RVI experiments')
+    parser.add_argument('--notrain', default=False, action='store_true',
+                        help='Stops training')
     parser.add_argument('-baseline', '--baseline_type', default='moving_average')
+
+    # technically notime should be True when we dont want time.
+    # here it is messed up a bit and reversed.
     parser.add_argument('-notime', '--notime', default=True, action='store_false',
                         help='Do not feed time into the neural network proposal')
     parser.add_argument('-gamma', '--gamma', default=1, type=float, help='discount factor')
