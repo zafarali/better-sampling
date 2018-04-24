@@ -13,7 +13,7 @@ from pg_methods.policies import CategoricalPolicy
 import argparse
 
 def conduct_draws(proposal, x, t):
-    return proposal.draw([[x]], t, sampling_probs_only=True)
+    return np.flip(proposal.draw([[x]], t, sampling_probs_only=True), 0)
 
 def generate_data(proposal, timesteps, xranges):
     t, x = np.meshgrid(range(0, timesteps), range(-xranges, xranges + 1))
@@ -64,11 +64,10 @@ def main(args):
                                   out_non_linearity=None)
 
     push_toward = [-args.width, args.width]
-    X, Y = generate_data(FunnelProposal(push_toward), 60, 25)
-    print(X, Y)
+    X, Y = generate_data(FunnelProposal(push_toward), 60, 50)
     data = TensorDataset(X, Y)
-    data = DataLoader(data, batch_size=128, shuffle=True)
-    optimizer = torch.optim.Adam(fn_approximator.parameters())
+    data = DataLoader(data, batch_size=2048, shuffle=True)
+    optimizer = torch.optim.Adam(fn_approximator.parameters(), lr=0.001)
     for i in range(args.epochs):
         losses_for_epoch = []
         for _, (X, Y) in enumerate(data):
