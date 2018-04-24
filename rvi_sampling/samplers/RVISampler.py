@@ -87,32 +87,38 @@ class RVISampler(Sampler):
                 action,  log_prob_action = self.policy(x_tm1)
 
                 """
+                Reverse Mode
                 reverse should be True because the RVI learneer doesn't know that it is taking steps in the reverse
-                for the matching. See https://github.com/zafarali/better-sampling/wiki/Reverse-mode-in-RVI for a
-                fullscale comparison
+                for the matching. 
                 """
                 x_t, path_log_prob, done, _ = stochastic_process.step(action, reverse=True)
 
-                """
-                #TODO: We need to experiment with these two options to see what happens 
+                """ 
                 Explanation of the different options below. There are two ways to do reward clipping:
                 A. Clip the log prob from the environment and then minus the log prob of the proposal
                 B. Clip the reward directly: ie minus the log prob from the environment and then minus the log 
                                             prob of the path. After this clip the reward.
+                
+                Both Reward Clipping and Reverse Mode were evaluated and are shown here:
+                https://docs.google.com/document/d/1OugyMJ4pPwiUW_3im9-exA5Ynj5O8eIv5GaVC6-laHc
+                We found that (as expected) reverse True performed best. Unsurprisingly Option B
+                performed best (as it is the theoretically justified method of doing this)
+                
+                Therefore, USE OPTION B AND REVERSE = TRUE 
                 """
 
                 # OPTION A:
-                reward_ = path_log_prob.float().view(-1,1)
+                # reward_ = path_log_prob.float().view(-1,1)
 
                 # OPTION B:
-                # reward_ = path_log_prob.float().view(-1,1) - log_prob_action.data.float().view(-1, 1)
+                reward_ = path_log_prob.float().view(-1,1) - log_prob_action.data.float().view(-1, 1)
 
                 reward = torch.zeros_like(reward_)
                 reward.copy_(reward_)
                 reward[reward <= -np.inf] = float(self.negative_reward_clip) # throw away infinite negative rewards
 
                 # OPTION A:
-                reward -= log_prob_action.data.float().view(-1, 1)
+                # reward -= log_prob_action.data.float().view(-1, 1)
 
                 # probability of the path gets updated:
                 log_path_prob += path_log_prob.numpy().reshape(-1, 1)
