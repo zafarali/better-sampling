@@ -27,8 +27,11 @@ class Experiments(object):
 
         if args.pretrained:
             script += ' --pretrained {}'.format(args.pretrained)
+        if args.notrain:
+            script += ' --notrain'
         return script
 
+    @staticmethod
     def two_window(args, replicate_id, rw_seed):
         script = '\npython two_window_experiment.py -s {samples} -samseed {replicate_id} -n_cpus 1 ' \
                  '--rw_time $RWTIME --rw_seed {rw_seed} --rw_width $RWWIDTH --outfolder {folder}/{rw_seed} ' \
@@ -42,6 +45,8 @@ class Experiments(object):
                                neural_network=args.neural_network_spec)
         if args.pretrained:
             script += ' --pretrained {}'.format(args.pretrained)
+        if args.notrain:
+            script += ' --notrain'
         return script
 
 
@@ -97,6 +102,7 @@ if __name__ == '__main__':
     parser.add_argument('-nnspec', '--neural_network_spec', help='Neural network specification. DO NOT USE -nn for this.',
                         required=True)
     parser.add_argument('-pretrained', '--pretrained', default=None)
+    parser.add_argument('-notrain', '--notrain', action='store_true', default=False)
     parser.add_argument_group('Random Walk Arguments')
     utils.parsers.random_walk_arguments(parser)
     parser.add_argument_group('RVI Arguments')
