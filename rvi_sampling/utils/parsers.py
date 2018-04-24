@@ -38,6 +38,7 @@ def rvi_arguments(parser):
                         help='Number of agents to use')
     parser.add_argument('-nn', '--neural-network', nargs='+', help='neural network specification',
                         default=[16, 16], type=int)
+    parser.add_argument('-pretrained', '--pretrained', default=None, type=str, help='path to a pretrained policy.')
     return parser
 
 def experimental_arguments(parser):
@@ -59,6 +60,5 @@ def experimental_arguments(parser):
                         help='the importance sampling distribution to use (funnel, soft)')
     parser.add_argument('-outfolder', '--outfolder', default='./', type=str,
                         help='Where to save things')
-    parser.add_argument('-pretrained', '--pretrained', default=None, type=str, help='path to a pretrained policy.')
     return parser
 

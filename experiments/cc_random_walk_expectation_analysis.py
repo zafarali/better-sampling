@@ -101,8 +101,6 @@ if __name__ == '__main__':
     parser.add_argument('-dryrun', '--dryrun', help='Dry run', default=False, action='store_true')
     parser.add_argument('-nnspec', '--neural_network_spec', help='Neural network specification. DO NOT USE -nn for this.',
                         required=True)
-    parser.add_argument('-pretrained', '--pretrained', default=None)
-    parser.add_argument('-notrain', '--notrain', action='store_true', default=False)
     parser.add_argument_group('Random Walk Arguments')
     utils.parsers.random_walk_arguments(parser)
     parser.add_argument_group('RVI Arguments')
