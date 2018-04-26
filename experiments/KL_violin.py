@@ -80,7 +80,7 @@ def main(args):
         melted_df = melted_df[(melted_df['Sampler'] == 'RVISampler')]
     _ = sns.factorplot(x="reward_clip", y="KL", hue=args.hue, kind=args.kind,
                     data=melted_df, ax=ax2, palette=get_color_map(args.hue), lw=0.5, legend_out=True)
-
+    print(melted_df.describe()) # describe what the data looks like (for reporting in the paper)
     ax2.legend(fontsize='x-small', frameon=True, framealpha=0.4)
     if args.only_rvi or args.no_legend: ax2.legend_.remove()
     ax2.set_title(args.title)
