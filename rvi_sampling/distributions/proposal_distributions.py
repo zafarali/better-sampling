@@ -23,7 +23,7 @@ class MinimalProposal(ProposalDistribution):
         if rng:
             self.rng = rng
 
-    def draw(self, x, time_left):
+    def draw(self, x, time_left, sampling_probs_only=False):
         """
         A slight pushing distribution
 
@@ -48,6 +48,9 @@ class MinimalProposal(ProposalDistribution):
 
         sampling_probs = unbias_probs * p + (1-p)*bias_probs
         sampling_probs /= sampling_probs.sum()
+
+        if sampling_probs_only:
+            return sampling_probs
 
         chosen_step_idx = self.rng.multinomial(1, sampling_probs, 1).argmax()
         chosen_step = self.step_sizes[chosen_step_idx]
@@ -82,7 +85,7 @@ class SimonsSoftProposal(SimonsProposal):
         self.push_toward = np.array(push_toward)
 
 
-    def draw(self, w, time_left):
+    def draw(self, w, time_left, sampling_probs_only=False):
         """
         :param w: the current position
         :param time_left: the number of time steps until we reach the start
@@ -138,6 +141,9 @@ class SimonsSoftProposal(SimonsProposal):
         probs = np.array([p / 2., p / 2.]) + (1 - p) * bias_prob_term
         # probs = np.exp(probs)
         # probs /= probs.sum()
+        if sampling_probs_only:
+            return probs
+
         choice_index = np.array([self.rng.multinomial(1, probs, 1).argmax()])
         choice_step = choices[choice_index]
         choice_prob = probs[choice_index]
@@ -158,7 +164,10 @@ class RandomProposal(ProposalDistribution):
             self.rng = rng
 
 
-    def draw(self, x, time_left):
+    def draw(self, x, time_left, sampling_probs_only=False):
+        if sampling_probs_only:
+            return np.array([0.5, 0.5])
+
         random_step = np.array([2 * self.rng.randint(0, 2) - 1])
         if random_step == -1:
             index = 0
@@ -174,7 +183,7 @@ class FunnelProposal(ProposalDistribution):
         if rng:
             self.rng = rng
 
-    def draw(self, w, time_left):
+    def draw(self, w, time_left, sampling_probs_only=False):
 
         STEP_SIZE = 1
         # print(w)
@@ -191,17 +200,24 @@ class FunnelProposal(ProposalDistribution):
             # we cannot ever move into the window, we push hard toward the window.
             if np.sign(w) == -1 and self.push_toward[0] - (w -1) > steps_left-1:
                 # too much in the negative direction
+                if sampling_probs_only:
+                    return np.array([0, 1])
                 return np.array([1]), +1, np.log(1 - np.finfo(float).eps)
 
             elif np.sign(w) == +1 and (w+1) - self.push_toward[1] > steps_left-1:
                 # we are in the positive area, if we took a step
                 # in the positive direction in the next time step
                 # would we still have enough steps to be in the window?
+                if sampling_probs_only:
+                    return np.array([1, 0])
                 return np.array([0]), -1, np.log(1-np.finfo(float).eps)
 
         choices = np.array([[-STEP_SIZE], [STEP_SIZE]])
 
         probs = np.array([1 / 2., 1 / 2.])
+
+        if sampling_probs_only:
+            return probs
 
         choice_index = np.array([self.rng.multinomial(1, probs, 1).argmax()])
         choice_step = choices[choice_index]

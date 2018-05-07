@@ -365,4 +365,12 @@ class ImportanceSamplingResults(SamplingResults):
 
 
 class RLSamplingResults(ImportanceSamplingResults):
-    pass
+    def plot_reward_curves(self, ax):
+        ax.plot(self.rewards_per_episode)
+        ax.set_xlabel('Episode')
+        ax.set_ylabel('Reward For Episode')
+
+    def plot_loss_curves(self, ax):
+        ax.plot(self.loss_per_episode)
+        ax.set_xlabel('Episode')
+        ax.set_ylabel('Loss')

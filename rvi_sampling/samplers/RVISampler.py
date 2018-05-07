@@ -1,9 +1,9 @@
-import pg_methods.utils.gradients as gradients
 from torch.nn.utils import clip_grad_norm
 import torch
 from torch.autograd import Variable
-from pg_methods.utils.data import MultiTrajectory
-from pg_methods.utils.objectives import PolicyGradientObjective
+from pg_methods.data import MultiTrajectory
+from pg_methods.objectives import PolicyGradientObjective
+import pg_methods.gradients as gradients
 import numpy as np
 from .Samplers import Sampler
 from ..results import RLSamplingResults
@@ -21,7 +21,9 @@ class RVISampler(Sampler):
                  objective=PolicyGradientObjective(),
                  seed=0,
                  gamma=1,
-                 use_cuda=False):
+                 negative_reward_clip=-1000,
+                 use_cuda=False,
+                 lr_scheduler=None):
         """
         The reinforced variational inference sampler
         :param policy: the policy to use
@@ -41,6 +43,8 @@ class RVISampler(Sampler):
         self.feed_time = feed_time
         self.objective = objective
         self.gamma = gamma
+        self.negative_reward_clip = negative_reward_clip
+        self.lr_scheduler=lr_scheduler
 
     def train_mode(self, mode):
         self._training = mode
@@ -81,16 +85,40 @@ class RVISampler(Sampler):
                 # this is p(w_{t} | w_{t+1})
                 assert len(x_tm1.size()) == 2
                 action,  log_prob_action = self.policy(x_tm1)
-                # print('proposal_log_prob step:',log_prob_proposal_step)
-                x_t, path_log_prob, done, _ = stochastic_process.step(action, reverse=False)
 
+                """
+                Reverse Mode
+                reverse should be True because the RVI learneer doesn't know that it is taking steps in the reverse
+                for the matching. 
+                """
+                x_t, path_log_prob, done, _ = stochastic_process.step(action, reverse=True)
 
+                """ 
+                Explanation of the different options below. There are two ways to do reward clipping:
+                A. Clip the log prob from the environment and then minus the log prob of the proposal
+                B. Clip the reward directly: ie minus the log prob from the environment and then minus the log 
+                                            prob of the path. After this clip the reward.
+                
+                Both Reward Clipping and Reverse Mode were evaluated and are shown here:
+                https://docs.google.com/document/d/1OugyMJ4pPwiUW_3im9-exA5Ynj5O8eIv5GaVC6-laHc
+                We found that (as expected) reverse True performed best. Unsurprisingly Option B
+                performed best (as it is the theoretically justified method of doing this)
+                
+                Therefore, USE OPTION B AND REVERSE = TRUE 
+                """
+
+                # OPTION A:
+                # reward_ = path_log_prob.float().view(-1,1)
+
+                # OPTION B:
                 reward_ = path_log_prob.float().view(-1,1) - log_prob_action.data.float().view(-1, 1)
 
                 reward = torch.zeros_like(reward_)
                 reward.copy_(reward_)
-                reward[reward <= -np.inf] = -100000. # throw away infinite negative rewards
-                # if t==0: print(reward)
+                reward[reward <= -np.inf] = float(self.negative_reward_clip) # throw away infinite negative rewards
+
+                # OPTION A:
+                # reward -= log_prob_action.data.float().view(-1, 1)
 
                 # probability of the path gets updated:
                 log_path_prob += path_log_prob.numpy().reshape(-1, 1)
@@ -122,7 +150,8 @@ class RVISampler(Sampler):
 
             # update the proposal distribution
             if self._training:
-                returns = gradients.calculate_returns(policy_gradient_trajectory_info.rewards, self.gamma, None)
+                returns = gradients.calculate_returns(policy_gradient_trajectory_info.rewards, self.gamma,
+                                                      policy_gradient_trajectory_info.masks)
                 advantages = returns - policy_gradient_trajectory_info.values
                 if self.baseline is not None:
                     self.baseline.update_baseline(policy_gradient_trajectory_info, returns)
@@ -137,29 +166,36 @@ class RVISampler(Sampler):
                     loss.backward()
                     clip_grad_norm(self.policy.fn_approximator.parameters(), 40)
                     self.policy_optimizer.step()
+                if self.lr_scheduler is not None: self.lr_scheduler.step()
                 # end training statement.
 
             reward_summary = torch.sum(policy_gradient_trajectory_info.rewards, dim=0).mean()
             rewards_per_episode.append(reward_summary)
+
             if self._training: loss_per_episode.append(loss.cpu().data[0])
             if i % 100 == 0 and verbose and self._training:
-                print('MC Sample {}, loss {:3g}, episode_reward {:3g}, successful trajs {}'.format(i, loss.cpu().data[0], reward_summary, len(trajectories)))
+                print('MC Sample {}, loss {:3g}, episode_reward {:3g}, '
+                      'trajectory_length {}, successful trajs {}, '
+                      'path_log_prob: {}, proposal_log_prob: {}'.format(i, loss.cpu().data[0],
+                                                                        reward_summary, len(trajectory_i),
+                                                                        len(trajectories), np.mean(log_path_prob),
+                                                                        np.mean(log_proposal_prob)))
 
 
             if feed_time:
-                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T,
+                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, len(trajectory_i),
                                                                x_t.size()[-1]-1)
             else:
-                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, stochastic_process.T,
+                trajectory_i = np.hstack(trajectory_i).reshape(stochastic_process.n_agents, len(trajectory_i),
                                                                x_t.size()[-1])
 
             # select paths for storage
             likelihood_ratios = log_path_prob - log_proposal_prob
             selected_trajectories = np.where(log_path_prob > -np.inf)
             for traj_idx in selected_trajectories[0]:
-                    trajectories.append(trajectory_i[traj_idx, ::-1, :stochastic_process.dimensions])
-                    posterior_particles.append(trajectories[-1][0])
-                    posterior_weights.append(np.exp(likelihood_ratios[traj_idx]))
+                trajectories.append(trajectory_i[traj_idx, ::-1, :stochastic_process.dimensions])
+                posterior_particles.append(trajectories[-1][0])
+                posterior_weights.append(np.exp(likelihood_ratios[traj_idx]))
             for m in range(trajectory_i.shape[0]):
                 all_trajectories.append(trajectory_i[m, ::-1, :stochastic_process.dimensions])
 

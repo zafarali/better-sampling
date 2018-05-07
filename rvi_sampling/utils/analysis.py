@@ -35,10 +35,10 @@ def analyze_samplers_rw(sampler_results,
     for i, sampler_result in enumerate(sampler_results):
         try:
             ax = fig_dists.add_subplot(panel_size + str(i + 1))
-            ax = sampler_result.plot_distribution(args.rw_width, ax, alpha=0.7) # TODO: change this hard coding of args.rw_width!
+            ax = sampler_result.plot_distribution(args.rw_width, ax, alpha=0.7)
             if analytic is not None: ax = analytic.plot(stochastic_process.xT, ax, label='analytic', color='r')
 
-            empirical_distribution = sampler_result.empirical_distribution(histbin_range=args.rw_width) ## TODO: Here as well
+            empirical_distribution = sampler_result.empirical_distribution(histbin_range=args.rw_width)
 
 
             if analytic is not None: kl_divergence = analytic.kl_divergence(empirical_distribution, stochastic_process.xT[0])
@@ -60,7 +60,21 @@ def analyze_samplers_rw(sampler_results,
         ax = fig_traj_evol_succ.add_subplot((panel_size + str(i + 1)))
         ax = sampler_result.plot_trajectory_evolution(ax=ax)
         ax.set_title('Successful Trajectories over time\nfor {}'.format(sampler_result.sampler_name))
-
+        try:
+            if sampler_result.sampler_name == 'RVISampler':
+                fig_RL = plt.figure(figsize=(8, 4))
+                ax = fig_RL.add_subplot(121)
+                sampler_result.plot_reward_curves(ax)
+                ax = fig_RL.add_subplot(122)
+                sampler_result.plot_loss_curves(ax)
+                fig_RL.tight_layout()
+                fig_RL.savefig(os.path.join(folder_name,'./RL_results.pdf'))
+                torch.save({
+                    'rewards_per_episode':sampler_result.rewards_per_episode,
+                    'loss_per_episode':sampler_result.loss_per_episode,
+                }, os.path.join(folder_name, './RL_results.pyt'))
+        except AttributeError as e:
+            pass
         try:
             if sampler_result._importance_sampled:
                 c, j = next(hist_colors)
@@ -99,15 +113,15 @@ def analyze_samplers_rw(sampler_results,
 
     # if we have given a policy, we should save it
     if policy is not None:
+        torch.save(policy, os.path.join(folder_name, 'rvi_policy.pyt'))
         try:
-            torch.save(policy, os.path.join(folder_name, 'rvi_policy.pyt'))
-
-            t, x, x_arrows, y_arrows_nn = plotting.visualize_proposal([policy], 50, 20, neural_network=True)
-            f = plotting.multi_quiver_plot(t, x, x_arrows,
-                                          [y_arrows_nn],
-                                          ['Learned Neural Network Proposal'],
-                                          figsize=(10, 5))
-            f.savefig(os.path.join(folder_name, 'visualized_proposal.pdf'))
+            if args.plot_posterior:
+                t, x, x_arrows, y_arrows_nn = plotting.visualize_proposal([policy], 50, 20, neural_network=True)
+                f = plotting.multi_quiver_plot(t, x, x_arrows,
+                                              [y_arrows_nn],
+                                              ['Learned Neural Network Proposal'],
+                                              figsize=(10, 5))
+                f.savefig(os.path.join(folder_name, 'visualized_proposal.pdf'))
         except Exception as e:
             print('Could not plot proposal distribution {}'.format(e))
-
+    # 

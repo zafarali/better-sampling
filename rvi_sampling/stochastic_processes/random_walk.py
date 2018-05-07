@@ -1,5 +1,5 @@
 import numpy as np
-from .base import StochasticProcess
+from .base import StochasticProcess, StochasticProcessOverError
 from ..distributions.prior_distributions import DiscreteUniform
 from collections import namedtuple
 
@@ -90,10 +90,9 @@ class RandomWalk(StochasticProcess):
         :param reverse: defines if the step execution is going in reverse or not
         """
         if self.transitions_left == 0:
-            # TODO return a custom error here to not conflate it with builtin types.
-            raise TimeoutError('You have already reached the end of the episode. Use reset()')
+            raise StochasticProcessOverError('You have already reached the end of the episode. Use reset()')
 
-        steps_taken = np.take(self.step_sizes, actions.ravel(), axis=0)
+        steps_taken = np.take(self.step_sizes, actions.ravel(), axis=0).reshape(self.n_agents, -1)
         step_log_probs = np.log(np.take(self.step_probs, actions.ravel(), axis=0).reshape(self.n_agents, -1))
 
         reversal_param = -1 if reverse else +1
@@ -102,7 +101,7 @@ class RandomWalk(StochasticProcess):
         if self.transitions_left == 0:
             # if there are no more transitions left, also add the "final reward"
             # to the step_log_probs
-            step_log_probs += np.log(self.prior.pdf(self.x_agent))
+            step_log_probs += np.log(self.prior.pdf(self.x_agent).reshape(self.n_agents, -1))
 
         return (self.x_agent, step_log_probs.reshape(-1, 1), self.transitions_left == 0, {})
 

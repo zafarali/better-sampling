@@ -21,10 +21,24 @@ def rvi_arguments(parser):
                         help='Learning rate')
     parser.add_argument('--only_rvi', default=False, action='store_true',
                         help='does only the RVI experiments')
+    parser.add_argument('--notrain', default=False, action='store_true',
+                        help='Stops training')
     parser.add_argument('-baseline', '--baseline_type', default='moving_average')
+
+    # technically notime should be True when we dont want time.
+    # here it is messed up a bit and reversed.
     parser.add_argument('-notime', '--notime', default=True, action='store_false',
                         help='Do not feed time into the neural network proposal')
     parser.add_argument('-gamma', '--gamma', default=1, type=float, help='discount factor')
+    parser.add_argument('-rewardclip', '--reward_clip', default=-1000, type=float, help='The value to clip negative '
+                                                                                        'infinite rewards to')
+    parser.add_argument('-nagents', '--n_agents', default=1, type=int,
+                        help='Number of agents to use')
+    parser.add_argument('-plot-posterior', '--plot_posterior', default=False, action='store_true',
+                        help='Number of agents to use')
+    parser.add_argument('-nn', '--neural-network', nargs='+', help='neural network specification',
+                        default=[16, 16], type=int)
+    parser.add_argument('-pretrained', '--pretrained', default=None, type=str, help='path to a pretrained policy.')
     return parser
 
 def experimental_arguments(parser):
@@ -40,7 +54,7 @@ def experimental_arguments(parser):
                         help='CPUs to use when doing the work')
     parser.add_argument('-notb', '--no_tensorboard', action='store_true',
                         help='Disables tensorboard')
-    parser.add_argument('-name', '--name', default='', type=str,
+    parser.add_argument('-name', '--name', default='results', type=str,
                         help='append name')
     parser.add_argument('-IS_proposal', '--IS_proposal', default='funnel', type=str,
                         help='the importance sampling distribution to use (funnel, soft)')

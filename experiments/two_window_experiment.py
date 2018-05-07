@@ -10,10 +10,10 @@ import seaborn as sns
 from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler, RVISampler
 from rvi_sampling.distributions.proposal_distributions import SimonsSoftProposal, FunnelProposal
 from rvi_sampling import utils
-from pg_methods.utils.baselines import MovingAverageBaseline
-from pg_methods.utils.policies import MultinomialPolicy
-from pg_methods.utils.networks import MLP_factory
-from pg_methods.utils.objectives import PolicyGradientObjective
+from pg_methods.baselines import MovingAverageBaseline
+from pg_methods.policies import MultinomialPolicy
+from pg_methods.networks import MLP_factory
+from pg_methods.objectives import PolicyGradientObjective
 
 DIMENSIONS = 1
 OUTPUT_SIZE = 2
@@ -21,7 +21,7 @@ OUTPUT_SIZE = 2
 if __name__=='__main__':
     args = utils.parsers.create_parser('1D random walk with two windows', 'random_walk').parse_args()
     utils.common.set_global_seeds(args.sampler_seed)
-    folder_name = utils.io.create_folder_name(args.outfolder, args.name)
+    folder_name = utils.io.create_folder_name(args.outfolder, args.name+'_'+str(args.sampler_seed)+'_'+str(args.rw_seed))
     utils.io.create_folder(folder_name)
 
     sns.set_style('white')
@@ -34,7 +34,7 @@ if __name__=='__main__':
 
     # create a policy for the RVI sampler
     fn_approximator = MLP_factory(DIMENSIONS+int(args.notime),
-                                  hidden_sizes=[16, 16],
+                                  hidden_sizes=args.neural_network,
                                   output_size=OUTPUT_SIZE,
                                   hidden_non_linearity=nn.ReLU)
 
@@ -55,6 +55,7 @@ if __name__=='__main__':
                            policy_optimizer,
                            baseline=baseline,
                            objective=PolicyGradientObjective(entropy=args.entropy),
+                           negative_reward_clip=args.reward_clip,
                            feed_time=args.notime,
                            seed=args.sampler_seed) ]
 
@@ -73,7 +74,10 @@ if __name__=='__main__':
 
 
     pool = multiprocessing.Pool(args.n_cpus)
-    solver_arguments = [(sampler, utils.stochastic_processes.create_rw_two_window(args)[0], args.samples) for sampler in samplers]
+    solver_arguments = [(sampler,
+                         utils.stochastic_processes.create_rw_two_window(args, n_agents=args.n_agents if sampler._name == 'RVISampler' else 1)[0],
+                         # args.samples * args.n_agents if sampler._name != 'RVISampler' else args.samples) for sampler in samplers]
+                         args.samples) for sampler in samplers]
 
     sampler_results = pool.map(utils.multiprocessing_tools.run_sampler, solver_arguments)
     utils.analysis.analyze_samplers_rw(sampler_results, args, folder_name, rw, policy=policy, analytic=analytic)
