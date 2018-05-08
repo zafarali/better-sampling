@@ -87,7 +87,10 @@ if __name__=='__main__':
                          # args.samples * args.n_agents if sampler._name != 'RVISampler' else args.samples) for sampler in samplers]
                          args.samples) for sampler in samplers]
 
-    sampler_results = pool.map(utils.multiprocessing_tools.run_sampler, solver_arguments)
+    if args.profile_performance:
+        sampler_results = pool.map(utils.multiprocessing_tools.run_sampler_with_profiling, solver_arguments)
+    else:
+        sampler_results = pool.map(utils.multiprocessing_tools.run_sampler, solver_arguments)
 
     utils.analysis.analyze_samplers_rw(sampler_results, args, folder_name, rw, policy=policy, analytic=analytic)
 
