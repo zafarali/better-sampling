@@ -70,7 +70,7 @@ if __name__=='__main__':
         samplers = [samplers[-1]]
 
     def kl_function(estimated_distribution):
-        return analytic.kl_divergence(estimated_distribution, rw.xT)
+        return analytic.kl_divergence(estimated_distribution, rw.xT[0])
 
     # kl_function = utils.diagnostics.make_kl_function(analytic, rw.xT) Can't work because lambda function
     _ = [sampler.set_diagnostic(utils.diagnostics.create_diagnostic(sampler._name, args, folder_name, kl_function)) for sampler in samplers]
