@@ -35,6 +35,11 @@ if __name__=='__main__':
     train_folder_name = os.path.join(folder_name, 'training_results')
     test_folder_name = os.path.join(folder_name, 'testing_results')
 
+    kl_train_track = os.path.join(folder_name, 'kl_training.txt')
+    kl_test_track = os.path.join(folder_name, 'kl_testing.txt')
+    prop_train_track = os.path.join(folder_name, 'prop_training.txt')
+    prop_test_track = os.path.join(folder_name, 'prop_testing.txt')
+
     utils.io.create_folder(folder_name)
     utils.io.create_folder(train_folder_name)
     utils.io.create_folder(test_folder_name)
@@ -85,8 +90,13 @@ if __name__=='__main__':
 
     test_folder_to_save_in = os.path.join(test_folder_name, '0')
     utils.io.create_folder(test_folder_to_save_in)
-    utils.analysis.analyze_samplers_rw([test_results], args, test_folder_to_save_in, rw,
+    kld = utils.analysis.analyze_samplers_rw([test_results], args, test_folder_to_save_in, rw,
                                        policy=policy, analytic=analytic)
+
+    utils.io.put(kl_train_track, '0, '+str(kld[0]))
+    utils.io.put(kl_test_track, '0, '+str(kld[0]))
+    utils.io.put(prop_train_track, '0, ' + test_results.prop_success())
+    utils.io.put(prop_test_track, '0, ' + test_results.prop_success())
 
     for i in range(1, args.cycles+1):
         test_results, train_results_new = sampler.solve(PyTorchWrap(rw), args.samples, verbose=True,
@@ -116,15 +126,21 @@ if __name__=='__main__':
         else:
             test_folder_to_save_in = os.path.join(test_folder_name, str(i))
             utils.io.create_folder(test_folder_to_save_in)
+
+        steps_so_far = str(i * args.train_steps)
         print('Testing Phase:')
-        utils.analysis.analyze_samplers_rw([test_results], args, test_folder_to_save_in, rw,
+        kld = utils.analysis.analyze_samplers_rw([test_results], args, test_folder_to_save_in, rw,
                                            policy=policy, analytic=analytic)
+
+        utils.io.put(kl_test_track, steps_so_far+', ' + str(kld[0]))
+        utils.io.put(prop_test_track, steps_so_far + ', ' + str(test_results.prop_success()))
 
         train_folder_to_save_in = os.path.join(train_folder_name, str(i))
         utils.io.create_folder(train_folder_to_save_in)
         print('Training Phase:')
-        utils.analysis.analyze_samplers_rw([test_results], args, train_folder_to_save_in, rw,
-                                           policy=None, analytic=analytic) # dont save these things again
+        kld = utils.analysis.analyze_samplers_rw([train_results], args, train_folder_to_save_in, rw,
+                                           policy=None, analytic=analytic) # don't save these things again
 
-
+        utils.io.put(kl_train_track, steps_so_far + ', ' + str(kld[0]))
+        utils.io.put(prop_train_track, steps_so_far + ', ' + str(train_results.prop_success()))
     print('DONE')

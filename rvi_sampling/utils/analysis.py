@@ -125,3 +125,5 @@ def analyze_samplers_rw(sampler_results,
         except Exception as e:
             print('Could not plot proposal distribution {}'.format(e))
     # 
+
+    return kl_divergences
