@@ -33,7 +33,7 @@ def test_algorithms():
                                   output_size=OUTPUT_SIZE,
                                   hidden_non_linearity=nn.ReLU)
 
-    policy = MultinomialPolicy(fn_approximator)
+    policy = CategoricalPolicy(fn_approximator)
     policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=0.001)
     baseline = MovingAverageBaseline(0.99)
 

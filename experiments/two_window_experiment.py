@@ -11,7 +11,7 @@ from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler, RVISampler
 from rvi_sampling.distributions.proposal_distributions import SimonsSoftProposal, FunnelProposal
 from rvi_sampling import utils
 from pg_methods.baselines import MovingAverageBaseline
-from pg_methods.policies import MultinomialPolicy
+from pg_methods.policies import CategoricalPolicy
 from pg_methods.networks import MLP_factory
 from pg_methods.objectives import PolicyGradientObjective
 
@@ -38,7 +38,7 @@ if __name__=='__main__':
                                   output_size=OUTPUT_SIZE,
                                   hidden_non_linearity=nn.ReLU)
 
-    policy = MultinomialPolicy(fn_approximator)
+    policy = CategoricalPolicy(fn_approximator)
     policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=args.learning_rate)
     baseline = MovingAverageBaseline(args.baseline_decay)
 
