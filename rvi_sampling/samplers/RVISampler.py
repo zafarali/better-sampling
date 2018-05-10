@@ -53,7 +53,8 @@ class RVISampler(Sampler):
         self._training = mode
 
     def solve(self, stochastic_process, mc_samples,
-              verbose=False, retrain=0, return_train_results=False):
+              verbose=False, retrain=0, return_train_results=False,
+              use_train_results_as_posterior=False):
         """
         Collect mc_samples from the posterior.
         Note that this function will first train the proposal before evaluating
@@ -67,6 +68,8 @@ class RVISampler(Sampler):
                         this many time steps
         :param return_train_results: This will also return the training_results
                                      (for diagnostic purposes)
+        :param use_train_results_as_posterior: Will skip the evaluation phase and
+                                    the posterior estimated during training is returned
         :return:
         """
         # decide how many training steps to do
@@ -78,17 +81,28 @@ class RVISampler(Sampler):
         else:
             train_episodes = self.train_episodes
 
+        if use_train_results_as_posterior:
+            train_episodes = mc_samples
+            if self.train_steps_completed > 0:
+                logging.warning('Proposal was already trained before retraining.')
+
         if train_episodes > 0 and self.policy_optimizer is not None:
             train_results = self.train(stochastic_process, train_episodes, verbose=verbose)
         else:
             train_results = None
 
-        sampler_results = self.sample_from_posterior(stochastic_process, mc_samples, verbose=verbose)
+        if not use_train_results_as_posterior:
+            sampler_results = self.sample_from_posterior(stochastic_process, mc_samples, verbose=verbose)
+        else:
+            sampler_results = None
 
-        if return_train_results:
+        if use_train_results_as_posterior:
+            return train_results
+        elif return_train_results:
             return sampler_results, train_results
         else:
             return sampler_results
+
 
     def train(self, stochastic_process, train_episodes, verbose=False):
         """
