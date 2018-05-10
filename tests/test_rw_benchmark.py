@@ -26,7 +26,7 @@ def test_algorithms():
     args = rwargs(5, 50, 0)
 
     rw, analytic = utils.stochastic_processes.create_rw(args, biased=False)
-
+    utils.common.set_global_seeds(0)
     # create a policy for the RVI sampler
     fn_approximator = MLP_factory(DIMENSIONS+1,
                                   hidden_sizes=[16, 16],
