@@ -57,6 +57,7 @@ if __name__=='__main__':
                            objective=PolicyGradientObjective(entropy=args.entropy),
                            negative_reward_clip=args.reward_clip,
                            feed_time=args.notime,
+                           train_episodes=args.train_steps,
                            seed=args.sampler_seed) ]
 
     if args.only_rvi:

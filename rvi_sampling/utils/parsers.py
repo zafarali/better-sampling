@@ -34,6 +34,8 @@ def rvi_arguments(parser):
                                                                                         'infinite rewards to')
     parser.add_argument('-nagents', '--n_agents', default=1, type=int,
                         help='Number of agents to use')
+    parser.add_argument('-trainsteps', '--train_steps', default=1000, type=int,
+                        help='Number of steps to train the RVI sampler before sampling.')
     parser.add_argument('-plot-posterior', '--plot_posterior', default=False, action='store_true',
                         help='Number of agents to use')
     parser.add_argument('-nn', '--neural-network', nargs='+', help='neural network specification',
