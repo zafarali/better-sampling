@@ -52,6 +52,44 @@ class RVISampler(Sampler):
     def train_mode(self, mode):
         self._training = mode
 
+    def solve(self, stochastic_process, mc_samples,
+              verbose=False, retrain=0, return_train_results=False):
+        """
+        Collect mc_samples from the posterior.
+        Note that this function will first train the proposal before evaluating
+        This is a departure from version 0.0.0 where samples were collected at
+        the same time as the training. In theory both of these could be useful
+        in different cases (online learning setting)
+        :param stochastic_process: The stochastic process to learn from
+        :param mc_samples: The number of samples to obtain
+        :param verbose: verbosity
+        :param retrain: Give an integer here if you want to retrain the proposal for
+                        this many time steps
+        :param return_train_results: This will also return the training_results
+                                     (for diagnostic purposes)
+        :return:
+        """
+        # decide how many training steps to do
+        if self.train_steps_completed > self.train_episodes:
+            if int(retrain) > 0:
+                train_episodes = retrain
+            else:
+                train_episodes = 0
+        else:
+            train_episodes = self.train_episodes
+
+        if train_episodes > 0 and self.policy_optimizer is not None:
+            train_results = self.train(stochastic_process, train_episodes, verbose=verbose)
+        else:
+            train_results = None
+
+        sampler_results = self.sample_from_posterior(stochastic_process, mc_samples, verbose=verbose)
+
+        if return_train_results:
+            return sampler_results, train_results
+        else:
+            return sampler_results
+
     def train(self, stochastic_process, train_episodes, verbose=False):
         """
         Train the RVI model
@@ -330,38 +368,6 @@ class RVISampler(Sampler):
             posterior_weights.append(np.exp(likelihood_ratios[traj_idx]))
         for m in range(sampled_trajectories.shape[0]):
             all_trajectories.append(sampled_trajectories[m, ::-1, :stochastic_process.dimensions])
-
-    def solve(self, stochastic_process, mc_samples,
-              verbose=False, retrain=0, return_train_results=False):
-        """
-
-        :param stochastic_process:
-        :param mc_samples:
-        :param verbose:
-        :param retrain:
-        :param return_train_results:
-        :return:
-        """
-        # decide how many training steps to do
-        if self.train_steps_completed > self.train_episodes:
-            if int(retrain) > 0:
-                train_episodes = retrain
-            else:
-                train_episodes = 0
-        else:
-            train_episodes = self.train_episodes
-
-        if train_episodes > 0 and self.policy_optimizer is not None:
-            train_results = self.train(stochastic_process, train_episodes, verbose=verbose)
-        else:
-            train_results = None
-
-        sampler_results = self.sample_from_posterior(stochastic_process, mc_samples, verbose=verbose)
-
-        if return_train_results:
-            return sampler_results, train_results
-        else:
-            return sampler_results
 
 
 
