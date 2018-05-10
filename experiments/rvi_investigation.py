@@ -95,8 +95,8 @@ if __name__=='__main__':
 
     utils.io.put(kl_train_track, '0, '+str(kld[0]))
     utils.io.put(kl_test_track, '0, '+str(kld[0]))
-    utils.io.put(prop_train_track, '0, ' + test_results.prop_success())
-    utils.io.put(prop_test_track, '0, ' + test_results.prop_success())
+    utils.io.put(prop_train_track, '0, ' + str(test_results.prop_success()))
+    utils.io.put(prop_test_track, '0, ' + str(test_results.prop_success()))
 
     for i in range(1, args.cycles+1):
         test_results, train_results_new = sampler.solve(PyTorchWrap(rw), args.samples, verbose=True,
@@ -132,8 +132,8 @@ if __name__=='__main__':
         kld = utils.analysis.analyze_samplers_rw([test_results], args, test_folder_to_save_in, rw,
                                            policy=policy, analytic=analytic)
 
-        utils.io.put(kl_test_track, steps_so_far+', ' + str(kld[0]))
-        utils.io.put(prop_test_track, steps_so_far + ', ' + str(test_results.prop_success()))
+        utils.io.stash(kl_test_track, steps_so_far+', ' + str(kld[0]))
+        utils.io.stash(prop_test_track, steps_so_far + ', ' + str(test_results.prop_success()))
 
         train_folder_to_save_in = os.path.join(train_folder_name, str(i))
         utils.io.create_folder(train_folder_to_save_in)
@@ -141,6 +141,6 @@ if __name__=='__main__':
         kld = utils.analysis.analyze_samplers_rw([train_results], args, train_folder_to_save_in, rw,
                                            policy=None, analytic=analytic) # don't save these things again
 
-        utils.io.put(kl_train_track, steps_so_far + ', ' + str(kld[0]))
-        utils.io.put(prop_train_track, steps_so_far + ', ' + str(train_results.prop_success()))
+        utils.io.stash(kl_train_track, steps_so_far + ', ' + str(kld[0]))
+        utils.io.stash(prop_train_track, steps_so_far + ', ' + str(train_results.prop_success()))
     print('DONE')
