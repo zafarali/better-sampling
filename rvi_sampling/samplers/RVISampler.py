@@ -21,8 +21,9 @@ class RVISampler(Sampler):
                  objective=PolicyGradientObjective(),
                  seed=0,
                  gamma=1,
-                 negative_reward_clip=-1000,
+                 negative_reward_clip=-10,
                  use_cuda=False,
+                 train_episodes=3000,
                  lr_scheduler=None):
         """
         The reinforced variational inference sampler
@@ -45,6 +46,8 @@ class RVISampler(Sampler):
         self.gamma = gamma
         self.negative_reward_clip = negative_reward_clip
         self.lr_scheduler=lr_scheduler
+        self.train_steps_completed = 0
+        self.train_episodes = train_episodes
 
     def train_mode(self, mode):
         self._training = mode
@@ -75,7 +78,7 @@ class RVISampler(Sampler):
         saved_trajectories = []
 
         for i in range(train_episodes):
-            pg_info, sampled_trajectory, log_path_prob, log_proposal_prob = self.do_rollout(stochastic_process)
+            pg_info, sampled_trajectory, log_path_prob, log_proposal_prob = self.do_rollout(stochastic_process, verbose)
 
             returns = gradients.calculate_returns(pg_info.rewards, self.gamma, pg_info.masks)
 
@@ -94,11 +97,10 @@ class RVISampler(Sampler):
             if self.use_cuda:
                 loss = loss.cuda()
 
-            if self.policy_optimizer is not None:
-                self.policy_optimizer.zero_grad()
-                loss.backward()
-                clip_grad_norm(self.policy.fn_approximator.parameters(), 40)
-                self.policy_optimizer.step()
+            self.policy_optimizer.zero_grad()
+            loss.backward()
+            clip_grad_norm(self.policy.fn_approximator.parameters(), 40) # TODO: what clipping value to use here?
+            self.policy_optimizer.step()
             if self.lr_scheduler is not None: self.lr_scheduler.step()
 
             reward_summary = torch.sum(pg_info.rewards, dim=0).mean()
@@ -112,7 +114,10 @@ class RVISampler(Sampler):
                                                                         reward_summary, len(sampled_trajectory),
                                                                         len(saved_trajectories), np.mean(log_path_prob),
                                                                         np.mean(log_proposal_prob)))
-
+            
+            # technically this is only to track if improvement is happening
+            # we can make this optional because ideally most people don't care about
+            # this except for diagnostic purposes
             # decide if the trajectory should be saved into the posterior.
             self.maybe_save_trajectory_into_posterior(stochastic_process, sampled_trajectory,
                                                       log_path_prob, log_proposal_prob,
@@ -126,10 +131,17 @@ class RVISampler(Sampler):
                                                                        saved_trajectories,
                                                                        posterior_particles,
                                                                        posterior_weights))
+            self.train_steps_completed += 1
 
+        results.all_trajectories(all_trajectories)
+        results.trajectories(saved_trajectories)
+        results.posterior(posterior_particles)
+        results.posterior_weights(posterior_weights)
+        results.loss_per_episode = loss_per_episode
+        results.rewards_per_episode = rewards_per_episode
+        return results
 
-
-    def evaluate(self, stochastic_process, mc_samples, verbose=False):
+    def sample_from_posterior(self, stochastic_process, mc_samples, verbose=False):
         """
         Evaluates draws from the RVI model
         :param stochastic_process: The stochastic process to learn from
@@ -143,15 +155,26 @@ class RVISampler(Sampler):
         stochastic_process.train_mode(False)
 
         # collect metrics
+        results = RLSamplingResults('RVISampler', stochastic_process.true_trajectory)
         all_trajectories = []
+        saved_trajectories = []
         posterior_particles = []
         posterior_weights = []
 
         for _ in range(mc_samples):
-            _, sampled_trajectory, log_path_prob, log_proposal_prob = self.do_rollout(stochastic_process)
+            _, sampled_trajectory, log_path_prob, log_proposal_prob = self.do_rollout(stochastic_process, verbose)
             # do something with the trajectory here.
+            self.maybe_save_trajectory_into_posterior(stochastic_process, sampled_trajectory,
+                                                      log_path_prob, log_proposal_prob,
+                                                      posterior_particles, posterior_weights,
+                                                      all_trajectories, saved_trajectories)
 
-        pass
+        results.all_trajectories(all_trajectories)
+        results.trajectories(saved_trajectories)
+        results.posterior(posterior_particles)
+        results.posterior_weights(posterior_weights)
+
+        return results
 
 
     def do_rollout(self, stochastic_process, verbose=False):
@@ -163,7 +186,6 @@ class RVISampler(Sampler):
         """
         self.check_stochastic_process(stochastic_process)
 
-        self.feed_time
         x_t = stochastic_process.reset()
         x_tm1 = x_t
         # TODO(PyT 0.4): Remove the Variable check here.
@@ -309,7 +331,42 @@ class RVISampler(Sampler):
         for m in range(sampled_trajectories.shape[0]):
             all_trajectories.append(sampled_trajectories[m, ::-1, :stochastic_process.dimensions])
 
-    def solve(self, stochastic_process, mc_samples, verbose=False):
+    def solve(self, stochastic_process, mc_samples,
+              verbose=False, retrain=0, return_train_results=False):
+        """
+
+        :param stochastic_process:
+        :param mc_samples:
+        :param verbose:
+        :param retrain:
+        :param return_train_results:
+        :return:
+        """
+        # decide how many training steps to do
+        if self.train_steps_completed > self.train_episodes:
+            if int(retrain) > 0:
+                train_episodes = retrain
+            else:
+                train_episodes = 0
+        else:
+            train_episodes = self.train_episodes
+
+        if train_episodes > 0 and self.policy_optimizer is not None:
+            train_results = self.train(stochastic_process, train_episodes, verbose=verbose)
+        else:
+            train_results = None
+
+        sampler_results = self.sample_from_posterior(stochastic_process, mc_samples, verbose=verbose)
+
+        if return_train_results:
+            return sampler_results, train_results
+        else:
+            return sampler_results
+
+
+
+    def solve_legacy(self, stochastic_process, mc_samples, verbose=False):
+        logging.warning('Solve_legacy will be deprecated soon')
         feed_time = self.feed_time
         assert stochastic_process._pytorch, 'Your stochastic process must be pytorch wrapped.'
         results = RLSamplingResults('RVISampler', stochastic_process.true_trajectory)
@@ -458,7 +515,7 @@ class RVISampler(Sampler):
             for m in range(trajectory_i.shape[0]):
                 all_trajectories.append(trajectory_i[m, ::-1, :stochastic_process.dimensions])
 
-            maybe_save_trajectory_into_posterior
+            # maybe_save_trajectory_into_posterior
             if self.diagnostic is not None:
                 self.run_diagnostic(RLSamplingResults.from_information(self._name,
                                                                      all_trajectories,
