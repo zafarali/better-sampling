@@ -160,11 +160,14 @@ class RVISampler(Sampler):
             loss_per_episode.append(loss.cpu().data[0])
 
             if i % 100 == 0 and verbose:
-                print('MC Sample {}, loss {:3g}, episode_reward {:3g}, '
+                print('Train Step {}, loss {:3g}, episode_reward {:3g}, '
                       'trajectory_length {}, successful trajs {}, '
-                      'path_log_prob: {}, proposal_log_prob: {}'.format(i, loss_per_episode[-1],
-                                                                        reward_summary, len(sampled_trajectory),
-                                                                        len(saved_trajectories), np.mean(log_path_prob),
+                      'path_log_prob: {}, proposal_log_prob: {}'.format(self.train_steps_completed,
+                                                                        loss_per_episode[-1],
+                                                                        reward_summary,
+                                                                        len(sampled_trajectory),
+                                                                        len(saved_trajectories),
+                                                                        np.mean(log_path_prob),
                                                                         np.mean(log_proposal_prob)))
             
             # technically this is only to track if improvement is happening
