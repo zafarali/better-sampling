@@ -7,7 +7,7 @@ from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler, RVISampler
 from rvi_sampling.distributions.proposal_distributions import SimonsSoftProposal, FunnelProposal
 from rvi_sampling import utils
 from pg_methods.baselines import MovingAverageBaseline
-from pg_methods.policies import MultinomialPolicy
+from pg_methods.policies import CategoricalPolicy
 from pg_methods.networks import MLP_factory
 from pg_methods.objectives import PolicyGradientObjective
 
