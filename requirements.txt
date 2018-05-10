@@ -4,6 +4,6 @@ matplotlib
 seaborn
 pandas
 tensorboardX
-http://download.pytorch.org/whl/cu80/torch-0.3.1-cp35-cp35m-linux_x86_64.whl
-https://github.com/zafarali/mlresearchkit.git
-https://github.com/zafarali/policy-gradient-methods.git
+git+http://download.pytorch.org/whl/cu80/torch-0.3.1-cp35-cp35m-linux_x86_64.whl
+git+https://github.com/zafarali/mlresearchkit.git
+git+https://github.com/zafarali/policy-gradient-methods.git
