@@ -230,7 +230,7 @@ class RVISampler(Sampler):
         sampled_trajectory = [x_t.data.cpu().numpy() if isinstance(x_t, Variable) else x_t.cpu().numpy()]
 
         if self.feed_time:
-            x_tm1 = self.augment_time(stochastic_process, x_tm1, x_t)
+            x_tm1 = self.augment_time(stochastic_process, x_tm1, x_t, start=True)
 
         log_path_prob = np.zeros((stochastic_process.n_agents, 1))
         log_proposal_prob = np.zeros((stochastic_process.n_agents, 1))
@@ -297,8 +297,7 @@ class RVISampler(Sampler):
             else:
                 value_estimate = torch.from_numpy(np.zeros(stochastic_process.n_agents, 1)).float()
 
-            pg_trajectory_info.append(x_tm1, action, reward,
-                                                   value_estimate, log_prob_action, x_t, done)
+            pg_trajectory_info.append(x_tm1, action, reward, value_estimate, log_prob_action, x_t, done)
 
             x_tm1 = x_t
 
@@ -314,23 +313,24 @@ class RVISampler(Sampler):
         if not stochastic_process._pytorch:
             raise ValueError('Stochastic Process must be pytorch wrapped.')
 
-    def augment_time(self, stochastic_process, x_tm1, x_t):
+    def augment_time(self, stochastic_process, x_tm1, x_t, start=False):
+        # if this is the first iteration, expansion of dimensions is necessary
+        expand_dims = int(start)
+        contract_dims = int(not start)
         # this will augment the state space with the time dimension
         # so that the learner has access to it.
         # TODO: Is there a better way to do this? Maybe in PyTorch 0.4
 
         # add another dimension to the state space dimension
-        x_with_time = torch.zeros(stochastic_process.n_agents, x_tm1.size()[-1])
-
+        x_with_time = torch.zeros(stochastic_process.n_agents, x_tm1.size()[-1]+expand_dims)
         # fill in all but the last entry with the state information
-        x_with_time[:, :x_tm1.size()[-1] - 1].copy_(x_t.data)
+        x_with_time[:, :x_tm1.size()[-1] - contract_dims].copy_(x_t.data)
 
         # fill in the last entry with the time information
         proportion_of_time_left = (stochastic_process.transitions_left / (stochastic_process.T - 1))
-        x_with_time[:, x_tm1.size()[-1] - 1].copy_(proportion_of_time_left * torch.ones(stochastic_process.n_agents))
-
+        x_with_time[:, x_tm1.size()[-1] - contract_dims].copy_(proportion_of_time_left * torch.ones(stochastic_process.n_agents))
         # create a new variable with this information
-        return Variable(x_with_time, volatile=self._training)
+        return Variable(x_with_time, volatile=(not self._training))
 
     def maybe_save_trajectory_into_posterior(self, stochastic_process,
                                              sampled_trajectories,
@@ -353,7 +353,7 @@ class RVISampler(Sampler):
 
         # stack and reshape the collected trajectories so that we can
         # apply numpy operations to it
-        reshape_last_dim = stochastic_process.dimensions - int(self.feed_time)
+        reshape_last_dim = stochastic_process.dimensions
         sampled_trajectories = np.hstack(sampled_trajectories).reshape(stochastic_process.n_agents,
                                                                        len(sampled_trajectories),
                                                                        reshape_last_dim)
@@ -397,6 +397,15 @@ class RVISampler(Sampler):
                 x_with_time[:, x_tm1.size()[-1]].copy_(torch.ones(stochastic_process.n_agents)) # 100% of the time is left
                 x_tm1 = Variable(x_with_time)
 
+
+            x_with_time = torch.zeros(stochastic_process.n_agents, x_tm1.size()[-1])
+            x_with_time[:, :x_tm1.size()[-1] - 1].copy_(x_t.data)
+            x_with_time[:, x_tm1.size()[-1] - 1].copy_(
+                (stochastic_process.transitions_left / (stochastic_process.T - 1)) * torch.ones(
+                    stochastic_process.n_agents))
+
+
+            x_t = Variable(x_with_time)
             log_path_prob = np.zeros((stochastic_process.n_agents, 1))
             log_proposal_prob = np.zeros((stochastic_process.n_agents, 1))
             policy_gradient_trajectory_info = MultiTrajectory(stochastic_process.n_agents)
