@@ -88,7 +88,8 @@ if __name__=='__main__':
                          args.samples) for sampler in samplers]
 
     if args.profile_performance:
-        sampler_results = pool.map(utils.multiprocessing_tools.run_sampler_with_profiling, solver_arguments)
+        profiler_args = [ (folder_name, solver_argument) for solver_argument in solver_arguments ]
+        sampler_results = pool.map(utils.multiprocessing_tools.run_sampler_with_profiling, profiler_args)
     else:
         sampler_results = pool.map(utils.multiprocessing_tools.run_sampler, solver_arguments)
 
