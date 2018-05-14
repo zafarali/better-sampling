@@ -19,6 +19,8 @@ def rvi_arguments(parser):
                         help='Moving Average baseline decay')
     parser.add_argument('-lr', '--learning_rate', default=0.001, type=float,
                         help='Learning rate')
+    parser.add_argument('-baseline_lr', '--baseline_learning_rate', default=0.001, type=float,
+                        help='learning rate for baseline function approximator')
     parser.add_argument('--only_rvi', default=False, action='store_true',
                         help='does only the RVI experiments')
     parser.add_argument('--notrain', default=False, action='store_true',

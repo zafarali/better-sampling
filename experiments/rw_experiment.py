@@ -52,7 +52,7 @@ if __name__=='__main__':
                                                hidden_sizes=args.baseline_neural_network,
                                                output_size=1,
                                                hidden_non_linearity=nn.ReLU)
-        baseline_optimizer = torch.optim.RMSprop(policy.fn_approximator.parameters(),lr=args.learning_rate)
+        baseline_optimizer = torch.optim.RMSprop(baseline_fn_approximator.parameters(), lr=args.baseline_learning_rate)
         baseline = FunctionApproximatorBaseline(baseline_fn_approximator, baseline_optimizer)
 
     push_toward = [-args.rw_width, args.rw_width]
