@@ -11,6 +11,7 @@ from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler, RVISampler
 from rvi_sampling.distributions.proposal_distributions import SimonsSoftProposal, FunnelProposal
 from rvi_sampling import utils
 from pg_methods.baselines import MovingAverageBaseline
+from pg_methods.baselines import FunctionApproximatorBaseline
 from pg_methods.policies import MultinomialPolicy
 from pg_methods.networks import MLP_factory
 from pg_methods.objectives import PolicyGradientObjective
@@ -44,7 +45,15 @@ if __name__=='__main__':
         policy = MultinomialPolicy(fn_approximator)
         policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=args.learning_rate)
 
-    baseline = MovingAverageBaseline(args.baseline_decay)
+    if args.baseline_type == 'moving_average':
+        baseline = MovingAverageBaseline(args.baseline_decay)
+    else:
+        baseline_fn_approximator = MLP_factory(DIMENSIONS+int(args.notime),
+                                               hidden_sizes=args.baseline_neural_network,
+                                               output_size=1,
+                                               hidden_non_linearity=nn.ReLU)
+        baseline_optimizer = torch.optim.RMSprop(policy.fn_approximator.parameters(),lr=args.learning_rate)
+        baseline = FunctionApproximatorBaseline(baseline_fn_approximator, baseline_optimizer)
 
     push_toward = [-args.rw_width, args.rw_width]
     if args.IS_proposal == 'soft':
