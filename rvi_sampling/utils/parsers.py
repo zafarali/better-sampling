@@ -60,5 +60,7 @@ def experimental_arguments(parser):
                         help='the importance sampling distribution to use (funnel, soft)')
     parser.add_argument('-outfolder', '--outfolder', default='./', type=str,
                         help='Where to save things')
+    parser.add_argument('-profile', '--profile_performance', default=False, action='store_true',
+                        help='Indicates if performance has to be profiled')
     return parser
 

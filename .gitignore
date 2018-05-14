@@ -99,3 +99,15 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# editor specific
+.idea
+
+# pytest
+.pytest_cache
+
+# Profile files
+*.prof
+
+# Results folders
+results_*
