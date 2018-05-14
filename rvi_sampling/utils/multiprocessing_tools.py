@@ -3,11 +3,9 @@ from ..stochastic_processes.base import PyTorchWrap
 import os
 import cProfile
 
-class ProfiledRunner:
-    """ Wrapper class for calling sampler with profiling enabled
-
-    Attributes:
-        returnValue (:RLSamplingResults): the result from calling sampler
+class ProfiledRunner(object):
+    """
+    Wrapper class for calling samplers with profiling enabled
     """
     def __init__(self):
         self.returnValue = None
