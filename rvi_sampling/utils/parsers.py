@@ -39,7 +39,7 @@ def rvi_arguments(parser):
     parser.add_argument('-plot-posterior', '--plot_posterior', default=False, action='store_true',
                         help='Number of agents to use')
     parser.add_argument('-nn', '--neural-network', nargs='+', help='neural network specification',
-                        default=[16, 16], type=int)
+                        default=[32, 32], type=int)
     parser.add_argument('-pretrained', '--pretrained', default=None, type=str, help='path to a pretrained policy.')
     return parser
 

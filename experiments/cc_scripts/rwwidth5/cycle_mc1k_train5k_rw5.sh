@@ -20,13 +20,18 @@ MC_SAMPLES=1000
 TRAIN_STEPS=5000
 RW_TIME=50
 RW_WIDTH=5
+REWARDCLIP=-10
 OUTFOLDER="./cycle_mc1k_train5k_rw5"
+REWARDCLIP=-10
 
 python rvi_cycle_investigation.py --cycles $CYCLES --rw_seed 0 --rw_time $RW_TIME --rw_width $RW_WIDTH \
--samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES --train_steps $TRAIN_STEPS -name rwseed0 --outfolder $OUTFOLDER &
+-samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES --train_steps $TRAIN_STEPS -name rwseed0 --outfolder $OUTFOLDER \
+-rewardclip $REWARDCLIP &
 python rvi_cycle_investigation.py --cycles $CYCLES --rw_seed 2 --rw_time $RW_TIME --rw_width $RW_WIDTH \
--samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES --train_steps $TRAIN_STEPS -name rwseed2 --outfolder $OUTFOLDER &
+-samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES --train_steps $TRAIN_STEPS -name rwseed2 --outfolder $OUTFOLDER \
+-rewardclip $REWARDCLIP &
 python rvi_cycle_investigation.py --cycles $CYCLES --rw_seed 7 --rw_time $RW_TIME --rw_width $RW_WIDTH \
--samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES --train_steps $TRAIN_STEPS -name rwseed7 --outfolder $OUTFOLDER &
+-samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES --train_steps $TRAIN_STEPS -name rwseed7 --outfolder $OUTFOLDER \
+-rewardclip $REWARDCLIP &
 
 wait

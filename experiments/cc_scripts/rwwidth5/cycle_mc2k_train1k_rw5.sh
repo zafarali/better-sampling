@@ -22,11 +22,15 @@ RW_TIME=50
 RW_WIDTH=5
 OUTFOLDER="./cycle_mc2k_train1k_rw5"
 
-python rvi_cycle_investigation.py --cycles $CYCLES --rw_seed 0 --rw_time $RW_TIME --rw_width $RW_WIDTH \
--samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES --train_steps $TRAIN_STEPS -name rwseed0 --outfolder $OUTFOLDER &
-python rvi_cycle_investigation.py --cycles $CYCLES --rw_seed 2 --rw_time $RW_TIME --rw_width $RW_WIDTH \
--samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES --train_steps $TRAIN_STEPS -name rwseed2 --outfolder $OUTFOLDER &
-python rvi_cycle_investigation.py --cycles $CYCLES --rw_seed 7 --rw_time $RW_TIME --rw_width $RW_WIDTH \
--samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES --train_steps $TRAIN_STEPS -name rwseed7 --outfolder $OUTFOLDER &
+REWARDCLIP=-10
 
+python rvi_cycle_investigation.py --cycles $CYCLES --rw_seed 0 --rw_time $RW_TIME --rw_width $RW_WIDTH \
+-samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES --train_steps $TRAIN_STEPS -name rwseed0 --outfolder $OUTFOLDER \
+-rewardclip $REWARDCLIP &
+python rvi_cycle_investigation.py --cycles $CYCLES --rw_seed 2 --rw_time $RW_TIME --rw_width $RW_WIDTH \
+-samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES --train_steps $TRAIN_STEPS -name rwseed2 --outfolder $OUTFOLDER \
+-rewardclip $REWARDCLIP &
+python rvi_cycle_investigation.py --cycles $CYCLES --rw_seed 7 --rw_time $RW_TIME --rw_width $RW_WIDTH \
+-samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES --train_steps $TRAIN_STEPS -name rwseed7 --outfolder $OUTFOLDER \
+-rewardclip $REWARDCLIP &
 wait
