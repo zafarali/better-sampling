@@ -1,4 +1,5 @@
 from scipy.misc import comb
+from rvi_sampling.utils.common import EPSILON
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -99,10 +100,10 @@ class TwoStepRandomWalkPosterior(AnalyticPosterior):
             return (np.nan, np.nan)
 
         for k in estimated_dist.keys():
-            value = analytic_probs[k]*np.log(analytic_probs[k]/estimated_dist[k])
+            value = analytic_probs[k]*np.log(EPSILON + analytic_probs[k]/(EPSILON + estimated_dist[k]))
             if not np.isnan(value):
                 KL_true_est += value
-            value = estimated_dist[k]*np.log(estimated_dist[k]/analytic_probs[k])
+            value = estimated_dist[k]*np.log(EPSILON + estimated_dist[k]/(EPSILON + analytic_probs[k]))
             if not np.isnan(value):
                 KL_est_true += value
 

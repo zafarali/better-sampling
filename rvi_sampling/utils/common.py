@@ -2,6 +2,8 @@ import random
 import numpy as np
 import torch
 
+EPSILON = 1e-10
+
 def set_global_seeds(seed):
     # sets global seeds
     torch.manual_seed(seed)
