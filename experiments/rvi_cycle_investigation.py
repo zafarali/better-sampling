@@ -35,8 +35,11 @@ if __name__=='__main__':
     train_folder_name = os.path.join(folder_name, 'training_results')
     test_folder_name = os.path.join(folder_name, 'testing_results')
 
+    kl_train_cumulative_track = os.path.join(folder_name, 'kl_training_cumulative.txt')
     kl_train_track = os.path.join(folder_name, 'kl_training.txt')
     kl_test_track = os.path.join(folder_name, 'kl_testing.txt')
+
+    prop_train_cumulative_track = os.path.join(folder_name, 'prop_training_cumulative.txt')
     prop_train_track = os.path.join(folder_name, 'prop_training.txt')
     prop_test_track = os.path.join(folder_name, 'prop_testing.txt')
 
@@ -102,6 +105,9 @@ if __name__=='__main__':
         test_results, train_results_new = sampler.solve(PyTorchWrap(rw), args.samples, verbose=True,
                                                         retrain=args.train_steps, return_train_results=True)
 
+
+        kld = utils.analysis.analyze_samplers_rw([test_results], args, test_folder_to_save_in, rw,
+                                           policy=policy, analytic=analytic)
         # technically doing this saving doesn't take too long so doesn't need to be run
         # in a background thread. This is good because it saves time of having to copy
         # the policy for saving etc.
@@ -132,7 +138,7 @@ if __name__=='__main__':
         kld = utils.analysis.analyze_samplers_rw([test_results], args, test_folder_to_save_in, rw,
                                            policy=policy, analytic=analytic)
 
-        utils.io.stash(kl_test_track, steps_so_far+', ' + str(kld[0]))
+        utils.io.stash(kl_test_track, steps_so_far+', ' + str(kld[0][0]))
         utils.io.stash(prop_test_track, steps_so_far + ', ' + str(test_results.prop_success()))
 
         train_folder_to_save_in = os.path.join(train_folder_name, str(i))
@@ -141,6 +147,13 @@ if __name__=='__main__':
         kld = utils.analysis.analyze_samplers_rw([train_results], args, train_folder_to_save_in, rw,
                                            policy=None, analytic=analytic) # don't save these things again
 
-        utils.io.stash(kl_train_track, steps_so_far + ', ' + str(kld[0]))
+        utils.io.stash(kl_train_track, steps_so_far + ', ' + str(kld[0][0]))
         utils.io.stash(prop_train_track, steps_so_far + ', ' + str(train_results.prop_success()))
+
+
+        kld = utils.analysis.analyze_samplers_rw([train_results_new], args, None, rw,
+                                           policy=None, analytic=analytic) # don't save these things again
+
+        utils.io.stash(kl_train_cumulative_track, steps_so_far + ', ' + str(kld[0][0]))
+        utils.io.stash(prop_train_cumulative_track, steps_so_far + ', ' + str(train_results_new.prop_success()))
     print('DONE')

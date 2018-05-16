@@ -68,7 +68,7 @@ def analyze_samplers_rw(sampler_results,
                 ax = fig_RL.add_subplot(122)
                 sampler_result.plot_loss_curves(ax)
                 fig_RL.tight_layout()
-                fig_RL.savefig(os.path.join(folder_name,'./RL_results.pdf'))
+                if folder_name: fig_RL.savefig(os.path.join(folder_name,'./RL_results.pdf'))
                 torch.save({
                     'rewards_per_episode':sampler_result.rewards_per_episode,
                     'loss_per_episode':sampler_result.loss_per_episode,
@@ -87,9 +87,12 @@ def analyze_samplers_rw(sampler_results,
     # start saving things:
     try:
         fig_weight_hists.tight_layout()
-        fig_weight_hists.savefig(os.path.join(folder_name, 'weight_distribution.pdf'))
+        if folder_name: fig_weight_hists.savefig(os.path.join(folder_name, 'weight_distribution.pdf'))
     except Exception as e:
         print('Could not create histogram of weights: {}'.format(e))
+
+    if folder_name is None:
+        return kl_divergences
 
     fig_dists.suptitle('MC_SAMPLES: {}, Analytic mean: {:3g}, Start {}, End {}'.format(args.samples,
                                                                                        analytic.expectation(stochastic_process.xT[0]) if analytic is not None else -100,
