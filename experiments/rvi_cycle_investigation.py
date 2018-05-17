@@ -149,13 +149,13 @@ if __name__=='__main__':
         kld = utils.analysis.analyze_samplers_rw([train_results], args, train_folder_to_save_in, rw,
                                            policy=None, analytic=analytic) # don't save these things again
 
-        utils.io.stash(kl_train_track, steps_so_far + ', ' + str(kld[0]))
-        utils.io.stash(prop_train_track, steps_so_far + ', ' + str(train_results.prop_success()))
+        utils.io.stash(kl_train_cumulative_track, steps_so_far + ', ' + str(kld[0]))
+        utils.io.stash(prop_train_cumulative_track, steps_so_far + ', ' + str(train_results.prop_success()))
 
 
         kld = utils.analysis.analyze_samplers_rw([train_results_new], args, None, rw,
                                            policy=None, analytic=analytic) # don't save these things again
 
-        utils.io.stash(kl_train_cumulative_track, steps_so_far + ', ' + str(kld[0]))
-        utils.io.stash(prop_train_cumulative_track, steps_so_far + ', ' + str(train_results_new.prop_success()))
+        utils.io.stash(kl_train_track, steps_so_far + ', ' + str(kld[0]))
+        utils.io.stash(prop_train_track, steps_so_far + ', ' + str(train_results_new.prop_success()))
     print('DONE')
