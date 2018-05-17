@@ -1,4 +1,4 @@
-from torch.nn.utils import clip_grad_norm
+from torch.nn.utils import clip_grad_norm_
 import torch
 from torch.autograd import Variable
 from pg_methods.data import MultiTrajectory
@@ -38,7 +38,7 @@ class RVISampler(Sampler):
         self.policy = policy
         self.policy_optimizer = policy_optimizer
         self.baseline = baseline
-        self.use_cuda = use_cuda
+        # self.use_cuda = use_cuda
         self._training = True
         self.feed_time = feed_time
         self.objective = objective
@@ -46,6 +46,7 @@ class RVISampler(Sampler):
         self.negative_reward_clip = negative_reward_clip
         self.lr_scheduler=lr_scheduler
         self.train_steps_completed = 0
+        self.device_cpu = torch.device("cpu")
 
     def train_mode(self, mode):
         self._training = mode
@@ -369,7 +370,7 @@ class RVISampler(Sampler):
         for i in range(mc_samples):
             x_t = stochastic_process.reset()  # start at the end
             x_tm1 = x_t
-            trajectory_i = [x_t.data.cpu().numpy() if isinstance(x_t, Variable) else x_t.cpu().numpy()]
+            trajectory_i = [x_t.data.numpy() if isinstance(x_t, Variable) else x_t.numpy()]
 
             if feed_time:
                 # this will augment the state space with the time dimension
@@ -435,7 +436,8 @@ class RVISampler(Sampler):
 
                 # probability of the path gets updated:
                 log_path_prob += path_log_prob.numpy().reshape(-1, 1)
-                log_proposal_prob += log_prob_action.data.cpu().float().numpy().reshape(-1, 1)
+                # log_proposal_prob += log_prob_action.data.to(self.device_cpu).float().numpy().reshape(-1, 1)
+                log_proposal_prob += log_prob_action.data.float().numpy().reshape(-1, 1)
                 # take the reverse step:
                 # if isinstance()
                 if isinstance(x_t, Variable):
@@ -471,13 +473,12 @@ class RVISampler(Sampler):
 
                 loss = self.objective(advantages, policy_gradient_trajectory_info)
 
-                if self.use_cuda:
-                    loss = loss.cuda()
+                # loss.to(self.device)
 
                 if self.policy_optimizer is not None:
                     self.policy_optimizer.zero_grad()
                     loss.backward()
-                    clip_grad_norm(self.policy.fn_approximator.parameters(), 40)
+                    clip_grad_norm_(self.policy.fn_approximator.parameters(), 40)
                     self.policy_optimizer.step()
                 if self.lr_scheduler is not None: self.lr_scheduler.step()
                 # end training statement.
@@ -485,11 +486,11 @@ class RVISampler(Sampler):
             reward_summary = torch.sum(policy_gradient_trajectory_info.rewards, dim=0).mean()
             rewards_per_episode.append(reward_summary)
 
-            if self._training: loss_per_episode.append(loss.cpu().data[0])
+            if self._training: loss_per_episode.append(loss.item())
             if i % 100 == 0 and verbose and self._training:
                 print('MC Sample {}, loss {:3g}, episode_reward {:3g}, '
                       'trajectory_length {}, successful trajs {}, '
-                      'path_log_prob: {}, proposal_log_prob: {}'.format(i, loss.cpu().data[0],
+                      'path_log_prob: {}, proposal_log_prob: {}'.format(i, loss.item(),
                                                                         reward_summary, len(trajectory_i),
                                                                         len(trajectories), np.mean(log_path_prob),
                                                                         np.mean(log_proposal_prob)))
@@ -504,7 +505,7 @@ class RVISampler(Sampler):
 
             # select paths for storage
             likelihood_ratios = log_path_prob - log_proposal_prob
-            selected_trajectories = np.where(log_path_prob > -np.inf)
+            selected_trajectories = np.where(log_path_prob > -40)
             for traj_idx in selected_trajectories[0]:
                 trajectories.append(trajectory_i[traj_idx, ::-1, :stochastic_process.dimensions])
                 posterior_particles.append(trajectories[-1][0])

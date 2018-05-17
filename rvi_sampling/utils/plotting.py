@@ -67,10 +67,10 @@ def conduct_draws_nn(sp_, x, t, n_draws=100, feed_time=False):
     :return:
     """
     if feed_time:
-        data = Variable(torch.FloatTensor([[x, t]]), volatile=True)
+        data = Variable(torch.FloatTensor([[x, t]]), requires_grad=False)
 
     else:
-        data = Variable(torch.FloatTensor([[x]]), volatile=True)
+        data = Variable(torch.FloatTensor([[x]]), requires_grad=False)
 
     log_probs = sp_.fn_approximator(data)
     probs = F.softmax(log_probs, dim=1).data # convert log probs to probs
