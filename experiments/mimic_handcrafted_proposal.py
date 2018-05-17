@@ -79,7 +79,7 @@ def main(args):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            losses_for_epoch.append(loss.data[0])
+            losses_for_epoch.append(loss.item())
         if i % 10 == 0:
             print('Update {}, loss {}'.format(i, np.mean(losses_for_epoch)))
 
