@@ -7,6 +7,7 @@ import pg_methods.gradients as gradients
 import numpy as np
 from .Samplers import Sampler
 from ..results import RLSamplingResults
+from rvi_sampling.utils.common import get_device
 import logging
 
 class RVISampler(Sampler):
@@ -38,7 +39,7 @@ class RVISampler(Sampler):
         self.policy = policy
         self.policy_optimizer = policy_optimizer
         self.baseline = baseline
-        # self.use_cuda = use_cuda
+        self.use_cuda = use_cuda
         self._training = True
         self.feed_time = feed_time
         self.objective = objective
@@ -356,6 +357,11 @@ class RVISampler(Sampler):
 
     def solve_legacy(self, stochastic_process, mc_samples, verbose=False):
         logging.warning('Solve_legacy will be deprecated soon')
+=======
+        device_cpu = torch.device("cpu")
+        device = get_device(self.use_cuda)
+
+>>>>>>> Device agnostic code
         feed_time = self.feed_time
         assert stochastic_process._pytorch, 'Your stochastic process must be pytorch wrapped.'
         results = RLSamplingResults('RVISampler', stochastic_process.true_trajectory)
@@ -436,8 +442,8 @@ class RVISampler(Sampler):
 
                 # probability of the path gets updated:
                 log_path_prob += path_log_prob.numpy().reshape(-1, 1)
-                # log_proposal_prob += log_prob_action.data.to(self.device_cpu).float().numpy().reshape(-1, 1)
-                log_proposal_prob += log_prob_action.data.float().numpy().reshape(-1, 1)
+                log_proposal_prob += log_prob_action.data.to(device_cpu).float().numpy().reshape(-1, 1)
+                # log_proposal_prob += log_prob_action.data.float().numpy().reshape(-1, 1)
                 # take the reverse step:
                 # if isinstance()
                 if isinstance(x_t, Variable):
@@ -473,7 +479,7 @@ class RVISampler(Sampler):
 
                 loss = self.objective(advantages, policy_gradient_trajectory_info)
 
-                # loss.to(self.device)
+                loss = loss.to(device)
 
                 if self.policy_optimizer is not None:
                     self.policy_optimizer.zero_grad()

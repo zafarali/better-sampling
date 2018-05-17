@@ -1,7 +1,7 @@
 import gym
 import numpy as np
 import torch
-import logging
+from rvi_sampling.utils.common import get_device
 from torch.autograd import Variable
 from functools import reduce
 
@@ -57,15 +57,6 @@ class PyTorchWrap(object):
         self.true_trajectory = self.stochastic_process.true_trajectory
         self._training = True
 
-        # if use_cuda:
-        #     if torch.cuda.is_available():
-        #         self.device = torch.device("cuda:0")
-        #     else:
-        #         logging.warning("GPU not available. Reverting to CPU...")
-        #         self.device = self.device_cpu
-        # else:
-        #     self.device = self.device_cpu
-
     def train_mode(self, mode):
         self._training = mode
     @property
@@ -73,13 +64,14 @@ class PyTorchWrap(object):
         return self.stochastic_process.transitions_left
 
     def variable_wrap(self, tensor):
+        device = get_device(self.use_cuda)
         if not isinstance(tensor, Variable):
             if self._training:
                 tensor = Variable(tensor)
             else:
                 tensor = Variable(tensor, requires_grad=False)
 
-        # tensor = tensor.to(self.device)
+        tensor = tensor.to(device)
 
         return tensor.float()
 
@@ -100,9 +92,10 @@ class PyTorchWrap(object):
         return delayed_to_return
 
     def step(self, actions, reverse=True):
+        device = get_device(self.use_cuda)
         if isinstance(actions, Variable):
             actions = actions.data
-        # actions = actions.to(self.device)
+        actions = actions.to(device)
         actions = actions.numpy()
         position, log_probs, done, info = self.stochastic_process.step(actions, reverse=reverse)
         position = self.variable_wrap(torch.from_numpy(position))
