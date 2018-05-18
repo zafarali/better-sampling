@@ -92,11 +92,12 @@ class PyTorchWrap(object):
         return delayed_to_return
 
     def step(self, actions, reverse=True):
-        device = get_device(self.use_cuda)
+        device_cpu = torch.device("cpu")
+        # device = get_device(self.use_cuda)
         if isinstance(actions, Variable):
             actions = actions.data
-        actions = actions.to(device)
-        actions = actions.numpy()
+        # actions = actions.to(device)
+        actions = actions.to(device_cpu).numpy()
         position, log_probs, done, info = self.stochastic_process.step(actions, reverse=reverse)
         position = self.variable_wrap(torch.from_numpy(position))
         log_probs = torch.from_numpy(log_probs).float().view(self.n_agents, 1)

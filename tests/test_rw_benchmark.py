@@ -58,7 +58,8 @@ def test_algorithms():
     print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
 
     pool = multiprocessing.Pool(2)
-    solver_arguments = [(sampler, utils.stochastic_processes.create_rw(args, biased=False, n_agents=1)[0], 1000) for sampler in samplers]
+    # Test without gpu support
+    solver_arguments = [(False, sampler, utils.stochastic_processes.create_rw(args, biased=False, n_agents=1)[0], 1000) for sampler in samplers]
 
     sampler_results = pool.map(utils.multiprocessing_tools.run_sampler, solver_arguments)
 

@@ -20,6 +20,7 @@ OUTPUT_SIZE = 2
 BIASED = False
 
 if __name__=='__main__':
+    multiprocessing.set_start_method('spawn')
     args = utils.parsers.create_parser('1D random walk', 'random_walk').parse_args()
     utils.common.set_global_seeds(args.sampler_seed)
     sns.set_style('white')
@@ -29,6 +30,8 @@ if __name__=='__main__':
     rw, analytic = utils.stochastic_processes.create_rw(args, biased=BIASED)
     utils.io.touch(os.path.join(folder_name, 'start={}'.format(rw.x0)))
     utils.io.touch(os.path.join(folder_name, 'end={}'.format(rw.xT)))
+
+    device = utils.common.get_device(args.use_cuda)
 
     if args.pretrained is not None:
         policy = torch.load(args.pretrained)
@@ -40,6 +43,8 @@ if __name__=='__main__':
                                       hidden_sizes=args.neural_network,
                                       output_size=OUTPUT_SIZE,
                                       hidden_non_linearity=nn.ReLU)
+
+        fn_approximator.to(device)
 
         policy = MultinomialPolicy(fn_approximator)
         policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=args.learning_rate)
@@ -73,15 +78,20 @@ if __name__=='__main__':
     def kl_function(estimated_distribution):
         return analytic.kl_divergence(estimated_distribution, rw.xT[0])
 
+    kl_functions = []
+
+    for sampler in samplers:
+        kl_functions.append(utils.diagnostics.KL_Function(rw.xT[0], analytic))
+
     # kl_function = utils.diagnostics.make_kl_function(analytic, rw.xT) Can't work because lambda function
-    _ = [sampler.set_diagnostic(utils.diagnostics.create_diagnostic(sampler._name, args, folder_name, kl_function)) for sampler in samplers]
+    _ = [sampler.set_diagnostic(utils.diagnostics.create_diagnostic(sampler._name, args, folder_name, kl_functions[ix])) for ix, sampler in enumerate(samplers)]
 
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))
     print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
 
     pool = multiprocessing.Pool(args.n_cpus)
-    solver_arguments = [(sampler,
+    solver_arguments = [(args.use_cuda, sampler,
                          utils.stochastic_processes.create_rw(args,
                                                               biased=BIASED,
                                                               n_agents=args.n_agents if sampler._name == 'RVISampler' else 1)[0],
@@ -95,4 +105,3 @@ if __name__=='__main__':
         sampler_results = pool.map(utils.multiprocessing_tools.run_sampler, solver_arguments)
 
     utils.analysis.analyze_samplers_rw(sampler_results, args, folder_name, rw, policy=policy, analytic=analytic)
-
