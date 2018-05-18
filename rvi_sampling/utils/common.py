@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import logging
 
-EPSILON = 1e-10
+EPSILON = 0
 
 def set_global_seeds(seed):
     # sets global seeds
