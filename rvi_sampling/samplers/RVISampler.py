@@ -198,7 +198,7 @@ class RVISampler(Sampler):
 
             # select paths for storage
             likelihood_ratios = log_path_prob - log_proposal_prob
-            selected_trajectories = np.where(log_path_prob > -40)
+            selected_trajectories = np.where(log_path_prob > -np.inf)
             for traj_idx in selected_trajectories[0]:
                 trajectories.append(trajectory_i[traj_idx, ::-1, :stochastic_process.dimensions])
                 posterior_particles.append(trajectories[-1][0])
