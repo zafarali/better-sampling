@@ -2,7 +2,7 @@
 This script is used to understand how RVI behaves during and after training
 """
 import sys
-sys.path.append('../..')
+sys.path.append('..')
 import torch
 import matplotlib
 matplotlib.use('Agg')

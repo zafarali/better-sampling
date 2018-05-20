@@ -2,7 +2,7 @@
 This script is used to understand how RVI behaves during and after training
 """
 import sys
-sys.path.append('../..')
+sys.path.append('..')
 import torch
 import matplotlib
 matplotlib.use('Agg')
@@ -10,8 +10,6 @@ import torch.nn as nn
 import numpy as np
 import os
 import seaborn as sns
-from rvi_sampling.samplers import RVISampler
-from rvi_sampling.stochastic_processes import PyTorchWrap
 from rvi_sampling import utils
 from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler
 from rvi_sampling.distributions.proposal_distributions import FunnelProposal
@@ -105,11 +103,7 @@ if __name__=='__main__':
             train_results._posterior_weights = np.hstack([train_results.posterior_weights(),
                                                           train_results_new.posterior_weights()])
 
-            train_results.loss_per_episode.extend(train_results_new.loss_per_episode)
-            train_results.rewards_per_episode.extend(train_results_new.rewards_per_episode)
-
-
-
+            
         steps_so_far = str(i * args.train_steps)
 
 
