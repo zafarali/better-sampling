@@ -146,14 +146,14 @@ if __name__=='__main__':
         train_folder_to_save_in = os.path.join(train_folder_name, str(i))
         utils.io.create_folder(train_folder_to_save_in)
         print('Training Phase:')
-        kld = utils.analysis.analyze_samplers_rw([train_results], args, train_folder_to_save_in, rw,
+        kld = utils.analysis.analyze_samplers_rw([train_results], args, None, rw,
                                            policy=None, analytic=analytic) # don't save these things again
 
         utils.io.stash(kl_train_cumulative_track, steps_so_far + ', ' + str(kld[0]))
         utils.io.stash(prop_train_cumulative_track, steps_so_far + ', ' + str(train_results.prop_success()))
 
 
-        kld = utils.analysis.analyze_samplers_rw([train_results_new], args, None, rw,
+        kld = utils.analysis.analyze_samplers_rw([train_results_new], args, train_folder_to_save_in, rw,
                                            policy=None, analytic=analytic) # don't save these things again
 
         utils.io.stash(kl_train_track, steps_so_far + ', ' + str(kld[0]))
