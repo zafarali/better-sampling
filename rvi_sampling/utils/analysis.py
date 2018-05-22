@@ -55,7 +55,7 @@ def analyze_samplers_rw(sampler_results,
         ax = fig_traj_evol.add_subplot(panel_size + str(i + 1))
         ax = sampler_result.plot_all_trajectory_evolution(ax=ax)
         ax.set_title('Evolution of Trajectories\nfor {}'.format(sampler_result.sampler_name))
-        sampler_result.save_results(folder_name)
+        if folder_name is not None: sampler_result.save_results(folder_name)
 
         ax = fig_traj_evol_succ.add_subplot((panel_size + str(i + 1)))
         ax = sampler_result.plot_trajectory_evolution(ax=ax)
@@ -68,6 +68,9 @@ def analyze_samplers_rw(sampler_results,
                 ax = fig_RL.add_subplot(122)
                 sampler_result.plot_loss_curves(ax)
                 fig_RL.tight_layout()
+                if folder_name is None:
+                    continue
+
                 fig_RL.savefig(os.path.join(folder_name,'./RL_results.pdf'))
                 torch.save({
                     'rewards_per_episode':sampler_result.rewards_per_episode,
@@ -87,9 +90,12 @@ def analyze_samplers_rw(sampler_results,
     # start saving things:
     try:
         fig_weight_hists.tight_layout()
-        fig_weight_hists.savefig(os.path.join(folder_name, 'weight_distribution.pdf'))
+        if folder_name: fig_weight_hists.savefig(os.path.join(folder_name, 'weight_distribution.pdf'))
     except Exception as e:
         print('Could not create histogram of weights: {}'.format(e))
+
+    if folder_name is None:
+        return kl_divergences
 
     fig_dists.suptitle('MC_SAMPLES: {}, Analytic mean: {:3g}, Start {}, End {}'.format(args.samples,
                                                                                        analytic.expectation(stochastic_process.xT[0]) if analytic is not None else -100,
@@ -125,3 +131,5 @@ def analyze_samplers_rw(sampler_results,
         except Exception as e:
             print('Could not plot proposal distribution {}'.format(e))
     # 
+
+    return kl_divergences
