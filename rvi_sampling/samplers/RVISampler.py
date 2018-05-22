@@ -23,7 +23,7 @@ class RVISampler(Sampler):
                  gamma=1,
                  negative_reward_clip=-10,
                  use_cuda=False,
-                 train_episodes=3000,
+                 # train_episodes=3000,
                  lr_scheduler=None):
         """
         The reinforced variational inference sampler
@@ -46,15 +46,13 @@ class RVISampler(Sampler):
         self.gamma = gamma
         self.negative_reward_clip = negative_reward_clip
         self.lr_scheduler=lr_scheduler
-        self.train_steps_completed = 0
-        self.train_episodes = train_episodes
+        # self.train_steps_completed = 0
+        # self.train_episodes = train_episodes
 
     def train_mode(self, mode):
         self._training = mode
 
-    def solve(self, stochastic_process, mc_samples,
-              verbose=False, retrain=0, return_train_results=False,
-              use_train_results_as_posterior=True):
+    def solve(self, stochastic_process, mc_samples, verbose=False):
         """
         Collect mc_samples from the posterior.
         Note that this function will first train the proposal before evaluating
@@ -64,47 +62,13 @@ class RVISampler(Sampler):
         :param stochastic_process: The stochastic process to learn from
         :param mc_samples: The number of samples to obtain
         :param verbose: verbosity
-        :param retrain: Give an integer here if you want to retrain the proposal for
-                        this many time steps
-        :param return_train_results: This will also return the training_results
-                                     (for diagnostic purposes)
-        :param use_train_results_as_posterior: Will skip the evaluation phase and
-                                    the posterior estimated during training is returned
+
         :return:
         """
-        # decide how many training steps to do
-        if self.train_steps_completed > self.train_episodes:
-            if int(retrain) > 0:
-                train_episodes = retrain
-            else:
-                train_episodes = 0
-        else:
-            train_episodes = self.train_episodes
 
-        if use_train_results_as_posterior:
-            train_episodes = mc_samples
-            if self.train_steps_completed > 0:
-                logging.warning('Proposal was already trained before retraining.')
+        results = self.train(stochastic_process, mc_samples, verbose=verbose)
 
-        if train_episodes > 0 and self.policy_optimizer is not None:
-            train_results = self.train(stochastic_process, train_episodes, verbose=verbose)
-        else:
-            train_results = None
-
-        if not use_train_results_as_posterior:
-            # See https://docs.google.com/document/d/1SNkV9eWCVXQk3NREhjsBvCSIqZIESS2DZ00CEJ5MUwQ/edit
-            logging.warning('Note that it is empirically found that only sampling without any training'
-                            'performs worse than training and using those samples.')
-            sampler_results = self.sample_from_posterior(stochastic_process, mc_samples, verbose=verbose)
-        else:
-            sampler_results = None
-
-        if use_train_results_as_posterior:
-            return train_results
-        elif return_train_results:
-            return sampler_results, train_results
-        else:
-            return sampler_results
+        return results
 
 
     def train(self, stochastic_process, train_episodes, verbose=False):
