@@ -23,7 +23,6 @@ class RVISampler(Sampler):
                  gamma=1,
                  negative_reward_clip=-10,
                  use_cuda=False,
-                 # train_episodes=3000,
                  lr_scheduler=None):
         """
         The reinforced variational inference sampler
