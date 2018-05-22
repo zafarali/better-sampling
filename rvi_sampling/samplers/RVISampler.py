@@ -54,7 +54,7 @@ class RVISampler(Sampler):
 
     def solve(self, stochastic_process, mc_samples,
               verbose=False, retrain=0, return_train_results=False,
-              use_train_results_as_posterior=False):
+              use_train_results_as_posterior=True):
         """
         Collect mc_samples from the posterior.
         Note that this function will first train the proposal before evaluating
@@ -92,6 +92,9 @@ class RVISampler(Sampler):
             train_results = None
 
         if not use_train_results_as_posterior:
+            # See https://docs.google.com/document/d/1SNkV9eWCVXQk3NREhjsBvCSIqZIESS2DZ00CEJ5MUwQ/edit
+            logging.warning('Note that it is empirically found that only sampling without any training'
+                            'performs worse than training and using those samples.')
             sampler_results = self.sample_from_posterior(stochastic_process, mc_samples, verbose=verbose)
         else:
             sampler_results = None
@@ -198,7 +201,7 @@ class RVISampler(Sampler):
 
     def sample_from_posterior(self, stochastic_process, mc_samples, verbose=False):
         """
-        Evaluates draws from the RVI model
+        Evaluates draws from the RVI model (with no training)
         :param stochastic_process: The stochastic process to learn from
         :param mc_samples: the number of draws to make from the proposal
         :param verbose:
