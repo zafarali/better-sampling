@@ -45,8 +45,7 @@ class RVISampler(Sampler):
         self.gamma = gamma
         self.negative_reward_clip = negative_reward_clip
         self.lr_scheduler=lr_scheduler
-        # self.train_steps_completed = 0
-        # self.train_episodes = train_episodes
+        self.train_steps_completed = 0
 
     def train_mode(self, mode):
         self._training = mode
