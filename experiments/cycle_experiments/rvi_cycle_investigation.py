@@ -33,19 +33,15 @@ if __name__=='__main__':
     folder_name = utils.io.create_folder_name(args.outfolder, args.name+'_'+str(args.sampler_seed)+'_'+str(args.rw_seed))
 
     train_folder_name = os.path.join(folder_name, 'training_results')
-    test_folder_name = os.path.join(folder_name, 'testing_results')
 
     kl_train_cumulative_track = os.path.join(folder_name, 'kl_training_cumulative.txt')
     kl_train_track = os.path.join(folder_name, 'kl_training.txt')
-    kl_test_track = os.path.join(folder_name, 'kl_testing.txt')
 
     prop_train_cumulative_track = os.path.join(folder_name, 'prop_training_cumulative.txt')
     prop_train_track = os.path.join(folder_name, 'prop_training.txt')
-    prop_test_track = os.path.join(folder_name, 'prop_testing.txt')
 
     utils.io.create_folder(folder_name)
     utils.io.create_folder(train_folder_name)
-    utils.io.create_folder(test_folder_name)
 
     rw, analytic = utils.stochastic_processes.create_rw(args, biased=BIASED, n_agents=args.n_agents)
 
@@ -115,15 +111,12 @@ if __name__=='__main__':
 
 
         if i >= args.cycles:
-            test_folder_to_save_in = folder_name
+            train_folder_name = folder_name
         else:
-            test_folder_to_save_in = os.path.join(test_folder_name, str(i))
-            utils.io.create_folder(test_folder_to_save_in)
+            train_folder_to_save_in = os.path.join(train_folder_name, str(i))
+            utils.io.create_folder(train_folder_to_save_in)
 
-        steps_so_far = str(i * args.train_steps)
-
-        train_folder_to_save_in = os.path.join(train_folder_name, str(i))
-        utils.io.create_folder(train_folder_to_save_in)
+        steps_so_far = str(i * args.samples)
 
         # save the cumulative information
         kld = utils.analysis.analyze_samplers_rw([train_results], args, None, rw,

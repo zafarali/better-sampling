@@ -71,19 +71,12 @@ if __name__=='__main__':
     print('True Ending Position is: {}'.format(rw.xT))
     print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
 
-    test_results = sampler.solve(rw, args.samples, verbose=True)
     train_results = None
 
-
-    kld = utils.analysis.analyze_samplers_rw([test_results], args, train_folder_to_save_in, rw,
-                                       policy=None, analytic=analytic)
-
-    utils.io.put(kl_train_track, '0, '+str(kld[0]))
-    utils.io.put(kl_train_cumulative_track, '0, '+str(kld[0]))
-
-    utils.io.put(prop_train_track, '0, ' + str(test_results.prop_success()))
-    utils.io.put(prop_train_cumulative_track, '0, ' + str(test_results.prop_success()))
-
+    utils.io.touch(kl_train_track)
+    utils.io.touch(kl_train_cumulative_track)
+    utils.io.touch(prop_train_track)
+    utils.io.touch(prop_train_cumulative_track)
 
     for i in range(1, args.cycles+1):
         train_results_new = sampler.solve(rw, args.samples)
@@ -104,7 +97,7 @@ if __name__=='__main__':
                                                           train_results_new.posterior_weights()])
 
             
-        steps_so_far = str(i * args.train_steps)
+        steps_so_far = str(i * args.samples)
 
 
         train_folder_to_save_in = os.path.join(train_folder_name, str(i))
