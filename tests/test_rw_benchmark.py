@@ -49,7 +49,6 @@ def test_algorithms():
                            negative_reward_clip=-1000,
                            objective=PolicyGradientObjective(entropy=0),
                            feed_time=True,
-                           train_episodes=1000,
                            seed=0) ]
 
 

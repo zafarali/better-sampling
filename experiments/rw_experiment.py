@@ -61,7 +61,6 @@ if __name__=='__main__':
                            negative_reward_clip=args.reward_clip,
                            objective=PolicyGradientObjective(entropy=args.entropy),
                            feed_time=args.notime,
-                           train_episodes=args.train_steps,
                            seed=args.sampler_seed) ]
 
     if args.notrain:
