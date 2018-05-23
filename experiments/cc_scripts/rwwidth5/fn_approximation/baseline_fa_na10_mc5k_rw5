@@ -25,12 +25,12 @@ BASELINE_LEARNING_RATE="1e-5"
 
 python ./rw_experiment.py --rw_seed 0 --rw_time $RW_TIME --rw_width $RW_WIDTH \
 -samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES -name rwseed0 --outfolder $OUTFOLDER --only-rvi \
--rewardclip $REWARDCLIP -baseline fn_approximation -baseline_nn 2 2 2 -baseline_lr BASELINE_LEARNING_RATE -nagents $N_AGENTS &
+-rewardclip $REWARDCLIP -baseline fn_approximation -baseline_nn 2 2 2 -baseline_lr $BASELINE_LEARNING_RATE -nagents $N_AGENTS &
 python ./rw_experiment.py --rw_seed 2 --rw_time $RW_TIME --rw_width $RW_WIDTH \
 -samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES -name rwseed2 --outfolder $OUTFOLDER --only-rvi\
--rewardclip $REWARDCLIP -baseline fn_approximation -baseline_nn 2 2 2 -baseline_lr BASELINE_LEARNING_RATE -nagents $N_AGENTS &
+-rewardclip $REWARDCLIP -baseline fn_approximation -baseline_nn 2 2 2 -baseline_lr $BASELINE_LEARNING_RATE -nagents $N_AGENTS &
 python ./rw_experiment.py --rw_seed 7 --rw_time $RW_TIME --rw_width $RW_WIDTH \
 -samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES -name rwseed7 --outfolder $OUTFOLDER --only-rvi\
--rewardclip $REWARDCLIP -baseline fn_approximation -baseline_nn 2 2 2 -baseline_lr BASELINE_LEARNING_RATE -nagents $N_AGENTS &
+-rewardclip $REWARDCLIP -baseline fn_approximation -baseline_nn 2 2 2 -baseline_lr $BASELINE_LEARNING_RATE -nagents $N_AGENTS &
 
 wait
