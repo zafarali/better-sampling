@@ -24,17 +24,18 @@ OUTFOLDER="./baseline_experiments/baseline_fa_na1_mc50k_rw5"
 REWARDCLIP=-10
 BASELINE_LEARNING_RATE="1e-5"
 
-python ./baseline_experiments/rvi_cycle_investigation.py --cycles $CYCLES --rw_seed 0 --rw_time $RW_TIME --rw_width $RW_WIDTH \
+
+python ./baseline_experiments/rvi_baseline_investigation.py --cycles $CYCLES --rw_seed 0 --rw_time $RW_TIME --rw_width $RW_WIDTH \
 -samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES -name rwseed0 --outfolder $OUTFOLDER \
 -rewardclip $REWARDCLIP -baseline fn_approximation -baseline_nn 2 2 2 -baseline_lr $BASELINE_LEARNING_RATE -nagents $N_AGENTS \
 --no_tensorboard &
 
-python ./baseline_experiments/rvi_cycle_investigation.py --cycles $CYCLES --rw_seed 2 --rw_time $RW_TIME --rw_width $RW_WIDTH \
+python ./baseline_experiments/rvi_baseline_investigation.py --cycles $CYCLES --rw_seed 2 --rw_time $RW_TIME --rw_width $RW_WIDTH \
 -samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES -name rwseed2 --outfolder $OUTFOLDER \
 -rewardclip $REWARDCLIP -baseline fn_approximation -baseline_nn 2 2 2 -baseline_lr $BASELINE_LEARNING_RATE -nagents $N_AGENTS \
 --no_tensorboard &
 
-python ./baseline_experiments/rvi_cycle_investigation.py --cycles $CYCLES --rw_seed 7 --rw_time $RW_TIME --rw_width $RW_WIDTH \
+python ./baseline_experiments/rvi_baseline_investigation.py --cycles $CYCLES --rw_seed 7 --rw_time $RW_TIME --rw_width $RW_WIDTH \
 -samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES -name rwseed7 --outfolder $OUTFOLDER \
 -rewardclip $REWARDCLIP -baseline fn_approximation -baseline_nn 2 2 2 -baseline_lr $BASELINE_LEARNING_RATE -nagents $N_AGENTS \
 --no_tensorboard &

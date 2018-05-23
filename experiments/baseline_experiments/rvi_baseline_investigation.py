@@ -1,5 +1,5 @@
 """
-This script is used to understand how RVI behaves during and after training
+This script is used to understand how different baseline methods behave in variance reduction
 """
 import sys
 sys.path.append('..')
@@ -120,7 +120,7 @@ if __name__=='__main__':
 
 
         if i >= args.cycles:
-            train_folder_name = folder_name
+            train_folder_to_save_in = folder_name
         else:
             train_folder_to_save_in = os.path.join(train_folder_name, str(i))
             utils.io.create_folder(train_folder_to_save_in)

@@ -23,15 +23,15 @@ RW_WIDTH=5
 OUTFOLDER="./baseline_experiments/baseline_ma_na10_mc5k_rw5"
 REWARDCLIP=-10
 
-python ./baseline_experiments/rvi_cycle_investigation.py --cycles $CYCLES --rw_seed 0 --rw_time $RW_TIME --rw_width $RW_WIDTH \
+python ./baseline_experiments/rvi_baseline_investigation.py --cycles $CYCLES --rw_seed 0 --rw_time $RW_TIME --rw_width $RW_WIDTH \
 -samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES -name rwseed0 --outfolder $OUTFOLDER \
 -rewardclip $REWARDCLIP -nagents $N_AGENTS --no_tensorboard &
 
-python ./baseline_experiments/rvi_cycle_investigation.py --cycles $CYCLES --rw_seed 2 --rw_time $RW_TIME --rw_width $RW_WIDTH \
+python ./baseline_experiments/rvi_baseline_investigation.py --cycles $CYCLES --rw_seed 2 --rw_time $RW_TIME --rw_width $RW_WIDTH \
 -samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES -name rwseed2 --outfolder $OUTFOLDER \
 -rewardclip $REWARDCLIP -nagents $N_AGENTS --no_tensorboard &
 
-python ./baseline_experiments/rvi_cycle_investigation.py --cycles $CYCLES --rw_seed 7 --rw_time $RW_TIME --rw_width $RW_WIDTH \
+python ./baseline_experiments/rvi_baseline_investigation.py --cycles $CYCLES --rw_seed 7 --rw_time $RW_TIME --rw_width $RW_WIDTH \
 -samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES -name rwseed7 --outfolder $OUTFOLDER \
 -rewardclip $REWARDCLIP -nagents $N_AGENTS --no_tensorboard &
 
