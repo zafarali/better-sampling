@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --time=2:30:00
-#SBATCH --job-name=baseline_fa_na1_mc50k_rw5
+#SBATCH --job-name=baseline_fa_na10_mc5k_rw5
 #SBATCH --ntasks=3
 #SBATCH -o ./out_%x.txt
 #SBATCH -e ./err_%x.txt
