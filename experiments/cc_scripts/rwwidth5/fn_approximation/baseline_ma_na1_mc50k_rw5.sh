@@ -16,7 +16,7 @@ module load cudnn/7.0
 module load qt
 
 MC_SAMPLES=50000
-N_AGENTS = 1
+N_AGENTS=1
 RW_TIME=50
 RW_WIDTH=5
 OUTFOLDER="./baseline_experiments/baseline_ma_na1_mc50k_rw5"
