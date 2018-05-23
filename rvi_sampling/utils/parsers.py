@@ -32,7 +32,7 @@ def rvi_arguments(parser):
     parser.add_argument('-notime', '--notime', default=True, action='store_false',
                         help='Do not feed time into the neural network proposal')
     parser.add_argument('-gamma', '--gamma', default=1, type=float, help='discount factor')
-    parser.add_argument('-rewardclip', '--reward_clip', default=-1000, type=float, help='The value to clip negative '
+    parser.add_argument('-rewardclip', '--reward_clip', default=-10, type=float, help='The value to clip negative '
                                                                                         'infinite rewards to')
     parser.add_argument('-nagents', '--n_agents', default=1, type=int,
                         help='Number of agents to use')

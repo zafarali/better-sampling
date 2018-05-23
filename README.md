@@ -5,7 +5,7 @@ The objective of this project is to learn the reverse transition dynamics of a s
 
 ## How to Set up
 
-This project requires installing PyTorch 0.3.1 (See requirements.txt for a full list of modules needed)
+This project requires installing PyTorch 0.3.1 (See requirements.txt for a full list of modules needed) and Python 3.5+
 Additionally, this project requires installing `pg_methods`, a new tool to make implementing algorithms based policy gradients / REINFORCE simpler
 
 To install that project:

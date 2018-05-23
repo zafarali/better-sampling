@@ -27,6 +27,14 @@ def put(path, text):
         else:
             f.write(text)
 
+def stash(path, text):
+    with open(path, 'a') as f:
+        if type(text) is list:
+            f.write('\n'.join(text))
+        else:
+            f.write('\n'+text)
+
+
 def argparse_saver(path, parser):
     "saves an argparse object"
     kwargs = [ '{},{}'.format(k, v) for k,v in parser._get_kwargs()]
