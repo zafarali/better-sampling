@@ -47,7 +47,6 @@ class RVISampler(Sampler):
         self.negative_reward_clip = negative_reward_clip
         self.lr_scheduler=lr_scheduler
         self.train_steps_completed = 0
-        self.device_cpu = torch.device("cpu")
 
     def train_mode(self, mode):
         self._training = mode
@@ -357,11 +356,8 @@ class RVISampler(Sampler):
 
     def solve_legacy(self, stochastic_process, mc_samples, verbose=False):
         logging.warning('Solve_legacy will be deprecated soon')
-=======
         device_cpu = torch.device("cpu")
         device = get_device(self.use_cuda)
-
->>>>>>> Device agnostic code
         feed_time = self.feed_time
         assert stochastic_process._pytorch, 'Your stochastic process must be pytorch wrapped.'
         results = RLSamplingResults('RVISampler', stochastic_process.true_trajectory)
