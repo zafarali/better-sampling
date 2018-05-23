@@ -15,6 +15,7 @@ module load cuda/8.0.44
 module load cudnn/7.0
 module load qt
 
+CYCLES=15
 MC_SAMPLES=5000
 N_AGENTS=10
 RW_TIME=50
@@ -22,14 +23,16 @@ RW_WIDTH=5
 OUTFOLDER="./baseline_experiments/baseline_ma_na10_mc5k_rw5"
 REWARDCLIP=-10
 
-python ./rw_experiment.py --rw_seed 0 --rw_time $RW_TIME --rw_width $RW_WIDTH \
--samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES -name rwseed0 --outfolder $OUTFOLDER --only-rvi\
--rewardclip $REWARDCLIP -nagents $N_AGENTS &
-python ./rw_experiment.py --rw_seed 2 --rw_time $RW_TIME --rw_width $RW_WIDTH \
--samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES -name rwseed2 --outfolder $OUTFOLDER --only-rvi\
--rewardclip $REWARDCLIP -nagents $N_AGENTS &
-python ./rw_experiment.py --rw_seed 7 --rw_time $RW_TIME --rw_width $RW_WIDTH \
--samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES -name rwseed7 --outfolder $OUTFOLDER --only-rvi\
--rewardclip $REWARDCLIP -nagents $N_AGENTS &
+python ./baseline_experiments/rvi_cycle_investigation.py --cycles $CYCLES --rw_seed 0 --rw_time $RW_TIME --rw_width $RW_WIDTH \
+-samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES -name rwseed0 --outfolder $OUTFOLDER \
+-rewardclip $REWARDCLIP -nagents $N_AGENTS --no_tensorboard &
+
+python ./baseline_experiments/rvi_cycle_investigation.py --cycles $CYCLES --rw_seed 2 --rw_time $RW_TIME --rw_width $RW_WIDTH \
+-samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES -name rwseed2 --outfolder $OUTFOLDER \
+-rewardclip $REWARDCLIP -nagents $N_AGENTS --no_tensorboard &
+
+python ./baseline_experiments/rvi_cycle_investigation.py --cycles $CYCLES --rw_seed 7 --rw_time $RW_TIME --rw_width $RW_WIDTH \
+-samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES -name rwseed7 --outfolder $OUTFOLDER \
+-rewardclip $REWARDCLIP -nagents $N_AGENTS --no_tensorboard &
 
 wait
