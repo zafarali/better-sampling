@@ -84,7 +84,7 @@ if __name__=='__main__':
                          seed=args.sampler_seed)
 
     def kl_function(estimated_distribution):
-        return analytic.kl_divergence(estimated_distribution, rw.xT)
+        return analytic.kl_divergence(estimated_distribution, rw.xT[0])
 
     sampler.set_diagnostic(utils.diagnostics.create_diagnostic(sampler._name, args, folder_name, kl_function))
 
