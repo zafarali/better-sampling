@@ -31,6 +31,7 @@ if __name__=='__main__':
     utils.io.touch(os.path.join(folder_name, 'start={}'.format(rw.x0)))
     utils.io.touch(os.path.join(folder_name, 'end={}'.format(rw.xT)))
 
+    # handling device from this experiment script, networks can be pushed to separate gpus's if required
     device = utils.common.get_device(args.use_cuda)
 
     if args.pretrained is not None:

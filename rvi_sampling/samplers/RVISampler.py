@@ -78,6 +78,8 @@ class RVISampler(Sampler):
         :param verbose:
         :return:
         """
+        device_cpu = torch.device("cpu")
+        device = get_device(self.use_cuda)
         self.train_mode(True)
         self.check_stochastic_process(stochastic_process)
         stochastic_process.train_mode(True)
@@ -102,7 +104,7 @@ class RVISampler(Sampler):
 
             advantages = returns - pg_info.values
 
-            pg_loss = self.objective(advantages, pg_info)
+            pg_loss = self.objective(advantages.to(device), pg_info)
 
             if self.baseline is not None:
                 val_loss = self.baseline.update_baseline(pg_info, returns)
@@ -112,18 +114,17 @@ class RVISampler(Sampler):
             loss = pg_loss + val_loss
 
             # this is a bit meaningless if the other parts of the graph are not on the cpu
-            if self.use_cuda:
-                loss = loss.cuda()
+            loss = loss.to(device)
 
             self.policy_optimizer.zero_grad()
             loss.backward()
-            clip_grad_norm(self.policy.fn_approximator.parameters(), 40) # TODO: what clipping value to use here?
+            clip_grad_norm_(self.policy.fn_approximator.parameters(), 40) # TODO: what clipping value to use here?
             self.policy_optimizer.step()
             if self.lr_scheduler is not None: self.lr_scheduler.step()
 
             reward_summary = torch.sum(pg_info.rewards, dim=0).mean()
             rewards_per_episode.append(reward_summary)
-            loss_per_episode.append(loss.cpu().data[0])
+            loss_per_episode.append(loss.item())
 
             if i % 100 == 0 and verbose:
                 print('Train Step {}, loss {:3g}, episode_reward {:3g}, '
@@ -205,12 +206,13 @@ class RVISampler(Sampler):
         :param verbose:
         :return:
         """
+        device_cpu = torch.device("cpu")
+        device = get_device(self.use_cuda)
         self.check_stochastic_process(stochastic_process)
 
         x_t = stochastic_process.reset()
         x_tm1 = x_t
-        # TODO(PyT 0.4): Remove the Variable check here.
-        sampled_trajectory = [x_t.data.cpu().numpy() if isinstance(x_t, Variable) else x_t.cpu().numpy()]
+        sampled_trajectory = [x_t.data.to(device_cpu).numpy()]
 
         if self.feed_time:
             x_tm1 = self.augment_time(stochastic_process, x_tm1, x_t, start=True)
@@ -224,7 +226,7 @@ class RVISampler(Sampler):
             # draw a reverse step
             # this is p(w_{t} | w_{t+1})
             assert len(x_tm1.size()) == 2
-            action, log_prob_action = self.policy(x_tm1)
+            action, log_prob_action = self.policy(x_tm1.to(device))
 
             """
             Reverse Mode
@@ -249,7 +251,7 @@ class RVISampler(Sampler):
             # reward_ = path_log_prob.float().view(-1,1)
 
             # OPTION B:
-            reward_ = path_log_prob.float().view(-1, 1) - log_prob_action.data.float().view(-1, 1)
+            reward_ = path_log_prob.to(device_cpu).float().view(-1, 1) - log_prob_action.to(device_cpu).data.float().view(-1, 1)
 
             reward = torch.zeros_like(reward_)
             reward.copy_(reward_)
@@ -260,14 +262,10 @@ class RVISampler(Sampler):
 
             # probability of the path gets updated:
             log_path_prob += path_log_prob.numpy().reshape(-1, 1)
-            log_proposal_prob += log_prob_action.data.cpu().float().numpy().reshape(-1, 1)
+            log_proposal_prob += log_prob_action.data.to(device_cpu).float().numpy().reshape(-1, 1)
 
 
-            # TODO(PyT 0.4): Remove variable check here
-            if isinstance(x_t, Variable):
-                sampled_trajectory.append(x_t.data.numpy())
-            else:
-                sampled_trajectory.append(x_t.numpy())
+            sampled_trajectory.append(x_t.data.to(device_cpu).numpy())
 
             if self.feed_time:
                 x_t = self.augment_time(stochastic_process, x_tm1, x_t)
@@ -313,7 +311,8 @@ class RVISampler(Sampler):
         proportion_of_time_left = (stochastic_process.transitions_left / (stochastic_process.T - 1))
         x_with_time[:, x_tm1.size()[-1] - contract_dims].copy_(proportion_of_time_left * torch.ones(stochastic_process.n_agents))
         # create a new variable with this information
-        return Variable(x_with_time, volatile=(not self._training))
+        with torch.set_grad_enabled(not self._training):
+            return x_with_time
 
     def maybe_save_trajectory_into_posterior(self, stochastic_process,
                                              sampled_trajectories,
