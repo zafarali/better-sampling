@@ -105,12 +105,10 @@ class RVISampler(Sampler):
 
             if self.baseline is not None:
                 val_loss = self.baseline.update_baseline(pg_info, returns)
-                if isinstance(val_loss, Variable):
-                    val_loss = val_loss.detach()
             else:
                 val_loss = 0
 
-            loss = pg_loss + val_loss
+            loss = pg_loss
 
             # this is a bit meaningless if the other parts of the graph are not on the cpu
             if self.use_cuda:
