@@ -106,7 +106,7 @@ class RVISampler(Sampler):
             if self.baseline is not None:
                 val_loss = self.baseline.update_baseline(pg_info, returns)
                 if isinstance(val_loss, Variable):
-                    val_loss.detach()
+                    val_loss = val_loss.detach()
             else:
                 val_loss = 0
 
