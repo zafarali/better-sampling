@@ -31,9 +31,6 @@ if __name__=='__main__':
     utils.io.touch(os.path.join(folder_name, 'start={}'.format(rw.x0)))
     utils.io.touch(os.path.join(folder_name, 'end={}'.format(rw.xT)))
 
-    # handling device from this experiment script, networks can be pushed to separate gpus's if required
-    device = utils.common.get_device(args.use_cuda)
-
     if args.pretrained is not None:
         policy = torch.load(args.pretrained)
         policy_optimizer = torch.optim.RMSprop(policy.fn_approximator.parameters(),lr=args.learning_rate)
@@ -44,8 +41,6 @@ if __name__=='__main__':
                                       hidden_sizes=args.neural_network,
                                       output_size=OUTPUT_SIZE,
                                       hidden_non_linearity=nn.ReLU)
-
-        fn_approximator.to(device)
 
         policy = MultinomialPolicy(fn_approximator)
         policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=args.learning_rate)

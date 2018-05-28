@@ -7,7 +7,6 @@ import pg_methods.gradients as gradients
 import numpy as np
 from .Samplers import Sampler
 from ..results import RLSamplingResults
-from rvi_sampling.utils.common import get_device
 import logging
 
 class RVISampler(Sampler):
@@ -78,8 +77,6 @@ class RVISampler(Sampler):
         :param verbose:
         :return:
         """
-        device_cpu = torch.device("cpu")
-        device = get_device(self.use_cuda)
         self.train_mode(True)
         self.check_stochastic_process(stochastic_process)
         stochastic_process.train_mode(True)
@@ -104,7 +101,7 @@ class RVISampler(Sampler):
 
             advantages = returns - pg_info.values
 
-            pg_loss = self.objective(advantages.to(device), pg_info)
+            pg_loss = self.objective(advantages, pg_info)
 
             if self.baseline is not None:
                 val_loss = self.baseline.update_baseline(pg_info, returns)
@@ -112,9 +109,6 @@ class RVISampler(Sampler):
                 val_loss = 0
 
             loss = pg_loss + val_loss
-
-            # this is a bit meaningless if the other parts of the graph are not on the cpu
-            loss = loss.to(device)
 
             self.policy_optimizer.zero_grad()
             loss.backward()
@@ -206,13 +200,11 @@ class RVISampler(Sampler):
         :param verbose:
         :return:
         """
-        device_cpu = torch.device("cpu")
-        device = get_device(self.use_cuda)
         self.check_stochastic_process(stochastic_process)
 
         x_t = stochastic_process.reset()
         x_tm1 = x_t
-        sampled_trajectory = [x_t.data.to(device_cpu).numpy()]
+        sampled_trajectory = [x_t.data.numpy()]
 
         if self.feed_time:
             x_tm1 = self.augment_time(stochastic_process, x_tm1, x_t, start=True)
@@ -226,7 +218,7 @@ class RVISampler(Sampler):
             # draw a reverse step
             # this is p(w_{t} | w_{t+1})
             assert len(x_tm1.size()) == 2
-            action, log_prob_action = self.policy(x_tm1.to(device))
+            action, log_prob_action = self.policy(x_tm1)
 
             """
             Reverse Mode
@@ -251,7 +243,7 @@ class RVISampler(Sampler):
             # reward_ = path_log_prob.float().view(-1,1)
 
             # OPTION B:
-            reward_ = path_log_prob.to(device_cpu).float().view(-1, 1) - log_prob_action.to(device_cpu).data.float().view(-1, 1)
+            reward_ = path_log_prob.float().view(-1, 1) - log_prob_action.data.float().view(-1, 1)
 
             reward = torch.zeros_like(reward_)
             reward.copy_(reward_)
@@ -262,10 +254,10 @@ class RVISampler(Sampler):
 
             # probability of the path gets updated:
             log_path_prob += path_log_prob.numpy().reshape(-1, 1)
-            log_proposal_prob += log_prob_action.data.to(device_cpu).float().numpy().reshape(-1, 1)
+            log_proposal_prob += log_prob_action.data.float().numpy().reshape(-1, 1)
 
 
-            sampled_trajectory.append(x_t.data.to(device_cpu).numpy())
+            sampled_trajectory.append(x_t.data.numpy())
 
             if self.feed_time:
                 x_t = self.augment_time(stochastic_process, x_tm1, x_t)
@@ -355,8 +347,6 @@ class RVISampler(Sampler):
 
     def solve_legacy(self, stochastic_process, mc_samples, verbose=False):
         logging.warning('Solve_legacy will be deprecated soon')
-        device_cpu = torch.device("cpu")
-        device = get_device(self.use_cuda)
         feed_time = self.feed_time
         assert stochastic_process._pytorch, 'Your stochastic process must be pytorch wrapped.'
         results = RLSamplingResults('RVISampler', stochastic_process.true_trajectory)
@@ -371,7 +361,7 @@ class RVISampler(Sampler):
         for i in range(mc_samples):
             x_t = stochastic_process.reset()  # start at the end
             x_tm1 = x_t
-            trajectory_i = [x_t.to(device_cpu).data.numpy() if isinstance(x_t, Variable) else x_t.to(device_cpu).numpy()]
+            trajectory_i = [x_t.data.numpy() if isinstance(x_t, Variable) else x_t.numpy()]
 
             if feed_time:
                 # this will augment the state space with the time dimension
@@ -399,7 +389,6 @@ class RVISampler(Sampler):
                 # draw a reverse step
                 # this is p(w_{t} | w_{t+1})
                 assert len(x_tm1.size()) == 2
-                x_tm1 = x_tm1.to(device)
                 action,  log_prob_action = self.policy(x_tm1)
 
                 """
@@ -427,7 +416,7 @@ class RVISampler(Sampler):
                 # reward_ = path_log_prob.float().view(-1,1)
 
                 # OPTION B:
-                reward_ = path_log_prob.to(device_cpu).float().view(-1,1) - log_prob_action.to(device_cpu).data.float().view(-1, 1)
+                reward_ = path_log_prob.float().view(-1,1) - log_prob_action.data.float().view(-1, 1)
 
                 reward = torch.zeros_like(reward_)
                 reward.copy_(reward_)
@@ -438,14 +427,14 @@ class RVISampler(Sampler):
 
                 # probability of the path gets updated:
                 log_path_prob += path_log_prob.numpy().reshape(-1, 1)
-                log_proposal_prob += log_prob_action.data.to(device_cpu).float().numpy().reshape(-1, 1)
+                log_proposal_prob += log_prob_action.data.float().numpy().reshape(-1, 1)
                 # log_proposal_prob += log_prob_action.data.float().numpy().reshape(-1, 1)
                 # take the reverse step:
                 # if isinstance()
                 if isinstance(x_t, Variable):
-                    trajectory_i.append(x_t.to(device_cpu).data.numpy())
+                    trajectory_i.append(x_t.data.numpy())
                 else:
-                    trajectory_i.append(x_t.to(device_cpu).numpy())
+                    trajectory_i.append(x_t.numpy())
 
                 if feed_time:
                     # this will augment the state space with the time dimension
@@ -457,7 +446,6 @@ class RVISampler(Sampler):
                     assert x_tm1.size() == x_t.size(), 'State sizes must match, but they dont. {} != {}'.format(x_tm1.size(), x_t.size())
 
                 value_estimate = self.baseline(x_t) if self.baseline is not None else torch.FloatTensor([[0]*stochastic_process.n_agents])
-                x_t = x_t.to(device)
                 policy_gradient_trajectory_info.append(x_tm1, action, reward, value_estimate, log_prob_action, x_t, done)
 
                 x_tm1 = x_t
@@ -474,10 +462,7 @@ class RVISampler(Sampler):
                 if self.baseline is not None:
                     self.baseline.update_baseline(policy_gradient_trajectory_info, returns)
 
-                advantages = advantages.to(device)
                 loss = self.objective(advantages, policy_gradient_trajectory_info)
-
-                loss = loss.to(device)
 
                 if self.policy_optimizer is not None:
                     self.policy_optimizer.zero_grad()
