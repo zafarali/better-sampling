@@ -1,7 +1,6 @@
 import gym
 import numpy as np
 import torch
-from torch.autograd import Variable
 from functools import reduce
 
 class StochasticProcess(gym.Env):
@@ -63,11 +62,8 @@ class PyTorchWrap(object):
         return self.stochastic_process.transitions_left
 
     def variable_wrap(self, tensor):
-        if not isinstance(tensor, Variable):
-            if self._training:
-                tensor = Variable(tensor)
-            else:
-                tensor = Variable(tensor, requires_grad=False)
+        with torch.set_grad_enabled(self._training):
+            tensor = tensor
 
         return tensor.float()
 

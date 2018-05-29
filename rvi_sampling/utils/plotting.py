@@ -1,6 +1,5 @@
 import torch
 import torch.nn.functional as F
-from torch.autograd import Variable
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
@@ -66,14 +65,14 @@ def conduct_draws_nn(sp_, x, t, n_draws=100, feed_time=False):
     :param t: the time in the random walk
     :return:
     """
-    if feed_time:
-        data = Variable(torch.FloatTensor([[x, t]]), requires_grad=False)
+    with torch.set_grad_enabled(False):
+        if feed_time:
+            data = torch.FloatTensor([[x, t]])
+        else:
+            data = torch.FloatTensor([[x]])
 
-    else:
-        data = Variable(torch.FloatTensor([[x]]), requires_grad=False)
-
-    log_probs = sp_.fn_approximator(data)
-    probs = F.softmax(log_probs, dim=1).data # convert log probs to probs
+        log_probs = sp_.fn_approximator(data)
+        probs = F.softmax(log_probs, dim=1).data # convert log probs to probs
 
     # return the expected step:
     return torch.mean(probs * torch.FloatTensor([-1, 1]))

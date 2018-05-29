@@ -4,7 +4,6 @@ Pre-train the RVI proposal to mimic a proposal of choice.
 
 import numpy as np
 import torch
-from torch.autograd import Variable
 import torch.nn as nn
 from pg_methods.networks import MLP_factory
 from torch.utils.data import TensorDataset, DataLoader
@@ -71,8 +70,8 @@ def main(args):
     for i in range(args.epochs):
         losses_for_epoch = []
         for _, (X, Y) in enumerate(data):
-            x_mb = Variable(X)
-            y_mb = Variable(Y)
+            x_mb = X
+            y_mb = Y
 
             y_hat = fn_approximator(x_mb)
             loss = SoftCE(y_hat, y_mb)
