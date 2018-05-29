@@ -20,9 +20,9 @@ def run_sampler(args):
     :param args:
     :return:
     """
-    use_cuda, sampler, rw, MC_samples = args
+    sampler, rw, MC_samples = args
     if sampler._name == 'RVISampler':
-        return sampler.solve(PyTorchWrap(rw, use_cuda=use_cuda), MC_samples, verbose=True)
+        return sampler.solve(PyTorchWrap(rw), MC_samples, verbose=True)
     else:
         return sampler.solve(rw, MC_samples)
 
