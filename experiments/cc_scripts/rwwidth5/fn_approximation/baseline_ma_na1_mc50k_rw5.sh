@@ -4,7 +4,7 @@
 #SBATCH --ntasks=3
 #SBATCH -o ./out_%x.txt
 #SBATCH -e ./err_%x.txt
-#SBATCH --mem-per-cpu=4G
+#SBATCH --mem-per-cpu=16G
 #SBATCH --array=0-4
 
 cd $SLURM_SUBMIT_DIR
