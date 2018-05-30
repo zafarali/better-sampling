@@ -69,10 +69,7 @@ def main(args):
     optimizer = torch.optim.Adam(fn_approximator.parameters(), lr=0.001)
     for i in range(args.epochs):
         losses_for_epoch = []
-        for _, (X, Y) in enumerate(data):
-            x_mb = X
-            y_mb = Y
-
+        for _, (x_mb, y_mb) in enumerate(data):
             y_hat = fn_approximator(x_mb)
             loss = SoftCE(y_hat, y_mb)
             optimizer.zero_grad()
