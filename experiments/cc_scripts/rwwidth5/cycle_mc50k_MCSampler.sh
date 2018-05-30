@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --time=12:00:00
-#SBATCH --job-name=cycle_mc10k_MCSampler
+#SBATCH --job-name=cycle_mc50k_MCSampler
 #SBATCH --ntasks=3
 #SBATCH -o ./out_%x.txt
 #SBATCH -e ./err_%x.txt
