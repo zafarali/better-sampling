@@ -34,6 +34,10 @@ def rvi_arguments(parser):
     parser.add_argument('-gamma', '--gamma', default=1, type=float, help='discount factor')
     parser.add_argument('-rewardclip', '--reward_clip', default=-10, type=float, help='The value to clip negative '
                                                                                         'infinite rewards to')
+    parser.add_argument('-gae', '--use_gae', default=False, action='store_true',
+                        help='Use generalized advantage estimation')
+    parser.add_argument('-lam', '--lam', default=1.0, type=float, help='Lambda value for generalized advantages.'
+                                                                          'Should be in range [0-1]')
     parser.add_argument('-nagents', '--n_agents', default=1, type=int,
                         help='Number of agents to use')
     parser.add_argument('-plot-posterior', '--plot_posterior', default=False, action='store_true',

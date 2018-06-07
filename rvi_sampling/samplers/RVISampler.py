@@ -3,6 +3,7 @@ import torch
 from torch.autograd import Variable
 from pg_methods.data import MultiTrajectory
 from pg_methods.objectives import PolicyGradientObjective
+from pg_methods import interfaces
 import pg_methods.gradients as gradients
 import numpy as np
 from .Samplers import Sampler
@@ -21,9 +22,11 @@ class RVISampler(Sampler):
                  objective=PolicyGradientObjective(),
                  seed=0,
                  gamma=1,
+                 lam=1,
                  negative_reward_clip=-10,
                  use_cuda=False,
-                 lr_scheduler=None):
+                 lr_scheduler=None,
+                 use_gae=False):
         """
         The reinforced variational inference sampler
         :param policy: the policy to use
@@ -46,6 +49,10 @@ class RVISampler(Sampler):
         self.negative_reward_clip = negative_reward_clip
         self.lr_scheduler=lr_scheduler
         self.train_steps_completed = 0
+
+        # Generalized Advantages
+        self.use_gae = use_gae
+        self.lam = lam
 
     def train_mode(self, mode):
         self._training = mode
@@ -99,12 +106,15 @@ class RVISampler(Sampler):
 
             returns = gradients.calculate_returns(pg_info.rewards, self.gamma, pg_info.masks)
 
-            advantages = returns - pg_info.values
+            if self.use_gae:
+                advantages = gradients.calculate_gae( interfaces.pytorch2list(pg_info.rewards), interfaces.pytorch2list(pg_info.values), self.gamma, self.lam)
+            else:
+                advantages = returns - pg_info.values
 
             pg_loss = self.objective(advantages, pg_info)
 
             if self.baseline is not None:
-                val_loss = self.baseline.update_baseline(pg_info, returns)
+                val_loss = self.baseline.update_baseline(pg_info, returns, tro=self.use_gae)
             else:
                 val_loss = 0
 

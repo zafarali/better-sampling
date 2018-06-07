@@ -70,7 +70,9 @@ if __name__=='__main__':
                            negative_reward_clip=args.reward_clip,
                            objective=PolicyGradientObjective(entropy=args.entropy),
                            feed_time=args.notime,
-                           seed=args.sampler_seed) ]
+                           seed=args.sampler_seed,
+                           use_gae=args.use_gae,
+                           lam=args.lam) ]
 
     if args.notrain:
         samplers[-1].train_mode(False)
