@@ -63,7 +63,7 @@ class PyTorchWrap(object):
 
     def variable_wrap(self, tensor):
         with torch.set_grad_enabled(self._training):
-            tensor = tensor
+            tensor = tensor.clone()
 
         return tensor.float()
 
