@@ -4,7 +4,8 @@ import os
 import cProfile
 
 class ProfiledRunner(object):
-    """ Wrapper class for calling sampler with profiling enabled
+    """
+    Wrapper class for calling sampler with profiling enabled
 
     Attributes:
         returnValue (:RLSamplingResults): the result from calling sampler
