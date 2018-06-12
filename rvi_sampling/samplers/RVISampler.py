@@ -6,6 +6,7 @@ import pg_methods.gradients as gradients
 import numpy as np
 from .Samplers import Sampler
 from ..results import RLSamplingResults
+from rvi_sampling import utils
 import logging
 
 class RVISampler(Sampler):
@@ -45,6 +46,7 @@ class RVISampler(Sampler):
         self.negative_reward_clip = negative_reward_clip
         self.lr_scheduler=lr_scheduler
         self.train_steps_completed = 0
+        self.seed = seed
 
     def train_mode(self, mode):
         self._training = mode
@@ -76,6 +78,7 @@ class RVISampler(Sampler):
         :param verbose:
         :return:
         """
+        utils.common.set_global_seeds(self.seed)
         self.train_mode(True)
         self.check_stochastic_process(stochastic_process)
         stochastic_process.train_mode(True)
