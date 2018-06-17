@@ -5,7 +5,6 @@ import matplotlib
 matplotlib.use('Agg')
 import torch.nn as nn
 import os
-import multiprocessing
 import seaborn as sns
 from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler, RVISampler
 from rvi_sampling.distributions.proposal_distributions import SimonsSoftProposal, FunnelProposal
@@ -20,7 +19,6 @@ OUTPUT_SIZE = 2
 BIASED = False
 
 if __name__=='__main__':
-    multiprocessing.set_start_method('spawn')
     args = utils.parsers.create_parser('1D random walk', 'random_walk').parse_args()
     utils.common.set_global_seeds(args.sampler_seed)
     sns.set_style('white')
@@ -86,7 +84,6 @@ if __name__=='__main__':
     print('True Ending Position is: {}'.format(rw.xT))
     print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
 
-    pool = multiprocessing.Pool(args.n_cpus)
     solver_arguments = [(sampler,
                          utils.stochastic_processes.create_rw(args,
                                                               biased=BIASED,
@@ -94,10 +91,13 @@ if __name__=='__main__':
                          # args.samples * args.n_agents if sampler._name != 'RVISampler' else args.samples) for sampler in samplers]
                          args.samples) for sampler in samplers]
 
+    sampler_results = []
     if args.profile_performance:
         profiler_args = [ (folder_name, solver_argument) for solver_argument in solver_arguments ]
-        sampler_results = pool.map(utils.multiprocessing_tools.run_sampler_with_profiling, profiler_args)
+        for argument in profiler_args:
+            sampler_results.append(utils.multiprocessing_tools.run_sampler_with_profiling(argument))
     else:
-        sampler_results = pool.map(utils.multiprocessing_tools.run_sampler, solver_arguments)
+        for argument in solver_arguments:
+            sampler_results.append(utils.multiprocessing_tools.run_sampler(argument))
 
     utils.analysis.analyze_samplers_rw(sampler_results, args, folder_name, rw, policy=policy, analytic=analytic)
