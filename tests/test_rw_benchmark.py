@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import os
-import multiprocessing
 import seaborn as sns
 from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler, RVISampler
 from rvi_sampling.distributions.proposal_distributions import SimonsSoftProposal, FunnelProposal
@@ -57,11 +56,12 @@ def test_algorithms():
     print('True Ending Position is: {}'.format(rw.xT))
     print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
 
-    pool = multiprocessing.Pool(2)
     # Test without gpu support
     solver_arguments = [(sampler, utils.stochastic_processes.create_rw(args, biased=False, n_agents=1)[0], 1000) for sampler in samplers]
 
-    sampler_results = pool.map(utils.multiprocessing_tools.run_sampler, solver_arguments)
+    sampler_results = []
+    for argument in solver_arguments:
+        sampler_results.append(utils.multiprocessing_tools.run_sampler(argument))
 
     for sampler_result in sampler_results:
         check_sampler_result(sampler_result, args, analytic, rw)
