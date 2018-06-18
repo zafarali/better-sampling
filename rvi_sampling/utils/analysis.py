@@ -1,6 +1,7 @@
 import pickle
 import torch
 import os
+import gc
 import matplotlib.pyplot as plt
 from . import plotting, io
 
@@ -72,6 +73,10 @@ def analyze_samplers_rw(sampler_results,
                     continue
 
                 fig_RL.savefig(os.path.join(folder_name,'./RL_results.pdf'))
+                fig_RL.clf()
+                plt.close()
+                gc.collect()
+
                 torch.save({
                     'rewards_per_episode':sampler_result.rewards_per_episode,
                     'loss_per_episode':sampler_result.loss_per_episode,
@@ -90,7 +95,11 @@ def analyze_samplers_rw(sampler_results,
     # start saving things:
     try:
         fig_weight_hists.tight_layout()
-        if folder_name: fig_weight_hists.savefig(os.path.join(folder_name, 'weight_distribution.pdf'))
+        if folder_name:
+            fig_weight_hists.savefig(os.path.join(folder_name, 'weight_distribution.pdf'))
+            fig_weight_hists.clf()
+            plt.close()
+            gc.collect()
     except Exception as e:
         print('Could not create histogram of weights: {}'.format(e))
 
@@ -104,15 +113,27 @@ def analyze_samplers_rw(sampler_results,
     io.put(os.path.join(folder_name, 'KL'), kl_divergences)
     fig_dists.tight_layout(rect=[0, 0.03, 1, 0.97])
     fig_dists.savefig(os.path.join(folder_name, 'ending_distribution.pdf'))
+    fig_dists.clf()
+    plt.close()
+    gc.collect()
 
     fig_traj.tight_layout()
     fig_traj.savefig(os.path.join(folder_name, 'trajectory_distribution.pdf'))
+    fig_traj.clf()
+    plt.close()
+    gc.collect()
 
     fig_traj_evol.tight_layout()
     fig_traj_evol.savefig(os.path.join(folder_name, 'trajectory_evolution.pdf'))
+    fig_traj.clf()
+    plt.close()
+    gc.collect()
 
     fig_traj_evol_succ.tight_layout()
     fig_traj_evol_succ.savefig(os.path.join(folder_name, 'successful_trajectories.pdf'))
+    fig_traj_evol_succ.clf()
+    plt.close()
+    gc.collect()
 
     # dump the arguments
     io.argparse_saver(os.path.join(folder_name, 'args'), args)
@@ -128,6 +149,9 @@ def analyze_samplers_rw(sampler_results,
                                               ['Learned Neural Network Proposal'],
                                               figsize=(10, 5))
                 f.savefig(os.path.join(folder_name, 'visualized_proposal.pdf'))
+                f.clf()
+                plt.close()
+                gc.collect()
         except Exception as e:
             print('Could not plot proposal distribution {}'.format(e))
     # 

@@ -2,6 +2,7 @@ import sys
 sys.path.append('..')
 import matplotlib.pyplot as plt
 import torch
+import gc
 from rvi_sampling.distributions.proposal_distributions import SimonsProposal, SimonsSoftProposal, FunnelProposal
 from rvi_sampling.utils.plotting import visualize_proposal, multi_quiver_plot
 import argparse
@@ -49,3 +50,6 @@ if __name__=='__main__':
                           figsize=(4,4))
 
     f.savefig('visualized_proposals.pdf')
+    f.clf()
+    plt.close()
+    gc.collect()

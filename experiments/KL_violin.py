@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import sys
 sys.path.append('..')
 import os
+import gc
 import pandas as pd
 import argparse
 import numpy as np
@@ -89,6 +90,9 @@ def main(args):
     if args.hue == 'Samplers': ax2.set(ylim=(-3, -1.5)) # use this funky syntax because this is not a matplotlib axis anymore
     fig.tight_layout()
     fig.savefig(os.path.join(args.out_folder, './KL_plots_{}.pdf'.format(args.title.replace(' ', '_'))))
+    fig.clf()
+    plt.close()
+    gc.collect()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Aggregate KLs from experimental runs and creates a histogram')

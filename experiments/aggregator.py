@@ -7,6 +7,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 import sys
+import gc
 sys.path.append('..')
 import os
 import argparse
@@ -137,6 +138,9 @@ def main(args):
             ax.set_xlabel('Support')
             ax.set_ylabel('Prob')
             fig.savefig(os.path.join(args.folder, args.save.replace('.csv', '_histogram_{}.pdf'.format(sampler_name))))
+            fig.clf()
+            plt.close()
+            gc.collect()
 
 
 if __name__ == '__main__':
