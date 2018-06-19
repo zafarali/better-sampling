@@ -17,6 +17,30 @@ from collections import namedtuple
 
 rwargs = namedtuple('rwargs', 'rw_width rw_time rw_seed')
 
+constraints = {
+    "ISSampler": {
+        "seed0": 0.0041,
+        "seed2": 0.012,
+        "seed7": 0.0018
+    },
+    "ABCSampler": {
+        "seed0": 0.05,
+        "seed2": 0.05,
+        "seed7": 0.024
+    },
+    "MCSampler": {
+        "seed0": 0.0023,
+        "seed2": 0.035,
+        "seed7": 0.00093
+    },
+    "RVISampler": {
+        "seed0": 0.0028,
+        "seed2": 0.005,
+        "seed7": 0.0067
+    }
+}
+
+
 def test_issampler():
     """
     This test ensures that issampler works as expected
@@ -54,7 +78,7 @@ def test_issampler():
 
         sampler_result = utils.multiprocessing_tools.run_sampler(solver_argument)
 
-        check_issampler_result(sampler_result, args, analytic, rw, rw_seed)
+        check_sampler_result(sampler_result, args, analytic, rw, rw_seed)
 
 
 def test_abcsampler():
@@ -94,7 +118,7 @@ def test_abcsampler():
 
         sampler_result = utils.multiprocessing_tools.run_sampler(solver_argument)
 
-        check_abcsampler_result(sampler_result, args, analytic, rw, rw_seed)
+        check_sampler_result(sampler_result, args, analytic, rw, rw_seed)
 
 
 def test_mcsampler():
@@ -134,7 +158,7 @@ def test_mcsampler():
 
         sampler_result = utils.multiprocessing_tools.run_sampler(solver_argument)
 
-        check_mcsampler_result(sampler_result, args, analytic, rw, rw_seed)
+        check_sampler_result(sampler_result, args, analytic, rw, rw_seed)
 
 
 def test_rvisampler():
@@ -180,68 +204,17 @@ def test_rvisampler():
 
         sampler_result = utils.multiprocessing_tools.run_sampler(solver_argument)
 
-        check_rvisampler_result(sampler_result, args, analytic, rw, rw_seed)
+        check_sampler_result(sampler_result, args, analytic, rw, rw_seed)
 
 
-def check_issampler_result(sampler_result, args, analytic, rw, rw_seed):
+def check_sampler_result(sampler_result, args, analytic, rw, rw_seed):
     empirical_distribution = sampler_result.empirical_distribution(histbin_range=args.rw_width)
 
     kl_divergences = analytic.kl_divergence(empirical_distribution, rw.xT[0])
 
     assert kl_divergences[0] < 1, 'Basic sanity check for {}'.format(sampler_result.sampler_name)
     assert kl_divergences[0] >= 0, 'non negativity constraint of KL for {}'.format(sampler_result.sampler_name)
-    if rw_seed == 0:
-        good_performance = 0.0041
-    elif rw_seed == 2:
-        good_performance = 0.012
-    elif rw_seed == 7:
-        good_performance = 0.0018
-    assert kl_divergences[0] < good_performance, 'Good enough performance for this seed({}) for {}'.format(rw_seed, sampler_result.sampler_name)
 
-
-def check_abcsampler_result(sampler_result, args, analytic, rw, rw_seed):
-    empirical_distribution = sampler_result.empirical_distribution(histbin_range=args.rw_width)
-
-    kl_divergences = analytic.kl_divergence(empirical_distribution, rw.xT[0])
-
-    assert kl_divergences[0] < 1, 'Basic sanity check for {}'.format(sampler_result.sampler_name)
-    assert kl_divergences[0] >= 0, 'non negativity constraint of KL for {}'.format(sampler_result.sampler_name)
-    if rw_seed == 0:
-        good_performance = 0.05
-    elif rw_seed == 2:
-        good_performance = 0.05
-    elif rw_seed == 7:
-        good_performance = 0.024
-    assert kl_divergences[0] < good_performance, 'Good enough performance for this seed({}) for {}'.format(rw_seed, sampler_result.sampler_name)
-
-
-def check_mcsampler_result(sampler_result, args, analytic, rw, rw_seed):
-    empirical_distribution = sampler_result.empirical_distribution(histbin_range=args.rw_width)
-
-    kl_divergences = analytic.kl_divergence(empirical_distribution, rw.xT[0])
-
-    assert kl_divergences[0] < 1, 'Basic sanity check for {}'.format(sampler_result.sampler_name)
-    assert kl_divergences[0] >= 0, 'non negativity constraint of KL for {}'.format(sampler_result.sampler_name)
-    if rw_seed == 0:
-        good_performance = 0.0023
-    elif rw_seed == 2:
-        good_performance = 0.035
-    elif rw_seed == 7:
-        good_performance = 0.00093
-    assert kl_divergences[0] < good_performance, 'Good enough performance for this seed({}) for {}'.format(rw_seed, sampler_result.sampler_name)
-
-
-def check_rvisampler_result(sampler_result, args, analytic, rw, rw_seed):
-    empirical_distribution = sampler_result.empirical_distribution(histbin_range=args.rw_width)
-
-    kl_divergences = analytic.kl_divergence(empirical_distribution, rw.xT[0])
-
-    assert kl_divergences[0] < 1, 'Basic sanity check for {}'.format(sampler_result.sampler_name)
-    assert kl_divergences[0] >= 0, 'non negativity constraint of KL for {}'.format(sampler_result.sampler_name)
-    if rw_seed == 0:
-        good_performance = 0.0028
-    elif rw_seed == 2:
-        good_performance = 0.005
-    elif rw_seed == 7:
-        good_performance = 0.0067
+    # Checks if performance is comparable or better than current performance
+    good_performance = constraints[sampler_result.sampler_name]["seed"+str(rw_seed)]
     assert kl_divergences[0] < good_performance, 'Good enough performance for this seed({}) for {}'.format(rw_seed, sampler_result.sampler_name)
