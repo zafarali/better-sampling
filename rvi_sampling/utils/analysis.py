@@ -125,7 +125,7 @@ def analyze_samplers_rw(sampler_results,
 
     fig_traj_evol.tight_layout()
     fig_traj_evol.savefig(os.path.join(folder_name, 'trajectory_evolution.pdf'))
-    fig_traj.clf()
+    fig_traj_evol.clf()
     plt.close()
     gc.collect()
 
