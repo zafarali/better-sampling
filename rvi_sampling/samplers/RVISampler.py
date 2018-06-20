@@ -114,7 +114,10 @@ class RVISampler(Sampler):
             pg_loss = self.objective(advantages, pg_info)
 
             if self.baseline is not None:
-                val_loss = self.baseline.update_baseline(pg_info, returns, tro=self.use_gae)
+                if self.baseline.__name__ == "FunctionApproximatorBaseline":
+                    val_loss = self.baseline.update_baseline(pg_info, returns, tro=self.use_gae)
+                else:
+                    val_loss = self.baseline.update_baseline(pg_info, returns)
             else:
                 val_loss = 0
 
