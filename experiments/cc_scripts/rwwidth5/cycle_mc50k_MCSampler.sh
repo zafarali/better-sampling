@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=12:00:00
+#SBATCH --time=48:00:00
 #SBATCH --job-name=cycle_mc50k_MCSampler
 #SBATCH --ntasks=3
 #SBATCH -o ./out_%x.txt
@@ -15,7 +15,7 @@ module load cuda/8.0.44
 module load cudnn/7.0
 module load qt
 
-CYCLES=50
+CYCLES=100
 MC_SAMPLES=1000
 RW_TIME=50
 RW_WIDTH=5
