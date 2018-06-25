@@ -19,7 +19,7 @@ CYCLES=100
 MC_SAMPLES=1000
 RW_TIME=50
 RW_WIDTH=5
-OUTFOLDER="./baseline_experiments/MCSampler_cycle_mc50k_rw5"
+OUTFOLDER="./baseline_experiments/MCSampler_cycle_mc100k_rw5"
 REWARDCLIP=-10
 
 python ./cycle_experiments/baseline_cycle_investigation.py --cycles $CYCLES --rw_seed 0 --rw_time $RW_TIME --rw_width $RW_WIDTH \
