@@ -52,6 +52,8 @@ def experimental_arguments(parser):
 
     parser.add_argument('-n_cpus', '--n_cpus', default=3, type=int,
                         help='CPUs to use when doing the work')
+    parser.add_argument('-gpu', '--use_cuda', action='store_true',
+                        help='Uses GPU if available')
     parser.add_argument('-notb', '--no_tensorboard', action='store_true',
                         help='Disables tensorboard')
     parser.add_argument('-name', '--name', default='results', type=str,

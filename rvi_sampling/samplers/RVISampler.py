@@ -1,12 +1,12 @@
-from torch.nn.utils import clip_grad_norm
+from torch.nn.utils import clip_grad_norm_
 import torch
-from torch.autograd import Variable
 from pg_methods.data import MultiTrajectory
 from pg_methods.objectives import PolicyGradientObjective
 import pg_methods.gradients as gradients
 import numpy as np
 from .Samplers import Sampler
 from ..results import RLSamplingResults
+from rvi_sampling import utils
 import logging
 
 class RVISampler(Sampler):
@@ -110,19 +110,15 @@ class RVISampler(Sampler):
 
             loss = pg_loss + val_loss
 
-            # this is a bit meaningless if the other parts of the graph are not on the cpu
-            if self.use_cuda:
-                loss = loss.cuda()
-
             self.policy_optimizer.zero_grad()
             loss.backward()
-            clip_grad_norm(self.policy.fn_approximator.parameters(), 40) # TODO: what clipping value to use here?
+            clip_grad_norm_(self.policy.fn_approximator.parameters(), 40) # TODO: what clipping value to use here?
             self.policy_optimizer.step()
             if self.lr_scheduler is not None: self.lr_scheduler.step()
 
             reward_summary = torch.sum(pg_info.rewards, dim=0).mean()
             rewards_per_episode.append(reward_summary)
-            loss_per_episode.append(loss.cpu().data[0])
+            loss_per_episode.append(loss.item())
 
             if i % 100 == 0 and verbose:
                 print('Train Step {}, loss {:3g}, episode_reward {:3g}, '
@@ -208,8 +204,7 @@ class RVISampler(Sampler):
 
         x_t = stochastic_process.reset()
         x_tm1 = x_t
-        # TODO(PyT 0.4): Remove the Variable check here.
-        sampled_trajectory = [x_t.data.cpu().numpy() if isinstance(x_t, Variable) else x_t.cpu().numpy()]
+        sampled_trajectory = [x_t.data.numpy()]
 
         if self.feed_time:
             x_tm1 = self.augment_time(stochastic_process, x_tm1, x_t, start=True)
@@ -259,14 +254,10 @@ class RVISampler(Sampler):
 
             # probability of the path gets updated:
             log_path_prob += path_log_prob.numpy().reshape(-1, 1)
-            log_proposal_prob += log_prob_action.data.cpu().float().numpy().reshape(-1, 1)
+            log_proposal_prob += log_prob_action.data.float().numpy().reshape(-1, 1)
 
 
-            # TODO(PyT 0.4): Remove variable check here
-            if isinstance(x_t, Variable):
-                sampled_trajectory.append(x_t.data.numpy())
-            else:
-                sampled_trajectory.append(x_t.numpy())
+            sampled_trajectory.append(x_t.data.numpy())
 
             if self.feed_time:
                 x_t = self.augment_time(stochastic_process, x_tm1, x_t)
@@ -296,23 +287,24 @@ class RVISampler(Sampler):
             raise ValueError('Stochastic Process must be pytorch wrapped.')
 
     def augment_time(self, stochastic_process, x_tm1, x_t, start=False):
-        # if this is the first iteration, expansion of dimensions is necessary
-        expand_dims = int(start)
-        contract_dims = int(not start)
-        # this will augment the state space with the time dimension
-        # so that the learner has access to it.
-        # TODO: Is there a better way to do this? Maybe in PyTorch 0.4
+        with torch.set_grad_enabled(not self._training):
+            # if this is the first iteration, expansion of dimensions is necessary
+            expand_dims = int(start)
+            contract_dims = int(not start)
+            # this will augment the state space with the time dimension
+            # so that the learner has access to it.
 
-        # add another dimension to the state space dimension
-        x_with_time = torch.zeros(stochastic_process.n_agents, x_tm1.size()[-1]+expand_dims)
-        # fill in all but the last entry with the state information
-        x_with_time[:, :x_tm1.size()[-1] - contract_dims].copy_(x_t.data)
+            # add another dimension to the state space dimension
+            x_with_time = torch.zeros(stochastic_process.n_agents, x_tm1.size()[-1]+expand_dims)
+            # fill in all but the last entry with the state information
+            x_with_time[:, :x_tm1.size()[-1] - contract_dims].copy_(x_t.data)
 
-        # fill in the last entry with the time information
-        proportion_of_time_left = (stochastic_process.transitions_left / (stochastic_process.T - 1))
-        x_with_time[:, x_tm1.size()[-1] - contract_dims].copy_(proportion_of_time_left * torch.ones(stochastic_process.n_agents))
-        # create a new variable with this information
-        return Variable(x_with_time, volatile=(not self._training))
+            # fill in the last entry with the time information
+            proportion_of_time_left = (stochastic_process.transitions_left / (stochastic_process.T - 1))
+            x_with_time[:, x_tm1.size()[-1] - contract_dims].copy_(proportion_of_time_left * torch.ones(stochastic_process.n_agents))
+
+            # create a new variable with this information
+            return x_with_time
 
     def maybe_save_trajectory_into_posterior(self, stochastic_process,
                                              sampled_trajectories,
@@ -369,7 +361,7 @@ class RVISampler(Sampler):
         for i in range(mc_samples):
             x_t = stochastic_process.reset()  # start at the end
             x_tm1 = x_t
-            trajectory_i = [x_t.data.cpu().numpy() if isinstance(x_t, Variable) else x_t.cpu().numpy()]
+            trajectory_i = [x_t.data.numpy()]
 
             if feed_time:
                 # this will augment the state space with the time dimension
@@ -377,7 +369,7 @@ class RVISampler(Sampler):
                 x_with_time = torch.zeros(stochastic_process.n_agents, x_tm1.size()[-1]+1)
                 x_with_time[:, :x_tm1.size()[-1]].copy_(x_tm1.data)
                 x_with_time[:, x_tm1.size()[-1]].copy_(torch.ones(stochastic_process.n_agents)) # 100% of the time is left
-                x_tm1 = Variable(x_with_time)
+                x_tm1 = x_with_time
 
 
             x_with_time = torch.zeros(stochastic_process.n_agents, x_tm1.size()[-1])
@@ -387,7 +379,7 @@ class RVISampler(Sampler):
                     stochastic_process.n_agents))
 
 
-            x_t = Variable(x_with_time)
+            x_t = x_with_time
             log_path_prob = np.zeros((stochastic_process.n_agents, 1))
             log_proposal_prob = np.zeros((stochastic_process.n_agents, 1))
             policy_gradient_trajectory_info = MultiTrajectory(stochastic_process.n_agents)
@@ -435,13 +427,11 @@ class RVISampler(Sampler):
 
                 # probability of the path gets updated:
                 log_path_prob += path_log_prob.numpy().reshape(-1, 1)
-                log_proposal_prob += log_prob_action.data.cpu().float().numpy().reshape(-1, 1)
+                log_proposal_prob += log_prob_action.data.float().numpy().reshape(-1, 1)
+                # log_proposal_prob += log_prob_action.data.float().numpy().reshape(-1, 1)
                 # take the reverse step:
                 # if isinstance()
-                if isinstance(x_t, Variable):
-                    trajectory_i.append(x_t.data.numpy())
-                else:
-                    trajectory_i.append(x_t.numpy())
+                trajectory_i.append(x_t.data.numpy())
 
                 if feed_time:
                     # this will augment the state space with the time dimension
@@ -449,7 +439,7 @@ class RVISampler(Sampler):
                     x_with_time = torch.zeros(stochastic_process.n_agents, x_tm1.size()[-1])
                     x_with_time[:, :x_tm1.size()[-1]-1].copy_(x_t.data)
                     x_with_time[:, x_tm1.size()[-1]-1].copy_((stochastic_process.transitions_left/(stochastic_process.T-1)) * torch.ones(stochastic_process.n_agents))
-                    x_t = Variable(x_with_time)
+                    x_t = x_with_time
                     assert x_tm1.size() == x_t.size(), 'State sizes must match, but they dont. {} != {}'.format(x_tm1.size(), x_t.size())
 
                 value_estimate = self.baseline(x_t) if self.baseline is not None else torch.FloatTensor([[0]*stochastic_process.n_agents])
@@ -471,13 +461,10 @@ class RVISampler(Sampler):
 
                 loss = self.objective(advantages, policy_gradient_trajectory_info)
 
-                if self.use_cuda:
-                    loss = loss.cuda()
-
                 if self.policy_optimizer is not None:
                     self.policy_optimizer.zero_grad()
                     loss.backward()
-                    clip_grad_norm(self.policy.fn_approximator.parameters(), 40)
+                    clip_grad_norm_(self.policy.fn_approximator.parameters(), 40)
                     self.policy_optimizer.step()
                 if self.lr_scheduler is not None: self.lr_scheduler.step()
                 # end training statement.
@@ -485,11 +472,11 @@ class RVISampler(Sampler):
             reward_summary = torch.sum(policy_gradient_trajectory_info.rewards, dim=0).mean()
             rewards_per_episode.append(reward_summary)
 
-            if self._training: loss_per_episode.append(loss.cpu().data[0])
+            if self._training: loss_per_episode.append(loss.item())
             if i % 100 == 0 and verbose and self._training:
                 print('MC Sample {}, loss {:3g}, episode_reward {:3g}, '
                       'trajectory_length {}, successful trajs {}, '
-                      'path_log_prob: {}, proposal_log_prob: {}'.format(i, loss.cpu().data[0],
+                      'path_log_prob: {}, proposal_log_prob: {}'.format(i, loss.item(),
                                                                         reward_summary, len(trajectory_i),
                                                                         len(trajectories), np.mean(log_path_prob),
                                                                         np.mean(log_proposal_prob)))

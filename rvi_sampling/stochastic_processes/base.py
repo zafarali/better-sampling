@@ -1,7 +1,6 @@
 import gym
 import numpy as np
 import torch
-from torch.autograd import Variable
 from functools import reduce
 
 class StochasticProcess(gym.Env):
@@ -63,13 +62,8 @@ class PyTorchWrap(object):
         return self.stochastic_process.transitions_left
 
     def variable_wrap(self, tensor):
-        if not isinstance(tensor, Variable):
-            if self._training:
-                tensor = Variable(tensor)
-            else:
-                tensor = Variable(tensor, volatile=True)
-        if self.use_cuda:
-            tensor = tensor.cuda()
+        with torch.set_grad_enabled(self._training):
+            tensor = tensor.clone()
 
         return tensor.float()
 
@@ -80,7 +74,7 @@ class PyTorchWrap(object):
         return self.variable_wrap(torch.from_numpy(self.stochastic_process.reset()))
 
     def prior_pdf(self, x_t):
-        x_t = x_t.cpu().data.numpy()
+        x_t = x_t.data.numpy()
         return self.stochastic_process.prior.pdf(x_t)
 
     def new_task(self):
@@ -90,9 +84,6 @@ class PyTorchWrap(object):
         return delayed_to_return
 
     def step(self, actions, reverse=True):
-        if isinstance(actions, Variable):
-            actions = actions.data
-        actions = actions.cpu()
         actions = actions.numpy()
         position, log_probs, done, info = self.stochastic_process.step(actions, reverse=reverse)
         position = self.variable_wrap(torch.from_numpy(position))

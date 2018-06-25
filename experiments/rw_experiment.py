@@ -5,7 +5,6 @@ import matplotlib
 matplotlib.use('Agg')
 import torch.nn as nn
 import os
-import multiprocessing
 import seaborn as sns
 from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler, RVISampler
 from rvi_sampling.distributions.proposal_distributions import SimonsSoftProposal, FunnelProposal
@@ -61,7 +60,8 @@ if __name__=='__main__':
                            negative_reward_clip=args.reward_clip,
                            objective=PolicyGradientObjective(entropy=args.entropy),
                            feed_time=args.notime,
-                           seed=args.sampler_seed) ]
+                           seed=args.sampler_seed,
+                           use_cuda=args.use_cuda) ]
 
     if args.notrain:
         samplers[-1].train_mode(False)
@@ -72,14 +72,18 @@ if __name__=='__main__':
     def kl_function(estimated_distribution):
         return analytic.kl_divergence(estimated_distribution, rw.xT[0])
 
+    kl_functions = []
+
+    for sampler in samplers:
+        kl_functions.append(utils.diagnostics.KL_Function(rw.xT[0], analytic))
+
     # kl_function = utils.diagnostics.make_kl_function(analytic, rw.xT) Can't work because lambda function
-    _ = [sampler.set_diagnostic(utils.diagnostics.create_diagnostic(sampler._name, args, folder_name, kl_function)) for sampler in samplers]
+    _ = [sampler.set_diagnostic(utils.diagnostics.create_diagnostic(sampler._name, args, folder_name, kl_functions[ix])) for ix, sampler in enumerate(samplers)]
 
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))
     print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
 
-    pool = multiprocessing.Pool(args.n_cpus)
     solver_arguments = [(sampler,
                          utils.stochastic_processes.create_rw(args,
                                                               biased=BIASED,
@@ -87,11 +91,13 @@ if __name__=='__main__':
                          # args.samples * args.n_agents if sampler._name != 'RVISampler' else args.samples) for sampler in samplers]
                          args.samples) for sampler in samplers]
 
+    sampler_results = []
     if args.profile_performance:
         profiler_args = [ (folder_name, solver_argument) for solver_argument in solver_arguments ]
-        sampler_results = pool.map(utils.multiprocessing_tools.run_sampler_with_profiling, profiler_args)
+        for argument in profiler_args:
+            sampler_results.append(utils.multiprocessing_tools.run_sampler_with_profiling(argument))
     else:
-        sampler_results = pool.map(utils.multiprocessing_tools.run_sampler, solver_arguments)
+        for argument in solver_arguments:
+            sampler_results.append(utils.multiprocessing_tools.run_sampler(argument))
 
     utils.analysis.analyze_samplers_rw(sampler_results, args, folder_name, rw, policy=policy, analytic=analytic)
-

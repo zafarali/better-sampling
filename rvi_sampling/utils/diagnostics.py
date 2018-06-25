@@ -3,6 +3,14 @@ import numpy as np
 import torch
 NO_RETURN = 'NORETURN'
 
+class KL_Function(object):
+    def __init__(self, target, analytic):
+        self.target = target
+        self.analytic = analytic
+
+    def __call__(self, estimated):
+        return self.analytic.kl_divergence(estimated, self.target)
+
 class Diagnostic(object):
     _handle = None
     def __init__(self, frequency, rounding=2):
