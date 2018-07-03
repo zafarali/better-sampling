@@ -23,6 +23,7 @@ def analyze_samplers_rw(sampler_results,
     """
     panel_size = plotting.determine_panel_size(len(sampler_results))
 
+    plt.close()
 
     fig_dists = plt.figure(figsize=(8, 9)) # the posterior
     fig_traj = plt.figure(figsize=(9, 9)) # the trajectory distribution
