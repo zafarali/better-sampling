@@ -28,6 +28,11 @@ if __name__=='__main__':
     utils.io.create_folder(folder_name)
 
     rw, analytic = utils.stochastic_processes.create_rw(args, biased=BIASED)
+
+    # Endpoint override
+
+    if args.override_endpoint:
+        rw.xT = [ args.endpoint ]
     utils.io.touch(os.path.join(folder_name, 'start={}'.format(rw.x0)))
     utils.io.touch(os.path.join(folder_name, 'end={}'.format(rw.xT)))
 

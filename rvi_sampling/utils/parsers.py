@@ -66,6 +66,10 @@ def experimental_arguments(parser):
                         help='append name')
     parser.add_argument('-IS_proposal', '--IS_proposal', default='funnel', type=str,
                         help='the importance sampling distribution to use (funnel, soft)')
+
+    parser.add_argument('-end_ov', '--override_endpoint', action='store_true', default=False, help='switch to Override endpoint')
+    parser.add_argument('-endpoint', '--endpoint', default=1, type=int, help='endpoint if endpoint override is switched on')
+
     parser.add_argument('-outfolder', '--outfolder', default='./', type=str,
                         help='Where to save things')
     parser.add_argument('-profile', '--profile_performance', default=False, action='store_true',
