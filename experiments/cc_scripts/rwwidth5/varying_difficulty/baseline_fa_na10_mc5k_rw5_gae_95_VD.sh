@@ -26,7 +26,7 @@ REWARDCLIP=-10
 BASELINE_LEARNING_RATE="1e-5"
 LAM=0.95
 
-for ENDPOINT in {0..20..2}
+for ENDPOINT in {0..15..1}
 do
     python ./baseline_experiments/rvi_baseline_investigation.py --cycles $CYCLES --rw_seed 0 --rw_time $RW_TIME --rw_width $RW_WIDTH \
     -samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES -name rwseed0 -end_ov -endpoint $ENDPOINT --outfolder ${OUTFOLDER}_${ENDPOINT} \
