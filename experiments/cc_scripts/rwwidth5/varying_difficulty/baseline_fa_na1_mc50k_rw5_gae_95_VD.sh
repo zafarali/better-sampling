@@ -17,7 +17,7 @@ module load cudnn/7.0
 module load qt
 
 CYCLES=50
-MC_SAMPLES=1000
+MC_SAMPLES=100
 N_AGENTS=1
 RW_TIME=50
 RW_WIDTH=5
@@ -26,7 +26,7 @@ REWARDCLIP=-10
 BASELINE_LEARNING_RATE="1e-5"
 LAM=0.95
 
-for ENDPOINT in {0..15..1}
+for ENDPOINT in {0..20..2}
 do
     python ./baseline_experiments/rvi_baseline_investigation.py --cycles $CYCLES --rw_seed 0 --rw_time $RW_TIME --rw_width $RW_WIDTH \
     -samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES -name rwseed0 -end_ov -endpoint $ENDPOINT --outfolder ${OUTFOLDER}_${ENDPOINT} \

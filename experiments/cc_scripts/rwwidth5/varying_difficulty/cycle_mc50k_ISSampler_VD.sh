@@ -16,14 +16,14 @@ module load cuda/8.0.44
 module load cudnn/7.0
 module load qt
 
-CYCLES=100
+CYCLES=50
 MC_SAMPLES=1000
 RW_TIME=50
 RW_WIDTH=5
 OUTFOLDER="./difficulty_experiments/ISSampler_cycle_mc50k_rw5"
 REWARDCLIP=-10
 
-for ENDPOINT in {0..15..1}
+for ENDPOINT in {0..20..2}
 do
     python ./cycle_experiments/baseline_cycle_investigation.py --cycles $CYCLES --rw_seed 0 --rw_time $RW_TIME --rw_width $RW_WIDTH \
     -samseed $SLURM_ARRAY_TASK_ID -s $MC_SAMPLES -name rwseed0 -end_ov -endpoint $ENDPOINT --outfolder ${OUTFOLDER}_${ENDPOINT} --method ISSampler &

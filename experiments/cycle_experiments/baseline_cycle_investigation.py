@@ -12,7 +12,7 @@ import os
 import seaborn as sns
 from rvi_sampling import utils
 from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler
-from rvi_sampling.distributions.proposal_distributions import FunnelProposal
+from rvi_sampling.distributions.proposal_distributions import FunnelProposal, SimonsSoftProposal
 
 DIMENSIONS = 1
 OUTPUT_SIZE = 2
@@ -48,15 +48,20 @@ if __name__=='__main__':
     rw, analytic = utils.stochastic_processes.create_rw(args, biased=BIASED, n_agents=args.n_agents)
 
     if args.override_endpoint:
-        rw.xT = [ args.endpoint ]
+        rw.xT = np.array([ args.endpoint ])
 
     utils.io.touch(os.path.join(folder_name, 'start={}'.format(rw.x0)))
     utils.io.touch(os.path.join(folder_name, 'end={}'.format(rw.xT)))
 
     push_toward = [-args.rw_width, args.rw_width]
 
+    if args.IS_proposal == 'soft':
+        proposal = SimonsSoftProposal(push_toward)
+    else:
+        proposal = FunnelProposal(push_toward)
+
     if args.method == 'ISSampler':
-        sampler = ISSampler(FunnelProposal(push_toward), seed=args.sampler_seed)
+        sampler = ISSampler(proposal, seed=args.sampler_seed)
     elif args.method == 'MCSampler':
         sampler = MCSampler(seed=args.sampler_seed)
     elif args.method == 'ABCSampler':

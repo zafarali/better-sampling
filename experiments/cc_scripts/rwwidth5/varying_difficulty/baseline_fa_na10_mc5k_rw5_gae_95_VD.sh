@@ -17,7 +17,7 @@ module load cudnn/7.0
 module load qt
 
 CYCLES=50
-MC_SAMPLES=100
+MC_SAMPLES=10
 N_AGENTS=10
 RW_TIME=50
 RW_WIDTH=5

@@ -17,7 +17,7 @@ module load cudnn/7.0
 module load qt
 
 CYCLES=50
-MC_SAMPLES=1000
+MC_SAMPLES=100
 RW_TIME=50
 RW_WIDTH=5
 OUTFOLDER="./difficulty_experiments/MCSampler_cycle_mc100k_rw5"
