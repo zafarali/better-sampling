@@ -79,10 +79,11 @@ class SimonsProposal(ProposalDistribution):
 
 class SimonsSoftProposal(SimonsProposal):
     _soft = True
-    def __init__(self, push_toward=[-5, 5], step_sizes=None, seed=0, rng=None):
+    def __init__(self, push_toward=[-5, 5], step_sizes=None, seed=0, rng=None, softness_coeff=1.0):
         assert len(push_toward) == 2, 'push toward expects a window range'
         super().__init__(step_sizes=step_sizes, seed=seed, rng=rng)
         self.push_toward = np.array(push_toward)
+        self.softness_coeff = softness_coeff
 
 
     def draw(self, w, time_left, sampling_probs_only=False):
@@ -105,13 +106,13 @@ class SimonsSoftProposal(SimonsProposal):
         if np.abs(w) > np.abs(self.push_toward[0]):
             # bias = (sign * np.abs(self.push_toward[0]) - w) * 1. / time_left
             if w < self.push_toward[0]: # x < -c
-                bias = (self.push_toward[0] - w) * 1. / time_left
+                bias = (self.push_toward[0] - w) * self.softness_coeff / time_left
                 # distance to acceptable position is c - w. Average steps needed is c-w/T
             elif w > self.push_toward[1]: # x > c
-                 bias = (self.push_toward[1] - w) * 1. / time_left
+                 bias = (self.push_toward[1] - w) * self.softness_coeff / time_left
             else:
                 # this conditional will never get executed for now.
-                bias = (sign*np.abs(self.push_toward[1]) - w) * 1./time_left
+                bias = (sign*np.abs(self.push_toward[1]) - w) * self.softness_coeff / gtime_left
 
 
         bias = bias[0][0]

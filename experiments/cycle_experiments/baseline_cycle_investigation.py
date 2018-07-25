@@ -56,7 +56,7 @@ if __name__=='__main__':
     push_toward = [-args.rw_width, args.rw_width]
 
     if args.IS_proposal == 'soft':
-        proposal = SimonsSoftProposal(push_toward)
+        proposal = SimonsSoftProposal(push_toward, softness_coeff=args.softness_coefficient)
     else:
         proposal = FunnelProposal(push_toward)
 
