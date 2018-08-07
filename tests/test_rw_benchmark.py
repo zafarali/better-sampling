@@ -54,15 +54,6 @@ def test_issampler():
 
         rw, analytic = utils.stochastic_processes.create_rw(args, biased=False)
         utils.common.set_global_seeds(0)
-        # create a policy for the RVI sampler
-        fn_approximator = MLP_factory(DIMENSIONS+1,
-                                      hidden_sizes=[16, 16],
-                                      output_size=OUTPUT_SIZE,
-                                      hidden_non_linearity=nn.ReLU)
-
-        policy = CategoricalPolicy(fn_approximator)
-        policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=0.001)
-        baseline = MovingAverageBaseline(0.99)
 
         push_toward = [-5, 5]
         proposal = FunnelProposal(push_toward)
@@ -94,18 +85,6 @@ def test_abcsampler():
 
         rw, analytic = utils.stochastic_processes.create_rw(args, biased=False)
         utils.common.set_global_seeds(0)
-        # create a policy for the RVI sampler
-        fn_approximator = MLP_factory(DIMENSIONS+1,
-                                      hidden_sizes=[16, 16],
-                                      output_size=OUTPUT_SIZE,
-                                      hidden_non_linearity=nn.ReLU)
-
-        policy = CategoricalPolicy(fn_approximator)
-        policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=0.001)
-        baseline = MovingAverageBaseline(0.99)
-
-        push_toward = [-5, 5]
-        proposal = FunnelProposal(push_toward)
 
         sampler = ABCSampler('slacked',seed=0)
 
@@ -140,13 +119,6 @@ def test_mcsampler():
                                       output_size=OUTPUT_SIZE,
                                       hidden_non_linearity=nn.ReLU)
 
-        policy = CategoricalPolicy(fn_approximator)
-        policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=0.001)
-        baseline = MovingAverageBaseline(0.99)
-
-        push_toward = [-5, 5]
-        proposal = FunnelProposal(push_toward)
-
         sampler = MCSampler(seed=0)
 
         print('True Starting Position is:{}'.format(rw.x0))
@@ -163,7 +135,7 @@ def test_mcsampler():
 
 def test_rvisampler_seed0():
     """
-    This test ensures that issampler works as expected
+    This test ensures that rvisampler works as expected for seed: 0
     :return:
     """
     rvisampler_test(0)
@@ -171,7 +143,7 @@ def test_rvisampler_seed0():
 
 def test_rvisampler_seed2():
     """
-    This test ensures that issampler works as expected
+    This test ensures that rvisampler works as expected for seed: 2
     :return:
     """
     rvisampler_test(2)
@@ -179,7 +151,7 @@ def test_rvisampler_seed2():
 
 def test_rvisampler_seed7():
     """
-    This test ensures that issampler works as expected
+    This test ensures that rvisampler works as expected for seed: 7
     :return:
     """
     rvisampler_test(7)
@@ -200,9 +172,6 @@ def rvisampler_test(rw_seed):
     policy = CategoricalPolicy(fn_approximator)
     policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=0.001)
     baseline = MovingAverageBaseline(0.99)
-
-    push_toward = [-5, 5]
-    proposal = FunnelProposal(push_toward)
 
     sampler = RVISampler(policy,
                            policy_optimizer,
