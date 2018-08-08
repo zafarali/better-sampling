@@ -1,6 +1,5 @@
 import numpy as np
 from rvi_sampling.distributions.proposal_distributions import FunnelProposal
-import multiprocessing
 
 
 def multi_draw(proposal, draw_args, n_draws=10000):

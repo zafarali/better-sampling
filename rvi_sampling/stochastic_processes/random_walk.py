@@ -2,6 +2,7 @@ import numpy as np
 from .base import StochasticProcess, StochasticProcessOverError
 from ..distributions.prior_distributions import DiscreteUniform
 from collections import namedtuple
+from rvi_sampling.utils.common import EPSILON
 
 RWParameters = namedtuple('RWParameters', 'possible_steps step_probs dimensions')
 
@@ -93,7 +94,7 @@ class RandomWalk(StochasticProcess):
             raise StochasticProcessOverError('You have already reached the end of the episode. Use reset()')
 
         steps_taken = np.take(self.step_sizes, actions.ravel(), axis=0).reshape(self.n_agents, -1)
-        step_log_probs = np.log(np.take(self.step_probs, actions.ravel(), axis=0).reshape(self.n_agents, -1))
+        step_log_probs = np.log(EPSILON + np.take(self.step_probs, actions.ravel(), axis=0).reshape(self.n_agents, -1))
 
         reversal_param = -1 if reverse else +1
         self.x_agent = self.x_agent + (steps_taken * reversal_param)
@@ -101,7 +102,7 @@ class RandomWalk(StochasticProcess):
         if self.transitions_left == 0:
             # if there are no more transitions left, also add the "final reward"
             # to the step_log_probs
-            step_log_probs += np.log(self.prior.pdf(self.x_agent).reshape(self.n_agents, -1))
+            step_log_probs += np.log(EPSILON + self.prior.pdf(self.x_agent).reshape(self.n_agents, -1))
 
         return (self.x_agent, step_log_probs.reshape(-1, 1), self.transitions_left == 0, {})
 

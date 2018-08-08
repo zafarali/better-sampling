@@ -1,5 +1,4 @@
 import numpy as np
-from torch.autograd import Variable
 from rvi_sampling.stochastic_processes.random_walk import RandomWalk, RWParameters, DiscreteUniform
 from rvi_sampling.stochastic_processes.base import PyTorchWrap
 POSSIBLE_STEPS = [[-1], [+1]]
@@ -82,5 +81,4 @@ def test_2d_process():
     pytrw = PyTorchWrap(rw)
 
     x = pytrw.reset()
-    assert isinstance(x, Variable)
     assert tuple(x.size()) == (1, 2)
