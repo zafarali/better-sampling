@@ -5,7 +5,10 @@ import cProfile
 
 class ProfiledRunner(object):
     """
-    Wrapper class for calling samplers with profiling enabled
+    Wrapper class for calling sampler with profiling enabled
+
+    Attributes:
+        returnValue (:RLSamplingResults): the result from calling sampler
     """
     def __init__(self):
         self.returnValue = None

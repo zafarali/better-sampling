@@ -108,7 +108,7 @@ class RVISampler(Sampler):
             else:
                 val_loss = 0
 
-            loss = pg_loss + val_loss
+            loss = pg_loss
 
             self.policy_optimizer.zero_grad()
             loss.backward()

@@ -19,6 +19,8 @@ def rvi_arguments(parser):
                         help='Moving Average baseline decay')
     parser.add_argument('-lr', '--learning_rate', default=0.001, type=float,
                         help='Learning rate')
+    parser.add_argument('-baseline_lr', '--baseline_learning_rate', default=0.001, type=float,
+                        help='learning rate for baseline function approximator')
     parser.add_argument('--only_rvi', default=False, action='store_true',
                         help='does only the RVI experiments')
     parser.add_argument('--notrain', default=False, action='store_true',
@@ -37,7 +39,9 @@ def rvi_arguments(parser):
     parser.add_argument('-plot-posterior', '--plot_posterior', default=False, action='store_true',
                         help='Number of agents to use')
     parser.add_argument('-nn', '--neural-network', nargs='+', help='neural network specification',
-                        default=[32, 32], type=int)
+                        default=[16, 16], type=int)
+    parser.add_argument('-baseline_nn', '--baseline_neural_network', nargs='+', help='baseline neural network specification',
+                        default=[16, 16], type=int)
     parser.add_argument('-pretrained', '--pretrained', default=None, type=str, help='path to a pretrained policy.')
     return parser
 
