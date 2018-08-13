@@ -4,7 +4,6 @@ Pre-train the RVI proposal to mimic a proposal of choice.
 
 import numpy as np
 import torch
-from torch.autograd import Variable
 import torch.nn as nn
 from pg_methods.networks import MLP_factory
 from torch.utils.data import TensorDataset, DataLoader
@@ -70,16 +69,13 @@ def main(args):
     optimizer = torch.optim.Adam(fn_approximator.parameters(), lr=0.001)
     for i in range(args.epochs):
         losses_for_epoch = []
-        for _, (X, Y) in enumerate(data):
-            x_mb = Variable(X)
-            y_mb = Variable(Y)
-
+        for _, (x_mb, y_mb) in enumerate(data):
             y_hat = fn_approximator(x_mb)
             loss = SoftCE(y_hat, y_mb)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            losses_for_epoch.append(loss.data[0])
+            losses_for_epoch.append(loss.item())
         if i % 10 == 0:
             print('Update {}, loss {}'.format(i, np.mean(losses_for_epoch)))
 

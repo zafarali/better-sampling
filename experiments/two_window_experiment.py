@@ -5,7 +5,6 @@ import matplotlib
 matplotlib.use('Agg')
 import torch.nn as nn
 import os
-import multiprocessing
 import seaborn as sns
 from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler, RVISampler
 from rvi_sampling.distributions.proposal_distributions import SimonsSoftProposal, FunnelProposal
@@ -72,12 +71,13 @@ if __name__=='__main__':
     # kl_function = utils.diagnostics.make_kl_function(analytic, rw.xT) Can't work because lambda function
     _ = [sampler.set_diagnostic(utils.diagnostics.create_diagnostic(sampler._name, args, folder_name, kl_function)) for sampler in samplers]
 
-
-    pool = multiprocessing.Pool(args.n_cpus)
     solver_arguments = [(sampler,
                          utils.stochastic_processes.create_rw_two_window(args, n_agents=args.n_agents if sampler._name == 'RVISampler' else 1)[0],
                          # args.samples * args.n_agents if sampler._name != 'RVISampler' else args.samples) for sampler in samplers]
                          args.samples) for sampler in samplers]
 
-    sampler_results = pool.map(utils.multiprocessing_tools.run_sampler, solver_arguments)
+    sampler_results = []
+    for argument in solver_arguments:
+        sampler_results.append(utils.multiprocessing_tools.run_sampler(argument))
+
     utils.analysis.analyze_samplers_rw(sampler_results, args, folder_name, rw, policy=policy, analytic=analytic)
