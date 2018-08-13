@@ -1,6 +1,9 @@
 import random
 import numpy as np
 import torch
+import logging
+
+EPSILON = 0
 
 def set_global_seeds(seed):
     # sets global seeds
