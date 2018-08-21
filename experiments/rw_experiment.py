@@ -10,6 +10,7 @@ from rvi_sampling.samplers import ISSampler, ABCSampler, MCSampler, RVISampler
 from rvi_sampling.distributions.proposal_distributions import SimonsSoftProposal, FunnelProposal
 from rvi_sampling import utils
 from pg_methods.baselines import MovingAverageBaseline
+from pg_methods.baselines import FunctionApproximatorBaseline
 from pg_methods.policies import MultinomialPolicy
 from pg_methods.networks import MLP_factory
 from pg_methods.objectives import PolicyGradientObjective
@@ -26,6 +27,11 @@ if __name__=='__main__':
     utils.io.create_folder(folder_name)
 
     rw, analytic = utils.stochastic_processes.create_rw(args, biased=BIASED)
+
+    # Endpoint override
+
+    if args.override_endpoint:
+        rw.xT = [ args.endpoint ]
     utils.io.touch(os.path.join(folder_name, 'start={}'.format(rw.x0)))
     utils.io.touch(os.path.join(folder_name, 'end={}'.format(rw.xT)))
 
@@ -43,7 +49,15 @@ if __name__=='__main__':
         policy = MultinomialPolicy(fn_approximator)
         policy_optimizer = torch.optim.RMSprop(fn_approximator.parameters(),lr=args.learning_rate)
 
-    baseline = MovingAverageBaseline(args.baseline_decay)
+    if args.baseline_type == 'moving_average':
+        baseline = MovingAverageBaseline(args.baseline_decay)
+    else:
+        baseline_fn_approximator = MLP_factory(DIMENSIONS+int(args.notime),
+                                               hidden_sizes=args.baseline_neural_network,
+                                               output_size=1,
+                                               hidden_non_linearity=nn.ReLU)
+        baseline_optimizer = torch.optim.RMSprop(baseline_fn_approximator.parameters(), lr=args.baseline_learning_rate)
+        baseline = FunctionApproximatorBaseline(baseline_fn_approximator, baseline_optimizer)
 
     push_toward = [-args.rw_width, args.rw_width]
     if args.IS_proposal == 'soft':
@@ -61,7 +75,8 @@ if __name__=='__main__':
                            objective=PolicyGradientObjective(entropy=args.entropy),
                            feed_time=args.notime,
                            seed=args.sampler_seed,
-                           use_cuda=args.use_cuda) ]
+                           use_gae=args.use_gae,
+                           lam=args.lam) ]
 
     if args.notrain:
         samplers[-1].train_mode(False)
@@ -88,8 +103,8 @@ if __name__=='__main__':
                          utils.stochastic_processes.create_rw(args,
                                                               biased=BIASED,
                                                               n_agents=args.n_agents if sampler._name == 'RVISampler' else 1)[0],
-                         # args.samples * args.n_agents if sampler._name != 'RVISampler' else args.samples) for sampler in samplers]
-                         args.samples) for sampler in samplers]
+                         args.samples * args.n_agents if sampler._name != 'RVISampler' else args.samples) for sampler in samplers]
+                         # args.samples) for sampler in samplers]
 
     sampler_results = []
     if args.profile_performance:

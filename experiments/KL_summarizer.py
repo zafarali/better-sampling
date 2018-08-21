@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import sys
 sys.path.append('..')
 import os
+import gc
 import pandas as pd
 import argparse
 import numpy as np
@@ -84,6 +85,9 @@ def main(args):
     # ax.semilogy()
     ax.legend(fontsize='x-small')
     fig.savefig(os.path.join(args.out_folder, args.name+'KL_KDE.pdf'))
+    fig.clf()
+    plt.close()
+    gc.collect()
 
     f = plt.figure()
     ax = f.add_subplot(1, 1, 1)
@@ -92,6 +96,9 @@ def main(args):
     ax.set_ylabel('KL')
     ax.set_ylim(0)
     f.savefig(os.path.join(args.out_folder, args.name+'KL_timeseries_custom.pdf'))
+    f.clf()
+    plt.close()
+    gc.collect()
 
     time_series_dfs = pd.concat(time_series_dfs, ignore_index=True)
     f = plt.figure()
@@ -102,6 +109,9 @@ def main(args):
     ax.set_ylim(0)
     ax.legend(fontsize='x-small')
     f.savefig(os.path.join(args.out_folder, args.name+'KL_timeseries.pdf'))
+    f.clf()
+    plt.close()
+    gc.collect()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Aggregate KLs from experimental runs and creates a histogram')

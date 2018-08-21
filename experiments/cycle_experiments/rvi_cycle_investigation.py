@@ -45,6 +45,9 @@ if __name__=='__main__':
 
     rw, analytic = utils.stochastic_processes.create_rw(args, biased=BIASED, n_agents=args.n_agents)
 
+    if args.override_endpoint:
+        rw.xT = [ args.endpoint ]
+
     utils.io.touch(os.path.join(folder_name, 'start={}'.format(rw.x0)))
     utils.io.touch(os.path.join(folder_name, 'end={}'.format(rw.xT)))
 
