@@ -16,10 +16,10 @@ def run_rvi(args):
     sampler_seed = os.getenv('SLURM_ARRAY_TASK_ID', args.sampler_seed)
     save_dir = os.path.join(
         args.save_dir_template.format(
-            os.getenv('SCRATCH', './'),
-            'testing_experiment',
-            args.learning_rate,
-            args.gae_value),
+            scratch=os.getenv('SCRATCH', './'),
+            experiment_name='testing_experiment',
+            learning_rate=args.learning_rate,
+            gave_value=args.gae_value),
         'Seed{}'.format(sampler_seed)
     )
 
@@ -52,17 +52,19 @@ if __name__ == '__main__':
         high=0.001,
         type=float,
         log_base=10,
+        tunable=True,
     )
     parser.opt_range(
         '--gae_value',
         low=0.95,
         high=0.98,
         type=float,
+        tunable=True,
     )
 
     # RVI Specific arguments.
     rvi_parser.random_walk_arguments(parser)
-    cc_parser.create_cc_arguments(parsers)
+    cc_parser.create_cc_arguments(parser)
 
 
     hyperparams = parser.parse_args()
@@ -88,7 +90,7 @@ if __name__ == '__main__':
         cmd='account',
         value=hyperparams.cc_account,
         comment='Account to run this on.'
-    )_
+    )
 
     cluster.notify_job_status(
         email='zafarali.ahmed@mail.mcgill.ca',
@@ -99,7 +101,6 @@ if __name__ == '__main__':
     cluster.add_command('source $RVI_ENV')
 
     cluster.per_experiment_nb_cpus = 2
-    cluster.per_experiment_nb_nodes = 1
     cluster.memory_mb_per_node = 16384
     cluster.optimize_parallel_cluster_cpu(
         run_rvi,
