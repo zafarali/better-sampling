@@ -15,6 +15,7 @@ def run_rvi(args):
     sampler_seed = os.getenv('SLURM_ARRAY_TASK_ID', args.sampler_seed)
     save_dir = os.path.join(
         args.save_dir_template.format(
+            os.getenv('SCRATCH', './'),
             'testing_experiment',
             args.learning_rate,
             args.gae_value),
@@ -38,8 +39,8 @@ if __name__ == '__main__':
         default='test',
     )
     parser.add_argument(
-        '--save_dir_tempalte',
-        default=('/scratch'
+        '--save_dir_template',
+        default=('/{scratch}'
                  '/{experiment_name}'
                  '/lr{learning_rate}'
                  '/gae{gae_value}')
@@ -60,7 +61,7 @@ if __name__ == '__main__':
 
     # RVI Specific arguments.
     rvi_parser.random_walk_arguments(parser)
-    rvi_parser.rvi_arguments(parser)
+    # rvi_parser.rvi_arguments(parser)
 
 
     hyperparams = parser.parse_args()
@@ -68,7 +69,7 @@ if __name__ == '__main__':
     cluster = hpc.SlurmCluster(
         hyperparam_optimizer=hyperparams,
         log_path=hyperparams.save_dir_template,
-        pythom_cmd='python3',
+        python_cmd='python3',
         test_tube_exp_name=hyperparams.experiment_name,
         enable_log_err=True,
         enable_log_out=True
