@@ -5,6 +5,7 @@ import os
 
 from test_tube import argparse_hopt
 from test_tube import hpc
+from mlresearchkit.computecanada import parsers as cc_parser
 
 from rvi_sampling.utils import parsers as rvi_parser
 from rvi_sampling.utils import io as rvi_io
@@ -61,14 +62,16 @@ if __name__ == '__main__':
 
     # RVI Specific arguments.
     rvi_parser.random_walk_arguments(parser)
-    # rvi_parser.rvi_arguments(parser)
+    cc_parser.create_cc_arguments(parsers)
 
 
     hyperparams = parser.parse_args()
 
     cluster = hpc.SlurmCluster(
         hyperparam_optimizer=hyperparams,
-        log_path=hyperparams.save_dir_template,
+        log_path=os.path.join(
+            os.getenv('SCRATCH', './'),
+            hyperparams.experiment_name),
         python_cmd='python3',
         test_tube_exp_name=hyperparams.experiment_name,
         enable_log_err=True,
@@ -81,6 +84,12 @@ if __name__ == '__main__':
         value='0,1,2,3,4',
         comment='Number of repeats.')
 
+    cluster.add_slurm_cmd(
+        cmd='account',
+        value=hyperparams.cc_account,
+        comment='Account to run this on.'
+    )_
+
     cluster.notify_job_status(
         email='zafarali.ahmed@mail.mcgill.ca',
         on_done=True,
@@ -92,7 +101,6 @@ if __name__ == '__main__':
     cluster.per_experiment_nb_cpus = 2
     cluster.per_experiment_nb_nodes = 1
     cluster.memory_mb_per_node = 16384
-    cluster.script_name = 'rw_experiment_dummy.py'  # Name of the script here.
     cluster.optimize_parallel_cluster_cpu(
         run_rvi,
         nb_trials=24,
