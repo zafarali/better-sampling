@@ -1,24 +1,48 @@
+"""
+Test run for doing hyperparameter search.
+"""
+import os
+
 from test_tube import argparse_hopt
 from test_tube import hpc
-from mlresearchkit.computecanada import parsers as compute_canada_parser
+
 from rvi_sampling.utils import parsers as rvi_parser
+from rvi_sampling.utils import io as rvi_io
 
-def main(args):
-    pass
+def run_rvi(args):
+    # Use Slurm task ID as the environment variable.
 
-def dummy_function(args):
-    pass
+    sampler_seed = os.getenv('SLURM_ARRAY_TASK_ID', args.sampler_seed)
+    save_dir = os.path.join(
+        args.save_dir_template.format(
+            'testing_experiment',
+            args.learning_rate,
+            args.gae_value),
+        'Seed{}'.format(sampler_seed)
+    )
+
+    folder_name = rvi_io.create_folder_name(
+        args.outfolder, save_dir)
+
+    rvi_io.create_folder(folder_name)
+    rvi_io.argparse_saver(
+        os.path.join(folder_name, 'args.txt'), args)
+
+    print(args)
 
 if __name__ == '__main__':
-    # Hyperparameter arguments.
-    parser = argparse_hopt.HyperOptArgumentParser(strategy='random_search')
+    parser = argparse_hopt.HyperOptArgumentParser(
+        strategy='random_search')
     parser.add_argument(
         '--experiment_name',
         default='test',
     )
     parser.add_argument(
         '--save_dir_tempalte',
-        default='/scratch/{experiment_name}/{hyperparameters}',
+        default=('/scratch'
+                 '/{experiment_name}'
+                 '/lr{learning_rate}'
+                 '/gae{gae_value}')
     )
     parser.opt_range(
         '--learning_rate',
@@ -33,9 +57,6 @@ if __name__ == '__main__':
         high=0.98,
         type=float,
     )
-
-    # Compute Canada specific arguments.
-    compute_canada_parser.create_cc_arguments(parser)
 
     # RVI Specific arguments.
     rvi_parser.random_walk_arguments(parser)
@@ -53,6 +74,12 @@ if __name__ == '__main__':
         enable_log_out=True
     )
 
+    # Execute the same experiment 5 times.
+    cluster.add_slurm_cmd(
+        cmd='array',
+        value='0,1,2,3,4',
+        comment='Number of repeats.')
+
     cluster.notify_job_status(
         email='zafarali.ahmed@mail.mcgill.ca',
         on_done=True,
@@ -64,9 +91,9 @@ if __name__ == '__main__':
     cluster.per_experiment_nb_cpus = 2
     cluster.per_experiment_nb_nodes = 1
     cluster.memory_mb_per_node = 16384
-    cluster.script_name = ...  # Name of the script here.
+    cluster.script_name = 'rw_experiment_dummy.py'  # Name of the script here.
     cluster.optimize_parallel_cluster_cpu(
-        dummy_function,  # Do nothing here. `script_name` is overwritten.
+        run_rvi,
         nb_trials=24,
         job_name='first_tt_job',
         job_display_name='short_name')
