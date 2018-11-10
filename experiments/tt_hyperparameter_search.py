@@ -10,25 +10,24 @@ from mlresearchkit.computecanada import parsers as cc_parser
 from rvi_sampling.utils import parsers as rvi_parser
 from rvi_sampling.utils import io as rvi_io
 
-def run_rvi(args):
+def run_rvi(args, *throwaway):
     # Use Slurm task ID as the environment variable.
-
+    print(args)
     sampler_seed = os.getenv('SLURM_ARRAY_TASK_ID', args.sampler_seed)
     save_dir = os.path.join(
         args.save_dir_template.format(
             scratch=os.getenv('SCRATCH', './'),
             experiment_name='testing_experiment',
             learning_rate=args.learning_rate,
-            gave_value=args.gae_value),
+            gae_value=args.gae_value),
         'Seed{}'.format(sampler_seed)
     )
 
-    folder_name = rvi_io.create_folder_name(
-        args.outfolder, save_dir)
+    #folder_name = rvi_io.create_folder_name('./', save_dir)
 
-    rvi_io.create_folder(folder_name)
+    rvi_io.create_folder(save_dir)
     rvi_io.argparse_saver(
-        os.path.join(folder_name, 'args.txt'), args)
+        os.path.join(save_dir, 'args.txt'), args)
 
     print(args)
 
@@ -39,6 +38,7 @@ if __name__ == '__main__':
         '--experiment_name',
         default='test',
     )
+    parser.add_argument('--sampler_seed', default=0, type=int)
     parser.add_argument(
         '--save_dir_template',
         default=('/{scratch}'
@@ -104,6 +104,6 @@ if __name__ == '__main__':
     cluster.memory_mb_per_node = 16384
     cluster.optimize_parallel_cluster_cpu(
         run_rvi,
-        nb_trials=24,
+        nb_trials=2,
         job_name='first_tt_job',
         job_display_name='short_name')
