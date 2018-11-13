@@ -13,9 +13,9 @@ from rvi_sampling.utils import common as common_utils
 from rvi_sampling.utils import stochastic_processes
 
 
-def run_rvi(args):
+def run_rvi(args, *throwaway):
     # Use Slurm task ID as the environment variable.
-
+    print(args)
     sampler_seed = os.getenv('SLURM_ARRAY_TASK_ID', args.sampler_seed)
 
     # Run RVI for different endpoints.
@@ -43,12 +43,11 @@ def run_rvi_experiment(args, sampler_seed, end_point):
         'EndPoint{}'.format(end_point)
     )
 
-    folder_name = rvi_io.create_folder_name(
-        args.outfolder, save_dir)
+    #folder_name = rvi_io.create_folder_name('./', save_dir)
 
-    rvi_io.create_folder(folder_name)
+    rvi_io.create_folder(save_dir)
     rvi_io.argparse_saver(
-        os.path.join(folder_name, 'args.txt'), args)
+        os.path.join(save_dir, 'args.txt'), args)
 
     rw, analytic = stochastic_processes.create_rw(args, biased=False)
 
@@ -60,6 +59,7 @@ if __name__ == '__main__':
         '--experiment_name',
         default='test',
     )
+    parser.add_argument('--sampler_seed', default=0, type=int)
     parser.add_argument(
         '--save_dir_template',
         default=('/{scratch}'
@@ -126,7 +126,7 @@ if __name__ == '__main__':
     cluster.per_experiment_nb_cpus = 2
     cluster.memory_mb_per_node = 16384
     cluster.optimize_parallel_cluster_cpu(
-        run_rvi_experiment,
+        run_rvi,
         nb_trials=24,
         job_name='first_tt_job',
         job_display_name='short_name')
