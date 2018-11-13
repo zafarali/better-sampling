@@ -12,6 +12,9 @@ from rvi_sampling.utils import io as rvi_io
 from rvi_sampling.utils import common as common_utils
 from rvi_sampling.utils import stochastic_processes
 
+DIMENSIONS = 1
+OUTPUT_SIZE = 2
+INCLUDE_TIME = True
 
 def run_rvi(args, *throwaway):
     # Use Slurm task ID as the environment variable.
@@ -39,8 +42,8 @@ def run_rvi_experiment(args, sampler_seed, end_point):
             experiment_name='testing_experiment',
             learning_rate=args.learning_rate,
             gave_value=args.gae_value),
-        'Seed{}'.format(sampler_seed),
-        'EndPoint{}'.format(end_point)
+        'EndPoint{}'.format(end_point),
+        'Seed{}'.format(sampler_seed)
     )
 
     #folder_name = rvi_io.create_folder_name('./', save_dir)
@@ -50,7 +53,53 @@ def run_rvi_experiment(args, sampler_seed, end_point):
         os.path.join(save_dir, 'args.txt'), args)
 
     rw, analytic = stochastic_processes.create_rw(args, biased=False)
+    rw.xT = end_point
+    rvi_io.touch(
+        os.path.join(save_dir, 'start={}'.format(rw.x0)))
+    rvi_io.touch(
+        os.path.join(save_dir, 'end={}'.format(rw.xT)))
 
+    #############
+    ### SET UP POLICY AND OPTIMIZER.
+    #############
+    fn_approximator = MLP_factory(
+        DIMENSIONS+int(INCLUDE_TIME),
+        hidden_sizes=args.neural_network,
+        output_size=OUTPUT_SIZE,
+        hidden_non_linearity=nn.ReLU)
+    policy = MultinomialPolicy(fn_approximator)
+    policy_optimizer = torch.optim.RMSprop(
+        fn_approximator.parameters(),
+        lr=args.learning_rate,
+        epsilon=1e-5)
+
+    #############
+    ### SET UP VALUE FUNCTION AND OPTIMIZER.
+    #############
+    baseline_fn_approximator = MLP_factory(
+        DIMENSIONS+int(INCLUDE_TIME),
+        hidden_sizes=args.baseline_neural_network,
+        output_size=1,
+        hidden_non_linearity=nn.ReLU)
+    baseline_optimizer = torch.optim.RMSprop(
+        baseline_fn_approximator.parameters(),
+        lr=args.baseline_learning_rate,
+        epsilon=1e-5)
+    baseline = FunctionApproximatorBaseline(
+        baseline_fn_approximator,
+        baseline_optimizer)
+
+    sampler = RVISampler(
+        policy,
+        policy_optimizer,
+        baseline=baseline,
+        negative_reward_clip=args.reward_clip,
+        objective=PolicyGradientObjective(entropy=args.entropy),
+        feed_time=INCLUDE_TIME,
+        seed=sampler_seed,
+        use_gae=args.use_gae,
+        lam=args.lam,
+        gamma=args.gamma)
 
 if __name__ == '__main__':
     parser = argparse_hopt.HyperOptArgumentParser(
