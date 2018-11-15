@@ -73,6 +73,32 @@ class ProportionSuccessDiagnostic(Diagnostic):
     def _call(self, results, other_information=None):
         return self.format_float(len(results.trajectories()) / len(results.all_trajectories()))
 
+class OtherInformationDiagnostic(Diagnostic):
+    _handle = 'other_information'
+    _other_information_key = None
+    def _call(self, results, other_information=None):
+        if other_information is None:
+            return NO_RETURN
+        else:
+            return other_information[self._other_information_key]
+
+
+class EpisodeRewardDiagnostic(OtherInformationDiagnostic):
+    _handle = 'episode_reward'
+    _other_information_key = 'episode_reward'
+
+class TrajectoryLengthDiagnostic(OtherInformationDiagnostic):
+    _handle = 'trajectory_length'
+    _other_information_key = 'trajectory_length'
+
+class PathLogProbDiagnostic(OtherInformationDiagnostic):
+    _handle = 'path_log_prob'
+    _other_information_key = 'path_log_prob'
+
+class ProposalLogProbDiagnostic(OtherInformationDiagnostic):
+    _handle = 'proposal_log_prob'
+    _other_information_key = 'proposal_log_prob'
+
 
 class DiagnosticHandler(Diagnostic):
     """
@@ -105,18 +131,22 @@ class DiagnosticHandler(Diagnostic):
                             and TensorBoardHandler)
         :return:
         """
-        tmpstr = '{}: '.format(self.count)
-        diagnostics_this_iter = [self.count]
+        if other_information is not None and 'override_count' in other_information.keys():
+            count = other_information['override_count']
+        else:
+            count = self.count
+        tmpstr = '{}: '.format(count)
+        diagnostics_this_iter = [count]
         diagnostic_count = 0
         for diagnostic in self.diagnostics:
             diagnosed = diagnostic(results, other_information)
-            if diagnosed == NO_RETURN:
+            if str(diagnosed) == NO_RETURN:
                 continue
             diagnostic_count += 1
             diagnostics_this_iter.append((diagnostic._handle, diagnosed))
             tmpstr += '{}={}, '.format(*diagnostics_this_iter[-1])
             if optional_fn is not None:
-                optional_fn(*diagnostics_this_iter[-1], self.count)
+                optional_fn(*diagnostics_this_iter[-1], count)
         if self.verbose: print(tmpstr)
         if diagnostic_count == 0:
             return NO_RETURN, NO_RETURN
@@ -192,7 +222,14 @@ def create_diagnostic(sampler_name, args, folder_name, kl_function=None):
     :return:
     """
     diagnostics = [ProportionSuccessDiagnostic(2)]
-    if kl_function is not None: diagnostics += [KLDivergenceDiagnostic(kl_function, args.rw_width, 2)]
+    if kl_function is not None:
+        diagnostics += [
+            KLDivergenceDiagnostic(kl_function, args.rw_width, 2),
+            EpisodeRewardDiagnostic(2),
+            TrajectoryLengthDiagnostic(2),
+            PathLogProbDiagnostic(2),
+            ProposalLogProbDiagnostic(2)
+        ]
 
     if args.no_tensorboard:
         diagnostic_handler = FileSaverHandler(diagnostics, os.path.join(folder_name), sampler_name)
