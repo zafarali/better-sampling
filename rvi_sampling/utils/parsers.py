@@ -1,5 +1,11 @@
 import argparse
-from .stochastic_processes import random_walk_arguments
+import logging
+
+from rvi_sampling.utils.stochastic_processes import (
+    random_walk_arguments,
+    bind_random_walk_arguments  # This unused import is OK.
+)
+
 
 def create_parser(experiment_name, stochastic_process='random_walk'):
     parser = argparse.ArgumentParser('Experiment:' + experiment_name)
@@ -8,12 +14,171 @@ def create_parser(experiment_name, stochastic_process='random_walk'):
     if stochastic_process == 'random_walk': parser = random_walk_arguments(parser)
     return parser
 
+def bind_policy_arguments(parser, policy_learning_rate=True):
+    """
+    These are arguments needed for setting up networks used as a policy.
+    :param parser:
+    :return:
+    """
+    parser.add_argument('--policy_neural_network',
+                        nargs='+',
+                        help='Neural network specification for the policy.',
+                        default=(16, 16),
+                        type=int, # TODO(zaf): Find a way to pass tuple arguments.
+                        # type=lambda s: tuple(map(int, s.split(' ')))
+                        )
+
+    parser.add_argument('--pretrained_policy',
+                        default=None,
+                        type=str,
+                        help='Path to a pretrained policy. Default is None.')
+
+    if policy_learning_rate:
+        parser.add_argument('--policy_learning_rate',
+                            default=0.001,
+                            type=float,
+                            help='Learning rate for the policy network.')
+
+
+    return parser
+
+
+
+def bind_value_function_arguments(parser,
+                                  baseline_learning_rate=True,
+                                  baseline_decay_rate=True):
+    """
+    These are arguments needed for setting up networks used as a baseline.
+    :param parser:
+    :return:
+    """
+    parser.add_argument('--baseline_type', default='moving_average')
+    parser.add_argument('--baseline_neural_network',
+                        nargs='+',
+                        help='Neural network specification for the baseline.',
+                        default=(16, 16),
+                        type=int)
+
+    if baseline_learning_rate:
+        parser.add_argument('--baseline_learning_rate',
+                            default=0.001,
+                            type=float,
+                            help='The learning rate for the baseline function.')
+
+    if baseline_decay_rate:
+        parser.add_argument('--baseline_decay_rate',
+                            default=0.99,
+                            type=float,
+                            help='The decay rate for the moving average baseline.')
+
+    return parser
+
+
+def bind_rvi_arguments(parser, n_agents=True, gae_value=True):
+    """
+    RVI-specific arugments.
+    :param parser:
+    :return:
+    """
+    parser.add_argument('--disable_training',
+                        default=False,
+                        action='store_true',
+                        help='Stops training')
+
+    parser.add_argument('--entropy_coefficient',
+                        default=0.0,
+                        type=float,
+                        help='Entropy bonus to encourage policy to be more stochastic.')
+
+    parser.add_argument('--gamma',
+                        default=1.0,
+                        type=float,
+                        help='Discount factor.')
+
+    parser.add_argument('--reward_clip',
+                        default=-10,
+                        type=float,
+                        help=('The value to clip negative infinite rewards to this value. '
+                             'If not set, will not clip.'))
+    if n_agents:
+        parser.add_argument('--n_agents',
+                            default=1,
+                            type=int,
+                            help='Number of agents for each training step.')
+
+    if gae_value:
+        parser.add_argument('--gae_value',
+                            default=None,
+                            type=float,
+                            help='Value for gae. If None, no GAE is used.')
+
+    return parser
+
+
+def bind_sampler_arguments(parser, outfolder=True):
+    """
+    General sampler arguments.
+    :param parser:
+    :param outfolder:
+    :return:
+    """
+    parser.add_argument('--samples',
+                        default=1000,
+                        type=int,
+                        help='Total number of monte carlo samples.')
+
+
+    parser.add_argument('--seed',
+                        default=0,
+                        type=int,
+                        help='The seed to use for the run.')
+
+    parser.add_argument('--use_gpu',
+                        default=False,
+                        action='store_true',
+                        help='Uses GPU if available.')
+
+    parser.add_argument('--no_tensorboard',
+                        action='store_true',
+                        default=False,
+                        help='Disables tensorboard.')
+
+    if outfolder:
+        parser.add_argument('--outfolder',
+                            default='./',
+                            type=str,
+                            help='Where to save things.')
+
+    return parser
+
+def bind_IS_arguments(parser, softness_coefficient=True):
+    """
+    Importance sampler arguments.
+    :param parser:
+    :param softness_coefficient:
+    :return:
+    """
+    parser.add_argument('--IS_proposal_type',
+                        default='funnel',
+                        type=str,
+                        help='The importance sampling distribution to use (funnel, soft)')
+
+    if softness_coefficient:
+        parser.add_argument('--softness_coefficient',
+                            default=1.0,
+                            type=float,
+                            help='Sets the softness of the soft proposal in ISSampler.')
+
+    return parser
+
 def rvi_arguments(parser):
     """
     Arguments for the Reinforcement Learning based agent
     :param parser:
     :return:
     """
+    logging.warning('rvi_arguments is no longer updated. Use the newer bind_* functions to bind arguments.')
+
     parser.add_argument('-entropy', '--entropy', default=0, type=float, help='entropy coefficient')
     parser.add_argument('-baseline_decay', '--baseline_decay', default=0.99, type=float,
                         help='Moving Average baseline decay')
