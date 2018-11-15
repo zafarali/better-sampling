@@ -132,6 +132,11 @@ if __name__ == '__main__':
         type=float,
         tunable=True,
     )
+    parser.opt_list(
+        '--n_agents',
+        options=[1, 16, 32],
+        tunable=True,
+    )
 
     # RVI Specific arguments.
     rvi_parser.random_walk_arguments(parser)
