@@ -107,7 +107,11 @@ class RVISampler(Sampler):
             returns = gradients.calculate_returns(pg_info.rewards, self.gamma, pg_info.masks)
 
             if self.use_gae:
-                advantages = gradients.calculate_gae( interfaces.pytorch2list(pg_info.rewards), interfaces.pytorch2list(pg_info.values), self.gamma, self.lam)
+                advantages = gradients.calculate_gae(
+                    interfaces.pytorch2list(pg_info.rewards),
+                    interfaces.pytorch2list(pg_info.values),
+                    self.gamma,
+                    self.lam)
             else:
                 advantages = returns - pg_info.values
 
@@ -115,7 +119,10 @@ class RVISampler(Sampler):
 
             if self.baseline is not None:
                 if type(self.baseline).__name__ == "FunctionApproximatorBaseline":
-                    val_loss = self.baseline.update_baseline(pg_info, returns, tro=self.use_gae)
+                    val_loss = self.baseline.update_baseline(
+                        pg_info,
+                        returns,
+                        tro=False)
                 else:
                     val_loss = self.baseline.update_baseline(pg_info, returns)
             else:
