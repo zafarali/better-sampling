@@ -4,6 +4,7 @@ Test run for doing hyperparameter search.
 import sys
 import os
 
+import numpy as np
 import torch
 
 from test_tube import argparse_hopt
@@ -17,7 +18,9 @@ from pg_methods.objectives import PolicyGradientObjective
 
 from rvi_sampling.samplers import RVISampler
 from rvi_sampling.stochastic_processes import PyTorchWrap
+from rvi_sampling.utils import analysis as sampler_analysis
 from rvi_sampling.utils import parsers as rvi_parser
+from rvi_sampling.utils import diagnostics
 from rvi_sampling.utils import io as rvi_io
 from rvi_sampling.utils import common as common_utils
 from rvi_sampling.utils import stochastic_processes
@@ -59,8 +62,9 @@ def run_rvi_experiment(args, sampler_seed, end_point):
             scratch=os.getenv('SCRATCH', './'),
             experiment_name='testing_experiment',
             learning_rate=args.learning_rate,
-            gae_value=args.gae_value),
-        'EndPoint{}'.format(end_point),
+            gae_value=args.gae_value,
+            n_agents=args.n_agents,
+            end_point=end_point),
         'Seed{}'.format(sampler_seed)
     )
 
@@ -71,9 +75,10 @@ def run_rvi_experiment(args, sampler_seed, end_point):
         os.path.join(save_dir, 'args.txt'), args)
 
     rw, analytic = stochastic_processes.create_rw(args, biased=False, n_agents=args.n_agents)
+    rw.xT = np.array([end_point])
     rw = PyTorchWrap(rw)
 
-    rw.xT = end_point
+    print(rw.xT)
     rvi_io.touch(
         os.path.join(save_dir, 'start={}'.format(rw.x0)))
     rvi_io.touch(
@@ -121,8 +126,40 @@ def run_rvi_experiment(args, sampler_seed, end_point):
         lam=args.gae_value,
         gamma=args.gamma)
 
-    sampler.train(
-        rw, get_training_iterations(args.samples, args.n_agents), True)
+    if args.disable_training:
+        sampler.train_mode(False)
+        stochastic_processes.train_mode(False)
+
+    #####################
+    ### Statistics
+    #####################
+    kl_function = diagnostics.KL_Function(rw.xT[0], analytic)
+
+    sampler.set_diagnostic(
+        diagnostics.create_diagnostic(
+            sampler._name,
+            args,
+            save_dir,
+            kl_function))
+
+    print('True Starting Position is:{}'.format(rw.x0))
+    print('True Ending Position is: {}'.format(rw.xT))
+    print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
+
+    training_iterations = get_training_iterations(args.samples, args.n_agents)
+    sampler_result = sampler.train(
+        rw, training_iterations, True)
+
+    print('Number of training iterations: {}'.format(training_iterations))
+
+    sampler_result.save_results(save_dir)
+    sampler_analysis.analyze_sampler_result(
+        sampler_result,
+        args.rw_width,
+        rw.xT[0],
+        analytic=analytic,
+        save_dir=os.path.join(save_dir, 'RVISampler'),
+        policy=policy)
 
 if __name__ == '__main__':
     parser = argparse_hopt.HyperOptArgumentParser(
@@ -134,8 +171,10 @@ if __name__ == '__main__':
     parser.add_argument(
         '--save_dir_template',
         default=('./{scratch}'
-                 '/rvi'
+                 '/rvi_results'
                  '/{experiment_name}'
+                 '/end_point{end_point}'
+                 '/n_agents{n_agents}'
                  '/lr{learning_rate}'
                  '/gae{gae_value}')
     )
@@ -186,7 +225,7 @@ if __name__ == '__main__':
         hyperparam_optimizer=hyperparams,
         log_path=os.path.join(
             os.getenv('SCRATCH', './'),
-            'rvi',
+            'rvi_tt',
             hyperparams.experiment_name),
         python_cmd='python3',
         test_tube_exp_name=hyperparams.experiment_name,
@@ -197,7 +236,7 @@ if __name__ == '__main__':
     # Execute the same experiment 5 times.
     cluster.add_slurm_cmd(
         cmd='array',
-        value='0,1,2,3,4',
+        value='0,1,2',
         comment='Number of repeats.')
 
     cluster.add_slurm_cmd(
@@ -218,6 +257,6 @@ if __name__ == '__main__':
     cluster.memory_mb_per_node = 16384
     cluster.optimize_parallel_cluster_cpu(
         run_rvi,
-        nb_trials=24,
+        nb_trials=350,
         job_name='first_tt_job',
         job_display_name='short_name')
