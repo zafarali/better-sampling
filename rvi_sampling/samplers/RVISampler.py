@@ -133,7 +133,7 @@ class RVISampler(Sampler):
             if self._training:
                 self.policy_optimizer.zero_grad()
                 loss.backward()
-                # clip_grad_norm_(self.policy.fn_approximator.parameters(), 40) # TODO: what clipping value to use here?
+                clip_grad_norm_(self.policy.fn_approximator.parameters(), 40) # TODO: what clipping value to use here?
                 self.policy_optimizer.step()
                 if self.lr_scheduler is not None: self.lr_scheduler.step()
 
