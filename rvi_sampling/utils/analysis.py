@@ -158,3 +158,49 @@ def analyze_samplers_rw(sampler_results,
     # 
 
     return kl_divergences
+
+
+def analyze_sampler_result(sampler_result, rw_width, xT, analytic=None, save_dir='./', policy=None):
+    fig = plt.figure(figsize=(5, 4))
+    ax = fig.add_subplot(111)
+    sampler_result.plot_distribution(rw_width, ax, alpha=0.7)
+    if analytic is not None: ax = analytic.plot(xT, ax, label='analytic', color='r')
+    ax.set_title('Posterior distribution over starting states')
+    fig.savefig(os.path.join(save_dir, 'posterior.pdf'))
+
+
+    fig = plt.figure(figsize=(5, 4))
+    ax = fig.add_subplot(111)
+    sampler_result.plot_mean_trajectory(ax=ax)
+    ax.set_title('Trajectory summary statistics')
+    fig.savefig(os.path.join(save_dir, 'summary.pdf'))
+
+    fig = plt.figure(figsize=(5, 4))
+    ax = fig.add_subplot(111)
+    sampler_result.plot_all_trajectory_evolution(ax=ax)
+    ax.set_title('Evolution of All Trajectories')
+    fig.savefig(os.path.join(save_dir, 'evolution_all.pdf'))
+
+    fig = plt.figure(figsize=(5, 4))
+    ax = fig.add_subplot(111)
+    sampler_result.plot_trajectory_evolution(ax=ax)
+    ax.set_title('Evolution of Successful Trajectories')
+    fig.savefig(os.path.join(save_dir, 'evolution_successful.pdf'))
+
+
+    if policy is not None:
+        torch.save(policy, os.path.join(save_dir, 'rvi_policy.pyt'))
+        try:
+            t, x, x_arrows, y_arrows_nn = plotting.visualize_proposal(
+                [policy], 50, 20, neural_network=True)
+
+            f = plotting.multi_quiver_plot(t, x, x_arrows,
+                                          [y_arrows_nn],
+                                          ['Learned Neural Network Proposal'],
+                                          figsize=(10, 5))
+            f.savefig(os.path.join(save_dir, 'visualized_proposal.pdf'))
+            f.clf()
+            plt.close()
+            gc.collect()
+        except Exception as e:
+            print('Could not plot proposal distribution {}'.format(e))

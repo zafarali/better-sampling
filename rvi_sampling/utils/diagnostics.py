@@ -73,6 +73,17 @@ class ProportionSuccessDiagnostic(Diagnostic):
     def _call(self, results, other_information=None):
         return self.format_float(len(results.trajectories()) / len(results.all_trajectories()))
 
+class EffectiveSampleSizeDiagnostic(Diagnostic):
+    """
+    Returns the proportion of trajectories that were sucessful so far
+    """
+    _handle = 'ESS'
+    def _call(self, results, other_information=None):
+        if results._importance_sampled:
+            return results.effective_sample_size()
+        else:
+            return NO_RETURN
+
 class OtherInformationDiagnostic(Diagnostic):
     _handle = 'other_information'
     _other_information_key = None
@@ -105,13 +116,13 @@ class DiagnosticHandler(Diagnostic):
     A "meta-diagnositc" that calls a whole bunch of other diagnostic
     Basically this is a list for `Diagnostic` objects.
     """
-    def __init__(self, diagnostics, sampler_name=None, verbose=False):
+    def __init__(self, diagnostics, sampler_name=None, verbose=False, frequency=1):
         """
         :param diagnostics: A list of diagnostics
         :param sampler_name: the name of the sampler
         :param verbose:
         """
-        super().__init__(1) # logging frequency is 1, by default `DiagnosticHandler`s should be called every step
+        super().__init__(frequency) # logging frequency is 1, by default `DiagnosticHandler`s should be called every step
         self.sampler_name = sampler_name
         self.diagnostics = diagnostics
         self.diagnostic_information = []
@@ -158,8 +169,8 @@ class TensorBoardHandler(DiagnosticHandler):
     """
     TensorBoardHandler
     """
-    def __init__(self, diagnostics, log_dir=None, sampler_name='', verbose=False):
-        super().__init__(diagnostics, sampler_name, verbose)
+    def __init__(self, diagnostics, log_dir=None, sampler_name='', verbose=False, frequency=1):
+        super().__init__(diagnostics, sampler_name, verbose, frequency)
         self.initialized = False
         self.log_dir = log_dir
 
@@ -190,8 +201,8 @@ class FileSaverHandler(DiagnosticHandler):
     Something like TensorBoardHandler, but without all the heavy weight stuff
     of saving into TensorBoard. Easier to export data from to do downstream analysis.
     """
-    def __init__(self, diagnostics, log_dir, sampler_name, verbose=False):
-        super().__init__(diagnostics, sampler_name, verbose)
+    def __init__(self, diagnostics, log_dir, sampler_name, verbose=False, frequency=1):
+        super().__init__(diagnostics, sampler_name, verbose, frequency)
         self.initialized = False
         self.log_dir = log_dir
         self.sampler_name = sampler_name
@@ -212,7 +223,7 @@ class FileSaverHandler(DiagnosticHandler):
         tmpstr, _ = self._call_all_diagnostics(results, other_information, optional_fn=self.log_to_file)
         return tmpstr
 
-def create_diagnostic(sampler_name, args, folder_name, kl_function=None):
+def create_diagnostic(sampler_name, args, folder_name, kl_function=None, frequency=2):
     """
     Creates diagnostics for our experiments
     :param sampler_name: Name of the sampler
@@ -221,20 +232,23 @@ def create_diagnostic(sampler_name, args, folder_name, kl_function=None):
     :param kl_function: The KL divergence function to use
     :return:
     """
-    diagnostics = [ProportionSuccessDiagnostic(2)]
+    diagnostics = [ProportionSuccessDiagnostic(frequency)]
     if kl_function is not None:
         diagnostics += [
-            KLDivergenceDiagnostic(kl_function, args.rw_width, 2),
-            EpisodeRewardDiagnostic(2),
-            TrajectoryLengthDiagnostic(2),
-            PathLogProbDiagnostic(2),
-            ProposalLogProbDiagnostic(2)
+            KLDivergenceDiagnostic(kl_function, args.rw_width, frequency),
+            EpisodeRewardDiagnostic(frequency),
+            TrajectoryLengthDiagnostic(frequency),
+            PathLogProbDiagnostic(frequency),
+            ProposalLogProbDiagnostic(frequency),
+            EffectiveSampleSizeDiagnostic(frequency)
         ]
 
     if args.no_tensorboard:
         diagnostic_handler = FileSaverHandler(diagnostics, os.path.join(folder_name), sampler_name)
     else:
         print('Tensorboard Logging at: {}'.format(os.path.join(folder_name, sampler_name)))
-        diagnostic_handler = TensorBoardHandler(diagnostics,log_dir=os.path.join(folder_name, sampler_name))
+        diagnostic_handler = TensorBoardHandler(diagnostics,
+                                                log_dir=os.path.join(folder_name, sampler_name),
+                                                frequency=frequency)
 
     return diagnostic_handler

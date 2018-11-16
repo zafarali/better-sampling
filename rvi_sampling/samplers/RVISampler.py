@@ -71,7 +71,8 @@ class RVISampler(Sampler):
         :return:
         """
 
-        results = self.train(stochastic_process, mc_samples, verbose=verbose)
+        with torch.set_grad_enabled(self._training):
+            results = self.train(stochastic_process, mc_samples, verbose=verbose)
 
         return results
 
@@ -84,9 +85,8 @@ class RVISampler(Sampler):
         :param verbose:
         :return:
         """
-        self.train_mode(True)
+
         self.check_stochastic_process(stochastic_process)
-        stochastic_process.train_mode(True)
 
         results = RLSamplingResults('RVISampler', stochastic_process.true_trajectory)
 
@@ -130,11 +130,12 @@ class RVISampler(Sampler):
 
             loss = pg_loss
 
-            self.policy_optimizer.zero_grad()
-            loss.backward()
-            clip_grad_norm_(self.policy.fn_approximator.parameters(), 40) # TODO: what clipping value to use here?
-            self.policy_optimizer.step()
-            if self.lr_scheduler is not None: self.lr_scheduler.step()
+            if self._training:
+                self.policy_optimizer.zero_grad()
+                loss.backward()
+                # clip_grad_norm_(self.policy.fn_approximator.parameters(), 40) # TODO: what clipping value to use here?
+                self.policy_optimizer.step()
+                if self.lr_scheduler is not None: self.lr_scheduler.step()
 
             reward_summary = torch.sum(pg_info.rewards, dim=0).mean()
             rewards_per_episode.append(reward_summary)
@@ -162,11 +163,16 @@ class RVISampler(Sampler):
 
             # use information saved so far to run a diagnostic.
             if self.diagnostic is not None:
-                self.run_diagnostic(RLSamplingResults.from_information(self._name,
-                                                                       all_trajectories,
-                                                                       saved_trajectories,
-                                                                       posterior_particles,
-                                                                       posterior_weights))
+                self.run_diagnostic(
+                    RLSamplingResults.from_information(
+                        self._name, all_trajectories, saved_trajectories, posterior_particles, posterior_weights),
+                    other_information={
+                        'episode_reward': reward_summary.item(),
+                        'trajectory_length': len(sampled_trajectory),
+                        'path_log_prob': np.mean(log_path_prob),
+                        'proposal_log_prob': np.mean(log_proposal_prob),
+                        'override_count': self.train_steps_completed * stochastic_process.n_agents
+                    })
             self.train_steps_completed += 1
 
         results.all_trajectories(all_trajectories)
