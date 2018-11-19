@@ -172,7 +172,7 @@ class RVISampler(Sampler):
                         'path_log_prob': np.mean(log_path_prob),
                         'proposal_log_prob': np.mean(log_proposal_prob),
                         'override_count': self.train_steps_completed * stochastic_process.n_agents
-                    })
+                    }, verbose=verbose)
             self.train_steps_completed += 1
 
         results.all_trajectories(all_trajectories)

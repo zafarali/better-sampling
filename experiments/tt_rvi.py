@@ -157,7 +157,7 @@ def run_rvi_experiment(args, sampler_seed, end_point):
 
     training_iterations = get_training_iterations(args.samples, args.n_agents)
     sampler_result = sampler.train(
-        rw, training_iterations, True)
+        rw, training_iterations, verbose=True)
 
     print('Number of training iterations: {}'.format(training_iterations))
 
