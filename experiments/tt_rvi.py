@@ -144,6 +144,7 @@ def run_rvi_experiment(args, sampler_seed, end_point):
         gamma=args.gamma)
 
     if args.disable_training:
+        print('Training has been disabled.')
         sampler.train_mode(False)
         stochastic_processes.train_mode(False)
 
