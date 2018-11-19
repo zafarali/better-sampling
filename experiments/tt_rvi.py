@@ -67,6 +67,7 @@ def run_rvi(args, *throwaway):
         print('Starting next experiment with endpoint: {}'.format(end_point))
         print('#'*30)
         run_rvi_experiment(args, sampler_seed, end_point)
+    sys.exit(0)
 
 def run_rvi_experiment(args, sampler_seed, end_point):
     common_utils.set_global_seeds(sampler_seed)
@@ -280,7 +281,7 @@ if __name__ == '__main__':
     cluster.add_command('source $RVI_ENV')
 
     cluster.per_experiment_nb_cpus = 1  # 1 CPU per job.
-    cluster.job_time = '2:30:00'  # Two hours and 30 mins.
+    cluster.job_time = '1:00:00'  # One hour.
     cluster.memory_mb_per_node = 16384
     cluster.optimize_parallel_cluster_cpu(
         run_rvi,
