@@ -37,7 +37,7 @@ def run_IS(args, *throwaway):
     # Use Slurm task ID as the environment variable.
     print(args)
     args.rw_seed = args.seed  # Backward compat.
-    sampler_seed = os.getenv('SLURM_ARRAY_TASK_ID', args.seed)
+    sampler_seed = int(os.getenv('SLURM_ARRAY_TASK_ID', args.seed))
 
 
     if args.rw_time == 50:
