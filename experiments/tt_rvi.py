@@ -237,6 +237,13 @@ if __name__ == '__main__':
         sys.exit(0)
 
     del hyperparams.dry_run
+
+    # TODO(zaf): Figure out how to fix passing tuples.
+    # To subprocesses.
+    # Remove these commands since they cause failures.
+    del args.policy_neural_network
+    del args.baseline_neural_network
+
     cluster = hpc.SlurmCluster(
         hyperparam_optimizer=hyperparams,
         log_path=os.path.join(
