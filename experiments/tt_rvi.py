@@ -268,5 +268,5 @@ if __name__ == '__main__':
     cluster.optimize_parallel_cluster_cpu(
         run_rvi,
         nb_trials=350,
-        job_name='first_tt_job',
-        job_display_name='short_name')
+        job_name='RVI Hyperparameter Search',
+        job_display_name='rvi_hps')
