@@ -14,19 +14,20 @@ def create_parser(experiment_name, stochastic_process='random_walk'):
     if stochastic_process == 'random_walk': parser = random_walk_arguments(parser)
     return parser
 
-def bind_policy_arguments(parser, policy_learning_rate=True):
+def bind_policy_arguments(parser, policy_learning_rate=True, policy_neural_network=True):
     """
     These are arguments needed for setting up networks used as a policy.
     :param parser:
     :return:
     """
-    parser.add_argument('--policy_neural_network',
-                        nargs='+',
-                        help='Neural network specification for the policy.',
-                        default=(16, 16),
-                        type=int, # TODO(zaf): Find a way to pass tuple arguments.
-                        # type=lambda s: tuple(map(int, s.split(' ')))
-                        )
+    if policy_neural_network:
+        parser.add_argument('--policy_neural_network',
+                            nargs='+',
+                            help='Neural network specification for the policy.',
+                            default=(16, 16),
+                            type=int, # TODO(zaf): Find a way to pass tuple arguments.
+                            # type=lambda s: tuple(map(int, s.split(' ')))
+                            )
 
     parser.add_argument('--pretrained_policy',
                         default=None,
@@ -46,18 +47,21 @@ def bind_policy_arguments(parser, policy_learning_rate=True):
 
 def bind_value_function_arguments(parser,
                                   baseline_learning_rate=True,
-                                  baseline_decay_rate=True):
+                                  baseline_decay_rate=True,
+                                  baseline_neural_network=True):
     """
     These are arguments needed for setting up networks used as a baseline.
     :param parser:
     :return:
     """
     parser.add_argument('--baseline_type', default='moving_average')
-    parser.add_argument('--baseline_neural_network',
-                        nargs='+',
-                        help='Neural network specification for the baseline.',
-                        default=(16, 16),
-                        type=int)
+
+    if baseline_neural_network:
+        parser.add_argument('--baseline_neural_network',
+                            nargs='+',
+                            help='Neural network specification for the baseline.',
+                            default=(16, 16),
+                            type=int)
 
     if baseline_learning_rate:
         parser.add_argument('--baseline_learning_rate',

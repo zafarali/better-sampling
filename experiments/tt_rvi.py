@@ -38,6 +38,7 @@ INCLUDE_TIME = True
 # Make use of backfilling using this slightly messy solutions:
 END_POINTS = [0, 12, 24, 36, 48]
 TOTAL_END_POINTS = len(END_POINTS)
+NEURAL_NETWORK = (16, 16)
 
 def get_training_iterations(mc_samples, n_agents):
     return mc_samples // n_agents
@@ -104,7 +105,7 @@ def run_rvi_experiment(args, sampler_seed, end_point):
     #############
     fn_approximator = MLP_factory(
         DIMENSIONS+int(INCLUDE_TIME),
-        hidden_sizes=args.policy_neural_network,
+        hidden_sizes=NEURAL_NETWORK,
         output_size=OUTPUT_SIZE,
         hidden_non_linearity=torch.nn.ReLU)
     policy = CategoricalPolicy(fn_approximator)
@@ -118,7 +119,7 @@ def run_rvi_experiment(args, sampler_seed, end_point):
     #############
     baseline_fn_approximator = MLP_factory(
         DIMENSIONS+int(INCLUDE_TIME),
-        hidden_sizes=args.baseline_neural_network,
+        hidden_sizes=NEURAL_NETWORK,
         output_size=1,
         hidden_non_linearity=torch.nn.ReLU)
     baseline_optimizer = torch.optim.RMSprop(
@@ -224,8 +225,10 @@ if __name__ == '__main__':
     # Setup general argparse arguments.
     rvi_parser.bind_random_walk_arguments(parser, rw_endpoint=False)
     rvi_parser.bind_sampler_arguments(parser, outfolder=False)
-    rvi_parser.bind_policy_arguments(parser, policy_learning_rate=False)
-    rvi_parser.bind_value_function_arguments(parser, baseline_learning_rate=False)
+    rvi_parser.bind_policy_arguments(
+        parser, policy_learning_rate=False, policy_neural_network=False)
+    rvi_parser.bind_value_function_arguments(
+        parser, baseline_learning_rate=False, baseline_neural_network=False)
     rvi_parser.bind_rvi_arguments(parser, n_agents=False, gae_value=False)
     cc_parser.create_cc_arguments(parser)
 
@@ -238,11 +241,11 @@ if __name__ == '__main__':
 
     del hyperparams.dry_run
 
-    # TODO(zaf): Figure out how to fix passing tuples.
-    # To subprocesses.
-    # Remove these commands since they cause failures.
-    del args.policy_neural_network
-    del args.baseline_neural_network
+    # # TODO(zaf): Figure out how to fix passing tuples.
+    # # To subprocesses.
+    # # Remove these commands since they cause failures.
+    # del hyperparams.policy_neural_network
+    # del hyperparams.baseline_neural_network
 
     cluster = hpc.SlurmCluster(
         hyperparam_optimizer=hyperparams,
