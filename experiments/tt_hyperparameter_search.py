@@ -29,6 +29,10 @@ DIMENSIONS = 1
 OUTPUT_SIZE = 2
 INCLUDE_TIME = True
 
+# Make use of backfilling using this slightly messy solutions:
+END_POINTS = [0, 24, 48]
+TOTAL_END_POINTS = len(END_POINTS)
+
 def get_training_iterations(mc_samples, n_agents):
     return mc_samples // n_agents
 
@@ -38,15 +42,19 @@ def run_rvi(args, *throwaway):
     args.rw_seed = args.seed  # Backward compat.
     sampler_seed = os.getenv('SLURM_ARRAY_TASK_ID', args.seed)
 
-    # Run RVI for different endpoints.
-    if args.rw_time == 10:
-        end_points = [2, 4, 6, 8]
-    elif args.rw_time == 50:
-        end_points = [2, 10, 20, 30, 40, 48]
+
+    if args.rw_time == 50:
+        end_points = END_POINTS
     else:
         raise ValueError('Unknown rw_time.')
+    
+    if os.getenv('SLURM_ARRAY_TASK_ID', False):
+        # Select end point from [0,6] so that we can
+        # use array jobs for backfilling.
+        end_point_index = sampler_seed % TOTAL_END_POINTS
+        sampler_seed = sampler_seed // TOTAL_END_POINTS
+        end_points = [end_points[end_point_index]]
 
-    # TODO(zaf): Make this happen in parallel?
     for end_point in end_points:
         print('#'*30)
         print('Starting next experiment with endpoint: {}'.format(end_point))
@@ -60,7 +68,7 @@ def run_rvi_experiment(args, sampler_seed, end_point):
     save_dir = os.path.join(
         args.save_dir_template.format(
             scratch=os.getenv('SCRATCH', './'),
-            experiment_name='testing_experiment',
+            experiment_name=args.experiment_name,
             learning_rate=args.learning_rate,
             gae_value=args.gae_value,
             n_agents=args.n_agents,
@@ -166,12 +174,12 @@ if __name__ == '__main__':
         strategy='random_search')
     parser.add_argument(
         '--experiment_name',
-        default='test',
+        default='rvi_experiment',
     )
     parser.add_argument(
         '--save_dir_template',
-        default=('./{scratch}'
-                 '/rvi_results'
+        default=('{scratch}'
+                 '/rvi/rvi_results'
                  '/{experiment_name}'
                  '/end_point{end_point}'
                  '/n_agents{n_agents}'
@@ -225,7 +233,7 @@ if __name__ == '__main__':
         hyperparam_optimizer=hyperparams,
         log_path=os.path.join(
             os.getenv('SCRATCH', './'),
-            'rvi_tt',
+            'rvi/tt',
             hyperparams.experiment_name),
         python_cmd='python3',
         test_tube_exp_name=hyperparams.experiment_name,
@@ -236,7 +244,7 @@ if __name__ == '__main__':
     # Execute the same experiment 5 times.
     cluster.add_slurm_cmd(
         cmd='array',
-        value='0,1,2',
+        value='0-12',
         comment='Number of repeats.')
 
     cluster.add_slurm_cmd(
@@ -253,7 +261,8 @@ if __name__ == '__main__':
     cluster.load_modules(['cuda/8.0.44', 'cudnn/7.0'])
     cluster.add_command('source $RVI_ENV')
 
-    cluster.per_experiment_nb_cpus = 2
+    cluster.per_experiment_nb_cpus = 1  # 1 CPU per job.
+    cluster.job_time = '2:30:00'  # Two hours and 30 mins.
     cluster.memory_mb_per_node = 16384
     cluster.optimize_parallel_cluster_cpu(
         run_rvi,
