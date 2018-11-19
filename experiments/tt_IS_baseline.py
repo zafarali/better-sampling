@@ -1,6 +1,11 @@
 """
 Test tube script for launching baseline jobs with importance sampling
 to compare with RVI.
+
+How to launch on SLURM:
+```
+python3 tt_IS_baseline.py --cc_account $CC_ACCOUNT --no_tensorboard --samples 5001
+```
 """
 import sys
 import os

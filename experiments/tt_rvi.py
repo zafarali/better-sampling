@@ -1,5 +1,11 @@
 """
-Test run for doing hyperparameter search.
+RVI Launcher script.
+
+How to launch on SLURM:
+```
+python3 tt_rvi.py --cc_account $CC_ACCOUNT --no_tensorboard --samples 5001
+```
+
 """
 import sys
 import os
