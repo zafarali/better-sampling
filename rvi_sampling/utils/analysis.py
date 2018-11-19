@@ -161,31 +161,43 @@ def analyze_samplers_rw(sampler_results,
 
 
 def analyze_sampler_result(sampler_result, rw_width, xT, analytic=None, save_dir='./', policy=None):
-    fig = plt.figure(figsize=(5, 4))
-    ax = fig.add_subplot(111)
-    sampler_result.plot_distribution(rw_width, ax, alpha=0.7)
-    if analytic is not None: ax = analytic.plot(xT, ax, label='analytic', color='r')
-    ax.set_title('Posterior distribution over starting states')
-    fig.savefig(os.path.join(save_dir, 'posterior.pdf'))
 
+    try:
+        fig = plt.figure(figsize=(5, 4))
+        ax = fig.add_subplot(111)
+        sampler_result.plot_distribution(rw_width, ax, alpha=0.7)
+        if analytic is not None: ax = analytic.plot(xT, ax, label='analytic', color='r')
+        ax.set_title('Posterior distribution over starting states')
+        fig.savefig(os.path.join(save_dir, 'posterior.pdf'))
+    except Exception as e:
+        print('Could not plot posterior.', str(e))
 
-    fig = plt.figure(figsize=(5, 4))
-    ax = fig.add_subplot(111)
-    sampler_result.plot_mean_trajectory(ax=ax)
-    ax.set_title('Trajectory summary statistics')
-    fig.savefig(os.path.join(save_dir, 'summary.pdf'))
+    try:
+        fig = plt.figure(figsize=(5, 4))
+        ax = fig.add_subplot(111)
+        sampler_result.plot_mean_trajectory(ax=ax)
+        ax.set_title('Trajectory summary statistics')
+        fig.savefig(os.path.join(save_dir, 'summary.pdf'))
+    except Exception as e:
+        print('Could not plot trajectory summary statistics.', str(e))
 
-    fig = plt.figure(figsize=(5, 4))
-    ax = fig.add_subplot(111)
-    sampler_result.plot_all_trajectory_evolution(ax=ax)
-    ax.set_title('Evolution of All Trajectories')
-    fig.savefig(os.path.join(save_dir, 'evolution_all.pdf'))
+    try:
+        fig = plt.figure(figsize=(5, 4))
+        ax = fig.add_subplot(111)
+        sampler_result.plot_all_trajectory_evolution(ax=ax)
+        ax.set_title('Evolution of All Trajectories')
+        fig.savefig(os.path.join(save_dir, 'evolution_all.pdf'))
+    except Exception as e:
+        print('Could not plot evolution all.', str(e))
 
-    fig = plt.figure(figsize=(5, 4))
-    ax = fig.add_subplot(111)
-    sampler_result.plot_trajectory_evolution(ax=ax)
-    ax.set_title('Evolution of Successful Trajectories')
-    fig.savefig(os.path.join(save_dir, 'evolution_successful.pdf'))
+    try:
+        fig = plt.figure(figsize=(5, 4))
+        ax = fig.add_subplot(111)
+        sampler_result.plot_trajectory_evolution(ax=ax)
+        ax.set_title('Evolution of Successful Trajectories')
+        fig.savefig(os.path.join(save_dir, 'evolution_successful.pdf'))
+    except Exception as e:
+        print('Could not plot evolution.', str(e))
 
 
     if policy is not None:
