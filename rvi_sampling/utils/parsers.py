@@ -91,7 +91,7 @@ def bind_rvi_arguments(parser, n_agents=True, gae_value=True):
                         help='Entropy bonus to encourage policy to be more stochastic.')
 
     parser.add_argument('--gamma',
-                        default=1.0,
+                        default=0.99,
                         type=float,
                         help='Discount factor.')
 
