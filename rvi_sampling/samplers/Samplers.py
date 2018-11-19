@@ -58,7 +58,9 @@ class ABCSampler(Sampler):
             all_trajectories.append(trajectory)
 
             if self.diagnostic is not None:
-                self.run_diagnostic(SamplingResults.from_information(self._name, all_trajectories, trajectories), verbose)
+                self.run_diagnostic(
+                    SamplingResults.from_information(self._name, all_trajectories, trajectories),
+                    verbose=verbose)
 
         results.all_trajectories(all_trajectories)
         results.trajectories(trajectories)
@@ -113,8 +115,9 @@ class MCSampler(Sampler):
             all_trajectories.append(np.vstack(list(reversed(trajectory_i))))
 
             if self.diagnostic is not None:
-                self.run_diagnostic(SamplingResults.from_information(self._name, all_trajectories, trajectories),
-                                    verbose=verbose)
+                self.run_diagnostic(
+                    SamplingResults.from_information(self._name, all_trajectories, trajectories),
+                    verbose=verbose)
 
         results.all_trajectories(all_trajectories)
         results.trajectories(trajectories)
@@ -174,12 +177,10 @@ class ISSampler(Sampler):
             all_trajectories.append(np.vstack(list(reversed(trajectory_i))))
 
             if self.diagnostic is not None:
-                self.run_diagnostic(ImportanceSamplingResults.from_information(self._name,
-                                                                     all_trajectories,
-                                                                     trajectories,
-                                                                     posterior_particles,
-                                                                     posterior_weights),
-                                    verbose)
+                self.run_diagnostic(
+                    ImportanceSamplingResults.from_information(
+                        self._name, all_trajectories, trajectories, posterior_particles, posterior_weights),
+                    verbose=verbose)
 
         results.all_trajectories(all_trajectories)
         results.trajectories(trajectories)

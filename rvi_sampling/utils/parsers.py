@@ -151,17 +151,18 @@ def bind_sampler_arguments(parser, outfolder=True):
 
     return parser
 
-def bind_IS_arguments(parser, softness_coefficient=True):
+def bind_IS_arguments(parser, softness_coefficient=True, IS_proposal_type=True):
     """
     Importance sampler arguments.
     :param parser:
     :param softness_coefficient:
     :return:
     """
-    parser.add_argument('--IS_proposal_type',
-                        default='funnel',
-                        type=str,
-                        help='The importance sampling distribution to use (funnel, soft)')
+    if IS_proposal_type:
+        parser.add_argument('--IS_proposal_type',
+                            default='funnel',
+                            type=str,
+                            help='The importance sampling distribution to use (funnel, soft)')
 
     if softness_coefficient:
         parser.add_argument('--softness_coefficient',
