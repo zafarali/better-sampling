@@ -148,7 +148,8 @@ def run_rvi_experiment(args, sampler_seed, end_point):
             sampler._name,
             args,
             save_dir,
-            kl_function))
+            kl_function,
+            frequency=10))
 
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))

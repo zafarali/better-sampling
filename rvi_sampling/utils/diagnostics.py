@@ -244,7 +244,11 @@ def create_diagnostic(sampler_name, args, folder_name, kl_function=None, frequen
         ]
 
     if args.no_tensorboard:
-        diagnostic_handler = FileSaverHandler(diagnostics, os.path.join(folder_name), sampler_name)
+        diagnostic_handler = FileSaverHandler(
+            diagnostics,
+            os.path.join(folder_name),
+            sampler_name,
+            frequency=frequency)
     else:
         print('Tensorboard Logging at: {}'.format(os.path.join(folder_name, sampler_name)))
         diagnostic_handler = TensorBoardHandler(diagnostics,
