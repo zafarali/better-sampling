@@ -30,7 +30,7 @@ OUTPUT_SIZE = 2
 INCLUDE_TIME = True
 
 # Make use of backfilling using this slightly messy solutions:
-END_POINTS = [0, 24, 48]
+END_POINTS = [0, 12, 24, 36, 48]
 TOTAL_END_POINTS = len(END_POINTS)
 
 def get_training_iterations(mc_samples, n_agents):
@@ -79,6 +79,7 @@ def run_rvi_experiment(args, sampler_seed, end_point):
     #folder_name = rvi_io.create_folder_name('./', save_dir)
 
     rvi_io.create_folder(save_dir)
+    rvi_io.create_folder(os.path.join(save_dir, 'RVISampler'))
     rvi_io.argparse_saver(
         os.path.join(save_dir, 'args.txt'), args)
 
@@ -245,7 +246,7 @@ if __name__ == '__main__':
     # Execute the same experiment 5 times.
     cluster.add_slurm_cmd(
         cmd='array',
-        value='0-12',
+        value='0-20',
         comment='Number of repeats.')
 
     cluster.add_slurm_cmd(
