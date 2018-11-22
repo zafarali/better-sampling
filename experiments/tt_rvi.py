@@ -9,6 +9,7 @@ python3 tt_rvi.py --cc_account $CC_ACCOUNT --no_tensorboard --samples 5001
 """
 import sys
 import os
+import time
 
 import numpy as np
 import torch
@@ -85,7 +86,6 @@ def run_rvi_experiment(args, sampler_seed, end_point):
     )
 
     #folder_name = rvi_io.create_folder_name('./', save_dir)
-
     rvi_io.create_folder(save_dir)
     rvi_io.create_folder(os.path.join(save_dir, 'RVISampler'))
     rvi_io.argparse_saver(
@@ -165,10 +165,13 @@ def run_rvi_experiment(args, sampler_seed, end_point):
     print('True Ending Position is: {}'.format(rw.xT))
     print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
 
+    start_time = time.time()
+
     training_iterations = get_training_iterations(args.samples, args.n_agents)
     sampler_result = sampler.train(
         rw, training_iterations, verbose=True)
 
+    print('Total time: {}'.format(time.time() - start_time))
     print('Number of training iterations: {}'.format(training_iterations))
 
     sampler_result.save_results(save_dir)
@@ -199,7 +202,7 @@ if __name__ == '__main__':
     )
     parser.opt_range(
         '--learning_rate',
-        low=0.00001,
+        low=0.000005,
         high=0.001,
         type=float,
         log_base=10,
@@ -207,14 +210,14 @@ if __name__ == '__main__':
     )
     parser.opt_range(
         '--gae_value',
-        low=0.95,
-        high=0.99,
+        low=0.92,
+        high=0.97,
         type=float,
         tunable=True,
     )
     parser.opt_list(
         '--n_agents',
-        options=[1, 16, 32],
+        options=[1],
         type=int,
         tunable=True,
     )
@@ -282,10 +285,10 @@ if __name__ == '__main__':
     cluster.add_command('source $RVI_ENV')
 
     cluster.per_experiment_nb_cpus = 1  # 1 CPU per job.
-    cluster.job_time = '1:00:00'  # One hour.
+    cluster.job_time = '0:30:00'  # 30 mins.
     cluster.memory_mb_per_node = 16384
     cluster.optimize_parallel_cluster_cpu(
         run_rvi,
-        nb_trials=350,
+        nb_trials=100,
         job_name='RVI Hyperparameter Search',
         job_display_name='rvi_hps')
