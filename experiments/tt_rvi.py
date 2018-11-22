@@ -185,7 +185,7 @@ def run_rvi_experiment(args, sampler_seed, end_point):
 
 if __name__ == '__main__':
     parser = argparse_hopt.HyperOptArgumentParser(
-        strategy='random_search')
+        strategy='grid_search')
     parser.add_argument(
         '--experiment_name',
         default='rvi_experiment',
@@ -207,11 +207,11 @@ if __name__ == '__main__':
         type=float,
         log_base=10,
         tunable=True,
+        nb_samples=50,
     )
-    parser.opt_range(
+    parser.opt_list(
         '--gae_value',
-        low=0.92,
-        high=0.97,
+        options=[0.94, 0.95, 0.96, 0.97],
         type=float,
         tunable=True,
     )
