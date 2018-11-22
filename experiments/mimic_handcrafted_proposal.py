@@ -56,6 +56,13 @@ def run_handcrafted_pretraining(args, save_dir):
     :param args:
     :return:
     """
+
+    file_template = 'pretrained_mimic_{}_{}'.format(
+        args.IS_proposal_type, args.softness_coefficient)
+
+    file_to_save = os.path.join(save_dir, file_template + '.pyt')
+    mlio.create_folder(save_dir)
+
     print('Training a network to mimic hand crafted proposal.')
     # Setup Function Approximator and Optimizer.
     fn_approximator = setup_network(args)
@@ -105,13 +112,13 @@ def run_handcrafted_pretraining(args, save_dir):
         if i % 50 == 0:
             print('Epoch: {}/{} Loss {:.5f}'.format(
                 i, args.epochs, np.mean(losses_for_epoch)))
+
+            # Intermediate saves.
+            torch.save(CategoricalPolicy(fn_approximator), file_to_save)
+
         all_losses.append(np.mean(losses_for_epoch))
 
-    file_template = 'pretrained_mimic_{}_{}'.format(
-        args.IS_proposal_type, args.softness_coefficient)
 
-    file_to_save = os.path.join(save_dir, file_template + '.pyt')
-    mlio.create_folder(save_dir)
     torch.save(CategoricalPolicy(fn_approximator), file_to_save)
     print('Done training. Saved to {}'.format(file_to_save))
 
