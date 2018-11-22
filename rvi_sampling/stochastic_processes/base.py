@@ -51,9 +51,12 @@ class PyTorchWrap(object):
         self.use_cuda = use_cuda
         self.T = stochastic_process.T
         self.n_agents = stochastic_process.n_agents
-        self.xT = stochastic_process.xT
         self.true_trajectory = self.stochastic_process.true_trajectory
         self._training = True
+
+    @property
+    def xT(self):
+        return self.stochastic_process.xT
 
     def train_mode(self, mode):
         self._training = mode
@@ -62,9 +65,6 @@ class PyTorchWrap(object):
         return self.stochastic_process.transitions_left
 
     def variable_wrap(self, tensor):
-        with torch.set_grad_enabled(self._training):
-            tensor = tensor.clone()
-
         return tensor.float()
 
     def simulate(self, rng=None):
@@ -79,7 +79,6 @@ class PyTorchWrap(object):
 
     def new_task(self):
         delayed_to_return = self.stochastic_process.new_task()
-        self.xT = self.stochastic_process.xT
         self.true_trajectory = self.stochastic_process.true_trajectory
         return delayed_to_return
 

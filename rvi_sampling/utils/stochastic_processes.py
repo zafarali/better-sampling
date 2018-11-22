@@ -1,6 +1,7 @@
 """
 Utility script to instantiate the different stochastic procceses
 """
+import logging
 import numpy as np
 from ..stochastic_processes.random_walk import RandomWalk, DiscreteUniform, RWParameters
 from ..stochastic_processes.epidemiology import SIR, SIRParameters
@@ -18,12 +19,33 @@ def random_walk_arguments(parser):
     :param parser:
     :return:
     """
+    logging.warning('Use bind_random_walk_arguments going forward.')
     parser.add_argument('-t', '--rw_time', default=50, type=int, help='Length of the random walk')
     parser.add_argument('-rwseed', '--rw_seed', default=0, type=int, help='The seed to use for the random walk')
 
     parser.add_argument('-width', '--rw_width', default=5, type=int,
                         help='width of the discrete uniform in the random walk')
     return parser
+
+def bind_random_walk_arguments(parser, rw_width=True, rw_time=True, rw_endpoint=True):
+    if rw_time:
+        parser.add_argument('--rw_time',
+                            default=50,
+                            type=int,
+                            help='Length of the random walk')
+    if rw_endpoint:
+        parser.add_argument('--rw_endpoint',
+                            default=0,
+                            type=int,
+                            help='The location of the end point.')
+
+    if rw_width:
+        parser.add_argument('--rw_width',
+                            default=5,
+                            type=int,
+                            help='width of the discrete uniform in the random walk')
+    return parser
+
 
 def create_rw(args, biased=False, n_agents=1):
     """
