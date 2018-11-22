@@ -9,6 +9,7 @@ python3 tt_IS_baseline.py --cc_account $CC_ACCOUNT --no_tensorboard --samples 50
 """
 import sys
 import os
+import time
 
 import numpy as np
 import torch
@@ -38,6 +39,7 @@ def run_IS(args, *throwaway):
     print(args)
     args.rw_seed = args.seed  # Backward compat.
     sampler_seed = int(os.getenv('SLURM_ARRAY_TASK_ID', args.seed))
+    print('Sampler Seed: {}'.format(sampler_seed))
 
 
     if args.rw_time == 50:
@@ -122,8 +124,9 @@ def run_IS_experiment(args, seed, end_point):
     print('True Ending Position is: {}'.format(rw.xT))
     print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
 
+    start_time = time.time()
     sampler_result = sampler.solve(rw, args.samples, verbose=True)
-
+    print('Total time taken: {}'.format(time.time() - start_time))
     
     sampler_result.save_results(save_dir)
     sampler_analysis.analyze_sampler_result(
@@ -150,17 +153,21 @@ if __name__ == '__main__':
                  '/proposal_type{proposal_type}'
                  '/softness_coefficient{softness_coefficient}')
     )
-    parser.opt_range(
+    parser.opt_list(
         '--softness_coefficient',
-        low=0.1,
-        high=1.5,
+        # low=0.1,
+        # high=1.5,
         type=float,
+        options=[0.8, 1.0, 1.1],
         tunable=True,
-        nb_samples=5
+        # nb_samples=5
     )
     parser.opt_list(
         '--IS_proposal_type',
-        options=['funnel', 'soft'],
+        options=[
+            # 'funnel',
+            'soft'
+        ],
         tunable=True
     )
     parser.add_argument(
@@ -217,7 +224,7 @@ if __name__ == '__main__':
     cluster.add_command('source $RVI_ENV')
 
     cluster.per_experiment_nb_cpus = 1  # 1 CPU per job.
-    cluster.job_time = '1:00:00'  # One hour.
+    cluster.job_time = '0:15:00'  # 15 mins.
     cluster.memory_mb_per_node = 16384
     cluster.optimize_parallel_cluster_cpu(
         run_IS,
