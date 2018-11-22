@@ -21,22 +21,29 @@ from mlresearchkit.computecanada import parsers as cc_parser
 import mlresearchkit.io as mlio
 
 from pg_methods.networks import MLP_factory
+from pg_methods.objectives import PolicyGradientObjective
 from pg_methods.policies import CategoricalPolicy
+from pg_methods.baselines import FunctionApproximatorBaseline
 
 from rvi_sampling.distributions import proposal_distributions
+from rvi_sampling.stochastic_processes import PyTorchWrap
+from rvi_sampling.samplers import RVISampler
+from rvi_sampling.utils import diagnostics
 from rvi_sampling.utils import parsers as rvi_parser
+from rvi_sampling.utils import stochastic_processes
+from rvi_sampling.utils import analysis
 
 import pretraining_tools
 
 NEURAL_NETWORK = (16, 16)
 LEARN_RANGE = 60
 
-def setup_network(args):
+def setup_network(args, output_size=2):
     # Setup a network to be trained.
     fn_approximator = MLP_factory(
         input_size=2,
         hidden_sizes=NEURAL_NETWORK,
-        output_size=2,
+        output_size=output_size,
         hidden_non_linearity=nn.ReLU,
         out_non_linearity=None)
 
@@ -114,7 +121,73 @@ def run_handcrafted_pretraining(args, save_dir):
 
 
 def run_multitask_pretraining(args, save_dir):
-    pass
+    """
+    Train the proposal distribution to be generally good at all tasks.
+    :param args:
+    :return:
+    """
+    args.rw_seed = 5
+    rw, analytic = stochastic_processes.create_rw(
+        args, biased=False, n_agents=1)
+    rw = PyTorchWrap(rw)
+
+    fn_approximator = setup_network(args)
+    policy = CategoricalPolicy(fn_approximator)
+    policy_optimizer = torch.optim.RMSprop(
+        fn_approximator.parameters(),
+        lr=args.policy_learning_rate,
+        eps=1e-5)
+
+    baseline_fn_approximator = setup_network(args, output_size=1)
+    baseline_optimizer = torch.optim.RMSprop(
+        baseline_fn_approximator.parameters(),
+        lr=args.policy_learning_rate,
+        eps=1e-5)
+    baseline = FunctionApproximatorBaseline(
+        baseline_fn_approximator,
+        baseline_optimizer)
+
+
+    sampler = RVISampler(
+        policy,
+        policy_optimizer,
+        baseline=baseline,
+        negative_reward_clip=args.reward_clip,
+        objective=PolicyGradientObjective(entropy=args.entropy_coefficient),
+        feed_time=True,
+        use_gae=(args.gae_value is not None),
+        lam=args.gae_value,
+        gamma=args.gamma,
+        multitask_training=True
+    )
+
+    sampler.train(rw, args.epochs, verbose=True)
+
+    file_template = 'pretrained_mimic_{}_{}'.format(
+        args.gae_value, args.policy_learning_rate)
+
+    meta_data_folder = os.path.join(save_dir, file_template+'_META')
+    mlio.create_folder(save_dir)
+    mlio.create_folder(meta_data_folder)
+
+    sampler.set_diagnostic(
+        diagnostics.FileSaverHandler([
+            diagnostics.EpisodeRewardDiagnostic(10),
+            diagnostics.ProportionSuccessDiagnostic(10)],
+            meta_data_folder, 'RVISampler', frequency=10)
+    )
+
+    file_to_save = os.path.join(save_dir, file_template + '.pyt')
+
+    mlio.argparse_saver(os.path.join(meta_data_folder, 'args.txt'), args)
+
+    torch.save(CategoricalPolicy(fn_approximator), file_to_save)
+    print('Done training. Saved to {}'.format(file_to_save))
+
+    analysis.plot_proposal(policy, meta_data_folder)
+
+    sys.exit(0)
+
 
 def run_pretraining(args, *throwaway):
     # Main entry point.
@@ -171,10 +244,9 @@ if __name__ == '__main__':
 
     rvi_parser.bind_random_walk_arguments(parser, rw_endpoint=False)
     rvi_parser.bind_policy_arguments(
-        parser, policy_learning_rate=True, policy_neural_network=False)
+        parser, policy_neural_network=False)
     rvi_parser.bind_rvi_arguments(parser)
-    rvi_parser.bind_IS_arguments(
-        parser, softness_coefficient=True, IS_proposal_type=True)
+    rvi_parser.bind_IS_arguments(parser)
     cc_parser.create_cc_arguments(parser)
 
     args = parser.parse_args()
