@@ -283,7 +283,7 @@ if __name__ == '__main__':
         comment='Account to run this on.'
     )
 
-    if args.cc_email is not None:
+    if args.cc_mail is not None:
         cluster.notify_job_status(
             email=args.cc_mail,
             on_done=True,
