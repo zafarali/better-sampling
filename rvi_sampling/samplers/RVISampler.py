@@ -26,7 +26,8 @@ class RVISampler(Sampler):
                  negative_reward_clip=-10,
                  use_cuda=False,
                  lr_scheduler=None,
-                 use_gae=False):
+                 use_gae=False,
+                 multitask_training=False):
         """
         The reinforced variational inference sampler
         :param policy: the policy to use
@@ -36,6 +37,8 @@ class RVISampler(Sampler):
                           should not feed time into the proposal
         :param seed: the seed to use
         :param use_cuda: uses cuda (currently not working)
+        :multitask_training: boolean indicating if a new task should be sampled
+            before every training step.
         """
         Sampler.__init__(self, seed)
         self.policy = policy
@@ -53,6 +56,9 @@ class RVISampler(Sampler):
         # Generalized Advantages
         self.use_gae = use_gae
         self.lam = lam
+
+        # Training Details
+        self.multitask_training = multitask_training
 
     def train_mode(self, mode):
         self._training = mode
@@ -102,6 +108,9 @@ class RVISampler(Sampler):
         saved_trajectories = []
 
         for i in range(train_episodes):
+            if self.multitask_training:
+                stochastic_process.new_task()
+
             pg_info, sampled_trajectory, log_path_prob, log_proposal_prob = self.do_rollout(stochastic_process, verbose)
 
             returns = gradients.calculate_returns(pg_info.rewards, self.gamma, pg_info.masks)

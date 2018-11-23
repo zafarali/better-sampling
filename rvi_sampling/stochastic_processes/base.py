@@ -45,7 +45,6 @@ class PyTorchWrap(object):
         # self.step_probs = stochastic_process.step_probs or stochastic_process.transition_prob
         self.dimensions = stochastic_process.dimensions
         self.step_sizes = stochastic_process.step_sizes
-        self.x0 = stochastic_process.x0
         self.state_space = stochastic_process.state_space
         self.action_space = stochastic_process.action_space
         self.use_cuda = use_cuda
@@ -57,6 +56,10 @@ class PyTorchWrap(object):
     @property
     def xT(self):
         return self.stochastic_process.xT
+
+    @property
+    def x0(self):
+        return self.stochastic_process.x0
 
     def train_mode(self, mode):
         self._training = mode

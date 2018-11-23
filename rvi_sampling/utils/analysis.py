@@ -160,6 +160,23 @@ def analyze_samplers_rw(sampler_results,
     return kl_divergences
 
 
+def plot_proposal(policy, save_dir):
+    try:
+        t, x, x_arrows, y_arrows_nn = plotting.visualize_proposal(
+            [policy], 50, 20, neural_network=True)
+
+        f = plotting.multi_quiver_plot(t, x, x_arrows,
+                                       [y_arrows_nn],
+                                       ['Learned Neural Network Proposal'],
+                                       figsize=(10, 5))
+        f.savefig(os.path.join(save_dir, 'visualized_proposal.pdf'))
+        f.clf()
+        plt.close()
+        gc.collect()
+    except Exception as e:
+        print('Could not plot proposal distribution {}'.format(e))
+
+
 def analyze_sampler_result(sampler_result, rw_width, xT, analytic=None, save_dir='./', policy=None):
 
     try:
@@ -202,17 +219,4 @@ def analyze_sampler_result(sampler_result, rw_width, xT, analytic=None, save_dir
 
     if policy is not None:
         torch.save(policy, os.path.join(save_dir, 'rvi_policy.pyt'))
-        try:
-            t, x, x_arrows, y_arrows_nn = plotting.visualize_proposal(
-                [policy], 50, 20, neural_network=True)
-
-            f = plotting.multi_quiver_plot(t, x, x_arrows,
-                                          [y_arrows_nn],
-                                          ['Learned Neural Network Proposal'],
-                                          figsize=(10, 5))
-            f.savefig(os.path.join(save_dir, 'visualized_proposal.pdf'))
-            f.clf()
-            plt.close()
-            gc.collect()
-        except Exception as e:
-            print('Could not plot proposal distribution {}'.format(e))
+        plot_proposal(policy, save_dir)
