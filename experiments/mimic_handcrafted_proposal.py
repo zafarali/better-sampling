@@ -61,7 +61,9 @@ def run_handcrafted_pretraining(args, save_dir):
         args.IS_proposal_type, args.softness_coefficient)
 
     file_to_save = os.path.join(save_dir, file_template + '.pyt')
+    meta_data_folder = os.path.join(save_dir, file_template+'_META')
     mlio.create_folder(save_dir)
+    mlio.create_folder(meta_data_folder)
 
     print('Training a network to mimic hand crafted proposal.')
     # Setup Function Approximator and Optimizer.
@@ -78,6 +80,8 @@ def run_handcrafted_pretraining(args, save_dir):
             push_toward, softness_coeff=args.softness_coefficient)
     elif args.IS_proposal_type == 'funnel':
         proposal = proposal_distributions.FunnelProposal(push_toward)
+    else:
+        raise ValueError('Unknown proposal defined.')
 
     print(('Proposal Information:\n'
            'Type: {} Softness Coeff: {}\n'
@@ -92,7 +96,7 @@ def run_handcrafted_pretraining(args, save_dir):
 
     # Generate the data to train from.
     X, Y = pretraining_tools.generate_data(
-        proposal_distributions.FunnelProposal(push_toward),
+        proposal,
         args.rw_time,
         LEARN_RANGE)
 
@@ -118,12 +122,14 @@ def run_handcrafted_pretraining(args, save_dir):
 
         all_losses.append(np.mean(losses_for_epoch))
 
-
     torch.save(CategoricalPolicy(fn_approximator), file_to_save)
     print('Done training. Saved to {}'.format(file_to_save))
 
-    file_to_save = os.path.join(save_dir, file_template + '.summary.txt')
+    file_to_save = os.path.join(
+        meta_data_folder, file_template + '.summary.txt')
     mlio.put(file_to_save, '\n'.join(map(str, all_losses)))
+
+    analysis.plot_proposal(CategoricalPolicy(fn_approximator), meta_data_folder)
     sys.exit(0)
 
 
