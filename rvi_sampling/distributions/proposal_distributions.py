@@ -112,7 +112,7 @@ class SimonsSoftProposal(SimonsProposal):
                  bias = (self.push_toward[1] - w) * self.softness_coeff / time_left
             else:
                 # this conditional will never get executed for now.
-                bias = (sign*np.abs(self.push_toward[1]) - w) * self.softness_coeff / gtime_left
+                bias = (sign*np.abs(self.push_toward[1]) - w) * self.softness_coeff / time_left
 
 
         bias = bias[0][0]
@@ -127,8 +127,12 @@ class SimonsSoftProposal(SimonsProposal):
                 index = 0
             else:
                 index = 1
-            return np.array([index]), random_step, np.log(1/2)
 
+            if sampling_probs_only:
+                return np.array([1., 1.])/2
+            else:
+                return np.array([index]), random_step, np.log(1/2)
+            
         # with probability p, pick uniform sampling; with probability 1-p, pick a step in the bias direction.
         # expected bias is (1-p) * step_size
         p = 1 - np.abs(bias) / STEP_SIZE
