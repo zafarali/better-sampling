@@ -1,0 +1,36 @@
+IS_proposal_type,funnel
+cc_account,def-dprecup_cpu
+cc_cluster,CEDAR
+cc_cpus,1
+cc_gpus,0
+cc_job_name,JOB1542927841.3659809
+cc_log,./
+cc_mail,zafarali.ahmed@mail.mcgill.ca
+cc_mem,8192
+cc_queue,debug
+cc_tasks,1
+cc_time,2:0:0
+disable_training,False
+entropy_coefficient,0.0
+epochs,10000
+experiment_name,multitask10k
+gae_value,0.96
+gamma,0.99
+generate_trials,<bound method HyperOptArgumentParser.generate_trials of HyperOptArgumentParser(prog='Code for pretraining policies.', usage=None, description=None, formatter_class=<class 'argparse.HelpFormatter'>, conflict_handler='error', add_help=True)>
+hpc_exp_number,0
+n_agents,1
+optimize_parallel,<bound method HyperOptArgumentParser.optimize_parallel of HyperOptArgumentParser(prog='Code for pretraining policies.', usage=None, description=None, formatter_class=<class 'argparse.HelpFormatter'>, conflict_handler='error', add_help=True)>
+optimize_parallel_cpu,<bound method HyperOptArgumentParser.optimize_parallel_cpu of HyperOptArgumentParser(prog='Code for pretraining policies.', usage=None, description=None, formatter_class=<class 'argparse.HelpFormatter'>, conflict_handler='error', add_help=True)>
+optimize_parallel_gpu,<bound method HyperOptArgumentParser.optimize_parallel_gpu of HyperOptArgumentParser(prog='Code for pretraining policies.', usage=None, description=None, formatter_class=<class 'argparse.HelpFormatter'>, conflict_handler='error', add_help=True)>
+optimize_trials_parallel_gpu,<bound method HyperOptArgumentParser.optimize_trials_parallel_gpu of HyperOptArgumentParser(prog='Code for pretraining policies.', usage=None, description=None, formatter_class=<class 'argparse.HelpFormatter'>, conflict_handler='error', add_help=True)>
+policy_learning_rate,0.0001
+pretrained_policy,None
+pretraining_type,multitask
+reward_clip,-10.0
+rw_seed,5
+rw_time,50
+rw_width,5
+save_dir_template,{scratch}/rvi/rvi_pretrained/{experiment_name}/{pretraining_type}
+softness_coefficient,1.0
+test_tube_slurm_cmd_path,/scratch/zafarali/rvi/tt/multitask10k/test_tube_data/multitask10k/slurm_scripts/trial_0_2018-11-22__15-04-01_slurm_cmd.sh
+trials,<bound method HyperOptArgumentParser.opt_trials of HyperOptArgumentParser(prog='Code for pretraining policies.', usage=None, description=None, formatter_class=<class 'argparse.HelpFormatter'>, conflict_handler='error', add_help=True)>
