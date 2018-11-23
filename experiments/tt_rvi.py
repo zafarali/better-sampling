@@ -104,16 +104,25 @@ def run_rvi_experiment(args, sampler_seed, end_point):
     #############
     ### SET UP POLICY AND OPTIMIZER.
     #############
-    fn_approximator = MLP_factory(
-        DIMENSIONS+int(INCLUDE_TIME),
-        hidden_sizes=NEURAL_NETWORK,
-        output_size=OUTPUT_SIZE,
-        hidden_non_linearity=torch.nn.ReLU)
-    policy = CategoricalPolicy(fn_approximator)
-    policy_optimizer = torch.optim.RMSprop(
-        fn_approximator.parameters(),
-        lr=args.learning_rate,
-        eps=1e-5)
+    if args.pretrained_policy is not None:
+        print('Loaded pretrained policy from: {}'.format(
+            args.pretrained_policy))
+        policy = torch.load(args.pretrained_policy)
+        policy_optimizer = torch.optim.RMSprop(
+            policy.fn_approximator.parameters(),
+            lr=args.learning_rate,
+            eps=1e-5)
+    else:
+        fn_approximator = MLP_factory(
+            DIMENSIONS+int(INCLUDE_TIME),
+            hidden_sizes=NEURAL_NETWORK,
+            output_size=OUTPUT_SIZE,
+            hidden_non_linearity=torch.nn.ReLU)
+        policy = CategoricalPolicy(fn_approximator)
+        policy_optimizer = torch.optim.RMSprop(
+            fn_approximator.parameters(),
+            lr=args.learning_rate,
+            eps=1e-5)
 
     #############
     ### SET UP VALUE FUNCTION AND OPTIMIZER.
