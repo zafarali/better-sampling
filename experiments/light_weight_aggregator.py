@@ -61,6 +61,16 @@ def main(args):
     extracted_data = extracted_data.apply(pd.to_numeric, errors='ignore',)
 
     print('Data extracted.')
+
+    if args.dry_run:
+        print(extracted_data)
+
+    if args.trajectory_count is None:
+        if args.sampler_name == 'RVISampler':
+            args.trajectory_count = (99, 499, 999, 1999, 2999, 3999, 4999, 5999, 6999, 7999, 8999, 9999)
+        else:
+            args.trajectory_count = (100, 500, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 10000)
+
     print('Summarizing data at: {}'.format(args.trajectory_count))
     
     grouped_data = []
@@ -72,7 +82,7 @@ def main(args):
         tag = '{}_{}_mean'.format(args.statistic, trajectory_count)
         mean_kls = summary_df.mean().swaplevel()
         mean_kls[tag] = mean_kls[args.statistic]
-        grouped_data.append(tag)
+        grouped_data.append(mean_kls[tag])
 
 
         tag = '{}_{}_std'.format(args.statistic, trajectory_count)
@@ -84,18 +94,21 @@ def main(args):
         counts = extracted_data[np.isclose(extracted_data.trajectories, trajectory_count)].groupby(
             ['end_point']+list(args.hyperparameters)).count().swaplevel()
 
-        counts['count'] = counts[args.statistic]
-        counts['proportion'] = counts['count']/counts['Seed']
 
-        grouped_data.append(counts['count'])
-        grouped_data.append(counts['proportion'])
+        tag_count = '{}_{}'.format('count', trajectory_count)
+        tag_prop = '{}_{}'.format('prop', trajectory_count)
+        counts[tag_count] = counts[args.statistic]
+        counts[tag_prop] = counts[tag_count]/counts['Seed']
+
+        grouped_data.append(counts[tag_count])
+        grouped_data.append(counts[tag_prop])
 
     combined_df = pd.concat(grouped_data, axis=1)
     combined_df['sampler'] = args.sampler_name
 
     print('Data summarized.')
 
-    if args.dryrun:
+    if args.dry_run:
         print(combined_df)
     else:
         print('Saving...')
@@ -131,7 +144,7 @@ if __name__ == '__main__':
         nargs='+',
         required=False,
         type=int,
-        default=(500, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 10000),
+        default=None,
         help='A list containing the number of trajectories after which to summarize.')
     parser.add_argument(
         '--hyperparameters',
