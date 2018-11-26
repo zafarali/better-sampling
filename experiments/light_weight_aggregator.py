@@ -40,11 +40,12 @@ def extract_data(
 
 
 def main(args):
+    print('Reading data from {}'.format(args.template))
     extracted_data = []
     for end_point in args.end_points:
         extracted_data.extend(
             extract_data(
-                template.format(
+                args.template.format(
                     end_point=end_point,
                     **{key: '*' for key in args.hyperparameters}),
                 statistic=args.statistic,
@@ -55,9 +56,11 @@ def main(args):
     extracted_data = pd.concat(extracted_data, ignore_index=True)
     extracted_data = extracted_data.apply(pd.to_numeric, errors='ignore',)
 
+    print('Data extracted.')
+    print('Summarizing data at: {}'.format(trajectory_count))
+    
     grouped_data = []
-
-    for trajectory_count in args.trajectory_count
+    for trajectory_count in args.trajectory_count:
         summary_df = extracted_data[np.isclose(extracted_data.trajectories, trajectory_count)].groupby(
             ['end_point']+list(args.hyperparameters))
 
@@ -85,11 +88,15 @@ def main(args):
     combined_df = pd.concat(grouped_data, axis=1)
     combined_df['sampler'] = args.sampler_name
 
+    print('Data summarized.')
+
     if args.dryrun:
         print(combined_df)
     else:
+        print('Saving...')
         with open(args.save_file, 'w') as f_:
             f_.write(combined_df.to_csv())
+        print('Saved.')
 
 
 if __name__ == '__main__':
