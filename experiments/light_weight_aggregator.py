@@ -41,8 +41,12 @@ def extract_data(
 
 def main(args):
     print('Reading data from {}'.format(args.template))
+    print('Hyperparameters: {}'.format(args.hyperparameters))
+    print('Extracting data...')
+
     extracted_data = []
     for end_point in args.end_points:
+        print('Extracting data for end point: {}'.format(end_point))
         extracted_data.extend(
             extract_data(
                 args.template.format(
@@ -57,10 +61,11 @@ def main(args):
     extracted_data = extracted_data.apply(pd.to_numeric, errors='ignore',)
 
     print('Data extracted.')
-    print('Summarizing data at: {}'.format(trajectory_count))
+    print('Summarizing data at: {}'.format(args.trajectory_count))
     
     grouped_data = []
     for trajectory_count in args.trajectory_count:
+        print('Summarizing at trajectory count {}'.format(trajectory_count))
         summary_df = extracted_data[np.isclose(extracted_data.trajectories, trajectory_count)].groupby(
             ['end_point']+list(args.hyperparameters))
 
@@ -139,7 +144,7 @@ if __name__ == '__main__':
         required=False,
         default='aggregated.csv')
     parser.add_argument(
-        '--dryrun',
+        '--dry_run',
         help='Dry run (only print)',
         required=False,
         action='store_true',
