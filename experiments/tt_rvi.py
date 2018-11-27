@@ -104,16 +104,25 @@ def run_rvi_experiment(args, sampler_seed, end_point):
     #############
     ### SET UP POLICY AND OPTIMIZER.
     #############
-    fn_approximator = MLP_factory(
-        DIMENSIONS+int(INCLUDE_TIME),
-        hidden_sizes=NEURAL_NETWORK,
-        output_size=OUTPUT_SIZE,
-        hidden_non_linearity=torch.nn.ReLU)
-    policy = CategoricalPolicy(fn_approximator)
-    policy_optimizer = torch.optim.RMSprop(
-        fn_approximator.parameters(),
-        lr=args.learning_rate,
-        eps=1e-5)
+    if args.pretrained_policy is not None:
+        print('Loaded pretrained policy from: {}'.format(
+            args.pretrained_policy))
+        policy = torch.load(args.pretrained_policy)
+        policy_optimizer = torch.optim.RMSprop(
+            policy.fn_approximator.parameters(),
+            lr=args.learning_rate,
+            eps=1e-5)
+    else:
+        fn_approximator = MLP_factory(
+            DIMENSIONS+int(INCLUDE_TIME),
+            hidden_sizes=NEURAL_NETWORK,
+            output_size=OUTPUT_SIZE,
+            hidden_non_linearity=torch.nn.ReLU)
+        policy = CategoricalPolicy(fn_approximator)
+        policy_optimizer = torch.optim.RMSprop(
+            fn_approximator.parameters(),
+            lr=args.learning_rate,
+            eps=1e-5)
 
     #############
     ### SET UP VALUE FUNCTION AND OPTIMIZER.
@@ -146,7 +155,7 @@ def run_rvi_experiment(args, sampler_seed, end_point):
     if args.disable_training:
         print('Training has been disabled.')
         sampler.train_mode(False)
-        stochastic_processes.train_mode(False)
+        rw.train_mode(False)
 
     #####################
     ### Statistics
@@ -199,6 +208,12 @@ if __name__ == '__main__':
                  '/n_agents{n_agents}'
                  '/lr{learning_rate}'
                  '/gae{gae_value}')
+    )
+    parser.add_argument(
+        '--n_trials',
+        type=int,
+        default=1,
+        help='Number of hyperparameter trials'
     )
     parser.opt_range(
         '--learning_rate',
@@ -276,19 +291,20 @@ if __name__ == '__main__':
         comment='Account to run this on.'
     )
 
-    cluster.notify_job_status(
-        email='zafarali.ahmed@mail.mcgill.ca',
-        on_done=True,
-        on_fail=True)
+    if hyperparams.cc_mail is not None:
+        cluster.notify_job_status(
+            email=hyperparams.cc_mail,
+            on_done=True,
+            on_fail=True)
 
     cluster.load_modules(['cuda/8.0.44', 'cudnn/7.0'])
     cluster.add_command('source $RVI_ENV')
 
     cluster.per_experiment_nb_cpus = 1  # 1 CPU per job.
-    cluster.job_time = '0:30:00'  # 30 mins.
+    cluster.job_time = hyperparams.cc_time  # 30 mins.
     cluster.memory_mb_per_node = 16384
     cluster.optimize_parallel_cluster_cpu(
         run_rvi,
-        nb_trials=100,
+        nb_trials=hyperparams.n_trials,
         job_name='RVI Hyperparameter Search',
-        job_display_name='rvi_hps')
+        job_display_name='rvi_hps_' + hyperparams.experiment_name)
