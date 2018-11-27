@@ -168,7 +168,7 @@ def run_rvi_experiment(args, sampler_seed, end_point):
             args,
             save_dir,
             kl_function,
-            frequency=500))
+            frequency=5))
 
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))
@@ -215,7 +215,7 @@ if __name__ == '__main__':
         default=1,
         help='Number of hyperparameter trials'
     )
-    parser.opt_range(
+    parser.opt_list(
         '--learning_rate',
         options=[0.01, 0.005, 0.001, 0.0005, 0.0001, 0.00005],
         type=float,

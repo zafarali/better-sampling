@@ -118,7 +118,7 @@ def run_IS_experiment(args, seed, end_point):
             args,
             save_dir,
             kl_function,
-            frequency=500))
+            frequency=50))
 
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))
