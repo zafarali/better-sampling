@@ -41,7 +41,7 @@ constraints = {
 }
 
 
-def test_issampler():
+def test_issampler_funnel():
     """
     This test ensures that issampler works as expected
     :return:
@@ -57,6 +57,37 @@ def test_issampler():
 
         push_toward = [-5, 5]
         proposal = FunnelProposal(push_toward)
+
+        sampler = ISSampler(proposal, seed=0)
+
+        print('True Starting Position is:{}'.format(rw.x0))
+        print('True Ending Position is: {}'.format(rw.xT))
+        print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
+
+        # Test without gpu support
+        solver_argument = (sampler, utils.stochastic_processes.create_rw(args, biased=False, n_agents=1)[0], 1000)
+
+        sampler_result = utils.multiprocessing_tools.run_sampler(solver_argument)
+
+        check_sampler_result(sampler_result, args, analytic, rw, rw_seed)
+
+
+def test_issampler_soft():
+    """
+    This test ensures that issampler works as expected
+    :return:
+    """
+
+    test_seeds = [ 0, 2, 7 ]
+
+    for rw_seed in test_seeds:
+        args = rwargs(5, 50, rw_seed)
+
+        rw, analytic = utils.stochastic_processes.create_rw(args, biased=False)
+        utils.common.set_global_seeds(0)
+
+        push_toward = [-5, 5]
+        proposal = SimonsSoftProposal(push_toward, softness_coeff=1.0)
 
         sampler = ISSampler(proposal, seed=0)
 
