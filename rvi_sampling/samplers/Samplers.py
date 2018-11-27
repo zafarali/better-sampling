@@ -75,8 +75,8 @@ class MCSampler(Sampler):
         # self.start_state = start_state
         self.log_prob_tolerance = log_prob_tolerance
 
-    def draw_step(self, current_state, time_to_end=None):
-        steps_idx = self.rng.multinomial(1, self.step_probs, 1).argmax(axis=1)
+    def draw_step(self, current_state, time_to_end=None, n_agents=1):
+        steps_idx = self.rng.multinomial(1, self.step_probs, n_agents).argmax(axis=1)
         steps_taken = np.take(self.step_sizes, steps_idx, axis=0)
         step_log_probs = np.log(np.take(self.step_probs, steps_idx, axis=0)).sum()
         return steps_idx, steps_taken, step_log_probs
@@ -86,12 +86,10 @@ class MCSampler(Sampler):
         self.step_probs, self.step_sizes = stochastic_process.step_probs, stochastic_process.step_sizes
         trajectories = []
         all_trajectories = []
-        observed_ending_location = stochastic_process.xT
-        x_0 = stochastic_process.x0
 
         for i in range(mc_samples):
             x_t = stochastic_process.reset()  # start at the end
-            trajectory_i = [observed_ending_location]
+            trajectory_i = [x_t]
             log_path_prob = 0
 
             # go in reverse time:
@@ -99,24 +97,38 @@ class MCSampler(Sampler):
             while not done:
                 x_t = trajectory_i[-1]
                 # this is p(w_{t} | w_{t+1})
-                step_idx, step, proposal_log_prob = self.draw_step(x_t)
+                step_idx, step, proposal_log_prob = self.draw_step(
+                    x_t, n_agents=stochastic_process.n_agents)
+
                 # reverse should be True here
                 # see discussion: ./issues/11#issuecomment-379937140
-                x_t, path_log_prob, done, _ = stochastic_process.step(step_idx, reverse=True)
+                x_t, path_log_prob, done, _ = stochastic_process.step(
+                    step_idx, reverse=True)
 
                 # probability of the path gets updated:
                 log_path_prob += path_log_prob
                 # take the reverse step:
                 trajectory_i.append(x_t)
 
-            if log_path_prob > -np.inf:
-                trajectories.append(np.vstack(list(reversed(trajectory_i))))
+            selected_trajectories = np.where(log_path_prob > -np.inf)
 
-            all_trajectories.append(np.vstack(list(reversed(trajectory_i))))
+            sampled_trajectories = np.hstack(trajectory_i)[:, ::-1]
+
+            sampled_trajectories = sampled_trajectories.reshape(
+                stochastic_process.n_agents,
+                stochastic_process.T,
+                stochastic_process.dimensions)
+
+            for traj_idx in selected_trajectories[0]:
+                trajectories.append(
+                    sampled_trajectories[traj_idx, :, :stochastic_process.dimensions])
+
+            all_trajectories.append(sampled_trajectories)
 
             if self.diagnostic is not None:
                 self.run_diagnostic(
-                    SamplingResults.from_information(self._name, all_trajectories, trajectories),
+                    SamplingResults.from_information(
+                        self._name, all_trajectories, trajectories),
                     verbose=verbose)
 
         results.all_trajectories(all_trajectories)
