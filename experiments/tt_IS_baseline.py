@@ -158,7 +158,7 @@ if __name__ == '__main__':
         # low=0.1,
         # high=1.5,
         type=float,
-        options=[0.8, 1.0, 1.1],
+        options=[0.0, 0.5, 0.8, 1.0, 1.1, 1.5, 2.0],
         tunable=True,
         # nb_samples=5
     )
@@ -206,7 +206,7 @@ if __name__ == '__main__':
     # Execute the same experiment 5 times.
     cluster.add_slurm_cmd(
         cmd='array',
-        value='0-20',
+        value='0-40',
         comment='Number of repeats.')
 
     cluster.add_slurm_cmd(
@@ -215,16 +215,17 @@ if __name__ == '__main__':
         comment='Account to run this on.'
     )
 
-    cluster.notify_job_status(
-        email='zafarali.ahmed@mail.mcgill.ca',
-        on_done=True,
-        on_fail=True)
+    if hyperparams.cc_mail is not None:
+        cluster.notify_job_status(
+            email=hyperparams.cc_mail,
+            on_done=True,
+            on_fail=True)
 
     cluster.load_modules(['cuda/8.0.44', 'cudnn/7.0'])
     cluster.add_command('source $RVI_ENV')
 
     cluster.per_experiment_nb_cpus = 1  # 1 CPU per job.
-    cluster.job_time = '0:15:00'  # 15 mins.
+    cluster.job_time = hyperparams.cc_time  # 15 mins.
     cluster.memory_mb_per_node = 16384
     cluster.optimize_parallel_cluster_cpu(
         run_IS,
