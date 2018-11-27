@@ -168,7 +168,7 @@ def run_rvi_experiment(args, sampler_seed, end_point):
             args,
             save_dir,
             kl_function,
-            frequency=10))
+            frequency=500))
 
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))
@@ -217,22 +217,19 @@ if __name__ == '__main__':
     )
     parser.opt_range(
         '--learning_rate',
-        low=0.000005,
-        high=0.001,
+        options=[0.01, 0.005, 0.001, 0.0005, 0.0001, 0.00005],
         type=float,
-        log_base=10,
         tunable=True,
-        nb_samples=50,
     )
     parser.opt_list(
         '--gae_value',
-        options=[0.94, 0.95, 0.96, 0.97],
+        options=[0.94, 0.97],
         type=float,
         tunable=True,
     )
     parser.opt_list(
         '--n_agents',
-        options=[1],
+        options=[100],
         type=int,
         tunable=True,
     )
@@ -282,7 +279,7 @@ if __name__ == '__main__':
     # Execute the same experiment 5 times.
     cluster.add_slurm_cmd(
         cmd='array',
-        value='0-20',
+        value='0-40',
         comment='Number of repeats.')
 
     cluster.add_slurm_cmd(
