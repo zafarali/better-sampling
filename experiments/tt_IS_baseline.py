@@ -118,7 +118,7 @@ def run_IS_experiment(args, seed, end_point):
             args,
             save_dir,
             kl_function,
-            frequency=10))
+            frequency=500))
 
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))
@@ -231,4 +231,4 @@ if __name__ == '__main__':
         run_IS,
         nb_trials=350,
         job_name='ImpS hyperparameter search',
-        job_display_name='imps_hps')
+        job_display_name='imps_hps_'+ hyperparams.experiment_name)
