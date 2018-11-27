@@ -217,7 +217,7 @@ if __name__ == '__main__':
     )
     parser.opt_list(
         '--learning_rate',
-        options=[0.01, 0.005, 0.001, 0.0005, 0.0001, 0.00005],
+        options=[0.0005, 0.0001, 0.00005, 0.00001],
         type=float,
         tunable=True,
     )
@@ -229,7 +229,7 @@ if __name__ == '__main__':
     )
     parser.opt_list(
         '--n_agents',
-        options=[100],
+        options=[1, 10, 100],
         type=int,
         tunable=True,
     )
