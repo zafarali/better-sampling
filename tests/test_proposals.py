@@ -7,9 +7,6 @@ def multi_draw(sp_, draw_args):
     """
     draw_probs = sp_.draw(*draw_args, sampling_probs_only=True)
     mean_step = np.array([-1, 1])
-    print(draw_probs)
-    print(mean_step)
-    print(draw_probs * mean_step)
     return np.sum(draw_probs * mean_step)
 
 def test_funnel_proposal():
