@@ -226,7 +226,7 @@ class FunnelProposal(ProposalDistribution):
                 # too much in the negative direction
                 if sampling_probs_only:
                     return np.array([0, 1])
-                return np.array([1]), +1, np.log(1 - np.finfo(float).eps)
+                return np.array([1]), np.log(1 - np.finfo(float).eps)
 
             elif np.sign(w) == +1 and (w+1) - self.push_toward[1] > steps_left-1:
                 # we are in the positive area, if we took a step
@@ -234,7 +234,7 @@ class FunnelProposal(ProposalDistribution):
                 # would we still have enough steps to be in the window?
                 if sampling_probs_only:
                     return np.array([1, 0])
-                return np.array([0]), -1, np.log(1-np.finfo(float).eps)
+                return np.array([0]), np.log(1-np.finfo(float).eps)
 
         choices = np.array([[-STEP_SIZE], [STEP_SIZE]])
 
