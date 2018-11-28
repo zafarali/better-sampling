@@ -86,72 +86,22 @@ class SimonsSoftProposal(SimonsProposal):
         self.push_toward = np.array(push_toward)
         self.softness_coeff = softness_coeff
 
-    # TODO(zaf): Test this.
-    def draw(self, w, time_left, sampling_probs_only=False):
-        assert w.shape[1] == 1
-        w = np.squeeze(w, -1)  # assumption here is that it is 1D
-        n_agents = w.shape[0]
-        n_actions = 2
-        log_probs = np.zeros((n_agents,))
-        action_index = np.zeros((n_agents,))
-        sampling_probs = np.ones((n_agents, n_actions))
-        step_size = 1
 
-        push_toward, softness_coeff = self.push_toward, self.softness_coeff
+    def draw(self, w_batch, time_left, sampling_probs_only=False):
 
-        def _determine_bias(wi, time_left):
-            if wi < push_toward[0]:
-                return (push_toward[0] - wi) * softness_coeff / time_left
-            else:  # wi > push_toward[1]:
-                return (push_toward[1] - wi) * softness_coeff / time_left
-
-        determine_bias = np.vectorize(_determine_bias)
-
-        bias_vector = determine_bias(w, time_left)
-        # These indices are never going to make it to the end. Just be random.
-        never_going_to_make_it = np.where(np.abs(bias_vector) > step_size)
-        sampling_probs[never_going_to_make_it] /= 2
-        log_probs[never_going_to_make_it] = np.log(1.0 / 2.0)
-        action_index[never_going_to_make_it] = self.rng.randint(
-            0, n_actions, n_agents)
-
-        # Potentially successful
-        might_make_it = np.where(np.abs(bias_vector) <= step_size)
-        bias_vector_might_make_it = bias_vector[might_make_it]
-        p = 1 - np.abs(bias_vector_might_make_it) / step_size
-        bias_prob_term = np.zeros((n_agents, 2))[might_make_it]
-
-        bias_prob_term[np.where(bias_vector_might_make_it > 0), 1] = 1
-        bias_prob_term[np.where(bias_vector_might_make_it < 0), 0] = 1
-        # print('bias_prob_term:', bias_prob_term)
-        # print(bias_prob_term.shape)
-        if bias_prob_term.shape[0] != 0:
-            probs = (
-                np.array([p / 2., p / 2.]).reshape(*bias_prob_term.shape)
-                + (1 - p) * bias_prob_term
-            )
-            # print('probs', probs)
-            sampling_probs[might_make_it, :] = probs
-            # print('sampling probs',sampling_probs)
-
-            choice_index = sampling_utils.vectorized_multinomial(
-                probs, np.arange(n_actions))
-            # print('choice_index:', choice_index)
-            # print('probs:', probs)
-            # print('n_actions:', np.arange(n_actions))
-
-            choice_prob = probs[:, choice_index]
-
-            log_probs[might_make_it] = np.log(choice_prob).sum(1)
-            action_index[might_make_it] = choice_index
+        # Batchify the drawing function.
+        return_value = np.apply_along_axis(
+            func1d=self.draw_legacy,
+            axis=1,
+            arr=w_batch,
+            time_left=time_left,
+            sampling_probs_only=sampling_probs_only)
 
         if sampling_probs_only:
-            return sampling_probs
+            return return_value
         else:
-            # none is here for backward compatability.
-            return action_index.astype(int), None, log_probs
-
-
+            return (return_value[:, 0].astype(int),
+                    return_value[:, 1].astype(np.float))
 
     def draw_legacy(self, w, time_left, sampling_probs_only=False):
         """
@@ -165,6 +115,7 @@ class SimonsSoftProposal(SimonsProposal):
 
         # We want to push slightly, such that the average step is d/T, where d is distance to
         # the acceptable position, and T is the number of generations left.
+        w = np.array([w])
         bias = np.array([[0]])
         STEP_SIZE = 1
 
@@ -217,11 +168,9 @@ class SimonsSoftProposal(SimonsProposal):
             return probs
 
         choice_index = np.array([self.rng.multinomial(1, probs, 1).argmax()])
-        choice_step = choices[choice_index]
         choice_prob = probs[choice_index]
 
-        return choice_index, choice_step, np.log(choice_prob)[0]
-
+        return np.concatenate((choice_index, np.log(choice_prob)))
 
 class RandomProposal(ProposalDistribution):
     _soft = False
