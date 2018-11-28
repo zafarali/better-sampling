@@ -75,7 +75,7 @@ def conduct_draws_nn(sp_, x, t, n_draws=100, feed_time=False):
         probs = F.softmax(log_probs, dim=1).data # convert log probs to probs
 
     # return the expected step:
-    return torch.mean(probs * torch.FloatTensor([-1, 1]))
+    return torch.sum(probs * torch.FloatTensor([-1, 1]))
 
 def conduct_draws(sp_, x, t, n_draws=100):
     """
@@ -85,8 +85,7 @@ def conduct_draws(sp_, x, t, n_draws=100):
     :param t:
     :return:
     """
-
-    return np.mean(sp_.draw([[x]], t, sampling_probs_only=True) * np.array([-1, 1]))
+    return np.sum(sp_.draw([[x]], t, sampling_probs_only=True) * np.array([-1, 1]))
 
 
 def visualize_proposal(list_of_proposals,
