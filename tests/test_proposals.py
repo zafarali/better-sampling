@@ -1,11 +1,16 @@
 import numpy as np
 from rvi_sampling.distributions.proposal_distributions import FunnelProposal
 
-
-def multi_draw(proposal, draw_args, n_draws=10000):
-    # pool = multiprocessing.Pool()
-    # pool.map(proposal)
-    return np.mean([proposal.draw(*draw_args)[1] for _ in range(n_draws)])
+def multi_draw(sp_, draw_args):
+    """
+    Conducts draws from a regular (non-neural ne twork) policy and takes the average
+    """
+    draw_probs = sp_.draw(*draw_args, sampling_probs_only=True)
+    mean_step = np.array([-1, 1])
+    print(draw_probs)
+    print(mean_step)
+    print(draw_probs * mean_step)
+    return np.sum(draw_probs * mean_step)
 
 def test_funnel_proposal():
     proposal = FunnelProposal(push_toward=[-1, 1])
