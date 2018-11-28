@@ -1,7 +1,6 @@
 import logging
 from scipy.spatial.distance import cosine
 import numpy as np
-from rvi_sampling.distributions import sampling_utils
 
 
 class ProposalDistribution(object):
