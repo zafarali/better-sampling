@@ -87,7 +87,6 @@ def conduct_draws(sp_, x, t, n_draws=100):
     """
     return np.sum(sp_.draw([[x]], t, sampling_probs_only=True) * np.array([-1, 1]))
 
-
 def visualize_proposal(list_of_proposals,
                        timesteps,
                        xranges,

@@ -18,13 +18,15 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser('Visualize Proposals')
     parser.add_argument('-nnp', '--nnpolicy', type=str, help='location of the neural net policy you want to visualize', default=False, required=False)
     parser.add_argument('-o', '--other', type=str, help='other proposal you want to visualize')
+    parser.add_argument('-s', '--soft', type=float, help='other proposal you want to visualize', default=1.0)
+
     parser.add_argument('-t', '--title', type=str, help='Title for the plot')
     args = parser.parse_args()
 
     if args.other == 'funnel':
         sp1 = FunnelProposal(push_toward=PUSH_TOWARD)
     elif args.other == 'soft':
-        sp1 = SimonsSoftProposal(push_toward=PUSH_TOWARD)
+        sp1 = SimonsSoftProposal(push_toward=PUSH_TOWARD, softness_coeff=args.soft)
     else:
         sp1 = SimonsProposal()
 
