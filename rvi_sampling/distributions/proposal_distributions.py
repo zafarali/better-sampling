@@ -57,7 +57,7 @@ class MinimalProposal(ProposalDistribution):
         chosen_step = self.step_sizes[chosen_step_idx]
         step_prob = sampling_probs[chosen_step_idx]
 
-        return chosen_step_idx, chosen_step, np.log(step_prob)
+        return chosen_step_idx, np.log(step_prob)
 
 class SimonsProposal(ProposalDistribution):
     _soft = False
@@ -194,7 +194,7 @@ class RandomProposal(ProposalDistribution):
             index = 0
         else:
             index = 1
-        return np.array([index]), random_step, np.log(1 / 2)
+        return np.array([index]), np.log(1 / 2)
 
 class FunnelProposal(ProposalDistribution):
     _soft = True
@@ -244,4 +244,4 @@ class FunnelProposal(ProposalDistribution):
         choice_step = choices[choice_index]
         choice_prob = probs[choice_index]
 
-        return choice_index, choice_step, np.log(choice_prob)[0]
+        return choice_index, np.log(choice_prob)[0]

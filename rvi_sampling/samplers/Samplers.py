@@ -160,15 +160,15 @@ class ISSampler(Sampler):
         for i in range(mc_samples):
             x_t = stochastic_process.reset()  # start at the end
             trajectory_i = [x_t]
-            log_path_prob = 0
-            log_proposal_prob = 0
+            log_path_prob = 0.0
+            log_proposal_prob = 0.0
             # go in reverse time:
             done = False
             while not done:
                 x_t = trajectory_i[-1]
                 # draw a reverse step
                 # this is p(w_{t} | w_{t+1})
-                step_idx, step, log_prob_proposal_step = proposal.draw(x_t, stochastic_process.transitions_left)
+                step_idx, log_prob_proposal_step = proposal.draw(x_t, stochastic_process.transitions_left)
                 # The IS proposal is already giving steps that go BACK in time
                 # therefore we don't need to specify the reverse parameter
                 # since it is actually already picking that reversed step.
