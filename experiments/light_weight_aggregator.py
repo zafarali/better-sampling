@@ -54,7 +54,7 @@ def main(args):
                     **{key: '*' for key in args.hyperparameters}),
                 statistic=args.statistic,
                 sampler_name=args.sampler_name,
-                hyperparameters=['end_point', 'n_agents', 'Seed'] + list(args.hyperparameters),
+                hyperparameters=['end_point', 'Seed'] + list(args.hyperparameters),
                 return_pd=False))
 
     extracted_data = pd.concat(extracted_data, ignore_index=True)
