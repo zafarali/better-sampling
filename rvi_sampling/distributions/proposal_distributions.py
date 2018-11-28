@@ -86,6 +86,10 @@ class SimonsSoftProposal(SimonsProposal):
         self.softness_coeff = softness_coeff
 
 
+    # TODO(zaf): IDEA!
+    # IDEA for speed up: Let draw_legacy return only the sampling probs for each row
+    # We then use the efficient multinomial sampling to get the action to be taken
+    # and the corresponding log probability in this function to return that.
     def draw(self, w_batch, time_left, sampling_probs_only=False):
 
         # Batchify the drawing function.
