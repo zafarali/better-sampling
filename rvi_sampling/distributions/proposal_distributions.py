@@ -106,6 +106,16 @@ class SimonsSoftProposal(SimonsProposal):
             return (return_value[:, 0].astype(int),
                     return_value[:, 1].astype(np.float))
 
+            # TODO(zaf): Improvement idea goes something like this:
+            # samples = sampling_utils.vectorized_multinomial(
+            #     sampling_probs,
+            #     np.arange(sampling_probs.shape[1])
+            # ).astype(int)
+            # print(samples)
+            # log_probs = np.log(sampling_probs[:, samples])[:, 0]
+            # print(log_probs)
+            # return samples, log_probs
+
     def draw_legacy(self, w, time_left, sampling_probs_only=False):
         """
         :param w: the current position
