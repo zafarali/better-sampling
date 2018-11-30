@@ -122,8 +122,8 @@ class MCSampler(Sampler):
             for traj_idx in selected_trajectories[0]:
                 trajectories.append(
                     sampled_trajectories[traj_idx, :, :stochastic_process.dimensions])
-
-            all_trajectories.append(sampled_trajectories)
+            for m in range(sampled_trajectories.shape[0]):
+                all_trajectories.append(sampled_trajectories[m, :, :stochastic_process.dimensions])
 
             if self.diagnostic is not None:
                 self.run_diagnostic(
@@ -191,13 +191,15 @@ class ISSampler(Sampler):
                 stochastic_process.T,
                 stochastic_process.dimensions)
 
+            # TODO(zaf): Batchify these operations?
             for traj_idx in selected_trajectories[0]:
                 trajectories.append(
                     sampled_trajectories[traj_idx, :, :stochastic_process.dimensions])
                 posterior_particles.append(trajectories[-1][0])
                 posterior_weights.append(np.exp(likelihood_ratio[traj_idx]))
 
-            all_trajectories.append(sampled_trajectories)
+            for m in range(sampled_trajectories.shape[0]):
+                all_trajectories.append(sampled_trajectories[m, :, :stochastic_process.dimensions])
 
             if self.diagnostic is not None:
                 self.run_diagnostic(

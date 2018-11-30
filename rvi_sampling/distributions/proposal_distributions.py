@@ -129,7 +129,10 @@ class SimonsSoftProposal(SimonsProposal):
             if sampling_probs_only:
                 return np.array([1., 1.])/2
             else:
-                return np.array([index]), random_step, np.log(1/2)
+                return np.concatenate((
+                    np.array([index]),
+                    np.array([np.log(1/2.)])
+                    ))
         # with probability p, pick uniform sampling; with probability 1-p, pick a step in the bias direction.
         # expected bias is (1-p) * step_size
         p = 1 - np.abs(bias) / STEP_SIZE
