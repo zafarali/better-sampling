@@ -26,11 +26,11 @@ class Sampler(object):
 class ABCSampler(Sampler):
     _name = 'ABCSampler'
     """
-    Approximate bayesian computation sampling from the posterior.
-    It uses the .simulate() method of the StochasticProcess object
-    to get trajectories. It them checks to see if the end of the trajectory
-    is within a tolerance factor of the observed ending point. If yes,
-    it stores this trajectory to be returned later.
+    Approximate bayesian computation sampling from the posterior.  It uses the
+    .simulate() method of the StochasticProcess object to get trajectories. It
+    them checks to see if the end of the trajectory is within a tolerance
+    factor of the observed ending point. If yes, it stores this trajectory to
+    be returned later.
     """
     def __init__(self, tolerance, seed=0):
         super().__init__(seed)
@@ -182,11 +182,22 @@ class ISSampler(Sampler):
 
             likelihood_ratio = log_path_prob - log_proposal_prob
 
-            if log_path_prob > -np.inf:
-                trajectories.append(np.vstack(list(reversed(trajectory_i))))
+            selected_trajectories = np.where(log_path_prob > -np.inf)
+
+            sampled_trajectories = np.hstack(trajectory_i)[:, ::-1]
+
+            sampled_trajectories = sampled_trajectories.reshape(
+                stochastic_process.n_agents,
+                stochastic_process.T,
+                stochastic_process.dimensions)
+
+            for traj_idx in selected_trajectories[0]:
+                trajectories.append(
+                    sampled_trajectories[traj_idx, :, :stochastic_process.dimensions])
                 posterior_particles.append(trajectories[-1][0])
-                posterior_weights.append(np.exp(likelihood_ratio))
-            all_trajectories.append(np.vstack(list(reversed(trajectory_i))))
+                posterior_weights.append(np.exp(likelihood_ratio[traj_idx]))
+
+            all_trajectories.append(sampled_trajectories)
 
             if self.diagnostic is not None:
                 self.run_diagnostic(
