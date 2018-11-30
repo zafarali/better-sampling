@@ -1,7 +1,7 @@
 import numpy as np
 from rvi_sampling.distributions.proposal_distributions import FunnelProposal
 
-def multi_draw(sp_, draw_args):
+def multi_draw_exact(sp_, draw_args):
     """
     Conducts draws from a regular (non-neural ne twork) policy and takes the average
     """
@@ -9,9 +9,32 @@ def multi_draw(sp_, draw_args):
     mean_step = np.array([-1, 1])
     return np.sum(draw_probs * mean_step)
 
-def test_funnel_proposal():
+
+def multi_draw_samples(sp_, draw_args):
+    """
+    Conducts draws from a regular (non-neural ne twork) policy and takes the average
+    """
+    steps = [-1, 1]
+    draws = [steps[sp_.draw(*draw_args)[0][0]] for _ in range(5000)]
+    return np.mean(draws)
+
+def test_funnel_proposal_exact():
     proposal = FunnelProposal(push_toward=[-1, 1])
 
+    multi_draw = multi_draw_exact
+
+    check_funnel_proposal(proposal, multi_draw)
+
+
+def test_funnel_proposal_sampled():
+    proposal = FunnelProposal(push_toward=[-1, 1])
+
+    multi_draw = multi_draw_samples
+
+    check_funnel_proposal(proposal, multi_draw)
+
+
+def check_funnel_proposal(proposal, multi_draw):
     ####
     # trivial cases
     ####
@@ -65,3 +88,7 @@ def test_funnel_proposal():
     # one wrong step could lead you to be out
     assert np.allclose(multi_draw(proposal, ([[-3]], 3)), 1, atol=0.05)
 
+
+if __name__ == '__main__':
+    test_funnel_proposal_exact()
+    test_funnel_proposal_sampled()
