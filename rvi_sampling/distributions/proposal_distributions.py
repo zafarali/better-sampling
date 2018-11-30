@@ -207,11 +207,27 @@ class FunnelProposal(ProposalDistribution):
         if rng:
             self.rng = rng
 
-    def draw(self, w, time_left, sampling_probs_only=False):
+
+    def draw(self, w_batch, time_left, sampling_probs_only=False):
+        # Batchify the drawing function.
+        return_value = np.apply_along_axis(
+            func1d=self.draw_legacy,
+            axis=1,
+            arr=w_batch,
+            time_left=time_left,
+            sampling_probs_only=sampling_probs_only)
+
+        if sampling_probs_only:
+            return return_value
+        else:
+            return (return_value[:, 0].astype(int),
+                    return_value[:, 1].astype(np.float))
+
+    def draw_legacy(self, w, time_left, sampling_probs_only=False):
 
         STEP_SIZE = 1
         # print(w)
-        w = w[0][0]
+        # w = w[0
         # print(w)
 
         # assuming symmetric window
@@ -244,7 +260,6 @@ class FunnelProposal(ProposalDistribution):
             return probs
 
         choice_index = np.array([self.rng.multinomial(1, probs, 1).argmax()])
-        choice_step = choices[choice_index]
         choice_prob = probs[choice_index]
 
-        return choice_index, np.log(choice_prob)[0]
+        return np.concatenate((choice_index, np.log(choice_prob)))
