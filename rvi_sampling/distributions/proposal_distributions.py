@@ -14,50 +14,6 @@ class ProposalDistribution(object):
     def set_rng(self, rng):
         self.rng = rng
 
-class MinimalProposal(ProposalDistribution):
-    def __init__(self, push_toward, step_sizes, bias=0, seed=0, rng=None):
-        logging.warning('This proposal is not tested.')
-        self.push_toward = push_toward
-        self.bias = bias
-        self.step_sizes = step_sizes
-        super().__init__(seed)
-        if rng:
-            self.rng = rng
-
-    def draw(self, x, time_left, sampling_probs_only=False):
-        """
-        A slight pushing distribution
-
-        :param x: the current position
-        :param time_left: the number of time steps left until we reach the start
-        :return:
-        """
-        target = self.push_toward
-        current = x
-        direction = target - current
-
-        unnormalized_bias_probs = -np.array([cosine(step + np.finfo('float').tiny, direction) for step in self.step_sizes])
-        bias_probs = np.exp(unnormalized_bias_probs)
-        bias_probs /= bias_probs.sum()
-        unbias_probs = np.ones(len(self.step_sizes)) * 1/len(self.step_sizes)
-
-        steps_needed = np.abs(direction).sum()
-        # estimates the amount of bias to be implemented
-        # based on how many steps needed to go and how much time you have left.
-        step_ratio = time_left/steps_needed
-        p = np.min([step_ratio, 0.999999])
-
-        sampling_probs = unbias_probs * p + (1-p)*bias_probs
-        sampling_probs /= sampling_probs.sum()
-
-        if sampling_probs_only:
-            return sampling_probs
-
-        chosen_step_idx = self.rng.multinomial(1, sampling_probs, 1).argmax()
-        chosen_step = self.step_sizes[chosen_step_idx]
-        step_prob = sampling_probs[chosen_step_idx]
-
-        return chosen_step_idx, np.log(step_prob)
 
 class SimonsProposal(ProposalDistribution):
     _soft = False
@@ -92,7 +48,17 @@ class SimonsSoftProposal(SimonsProposal):
     # We then use the efficient multinomial sampling to get the action to be taken
     # and the corresponding log probability in this function to return that.
     def draw(self, w_batch, time_left, sampling_probs_only=False):
-
+        """
+        :param w_batch: A np.ndarray containing the batch of positions of shape
+            (B, N) where N is the dimensionality of the stochastic process
+        and B is the batch size.
+        :param time_left: An int representing the time left until the process
+            is over.
+        :param sampling_probs_only: A bool indicating if the return will be
+            probabilities of shape (B, A) where A is the number of possible
+            actions. If False it returns a tuple containing the sampled action
+            index and the log_prob of taking that action.
+        """
         # Batchify the drawing function.
         return_value = np.apply_along_axis(
             func1d=self.draw_legacy,
@@ -164,7 +130,6 @@ class SimonsSoftProposal(SimonsProposal):
                 return np.array([1., 1.])/2
             else:
                 return np.array([index]), random_step, np.log(1/2)
-            
         # with probability p, pick uniform sampling; with probability 1-p, pick a step in the bias direction.
         # expected bias is (1-p) * step_size
         p = 1 - np.abs(bias) / STEP_SIZE
@@ -220,6 +185,17 @@ class FunnelProposal(ProposalDistribution):
 
 
     def draw(self, w_batch, time_left, sampling_probs_only=False):
+        """
+        :param w_batch: A np.ndarray containing the batch of positions of shape
+            (B, N) where N is the dimensionality of the stochastic process
+        and B is the batch size.
+        :param time_left: An int representing the time left until the process
+            is over.
+        :param sampling_probs_only: A bool indicating if the return will be
+            probabilities of shape (B, A) where A is the number of possible
+            actions. If False it returns a tuple containing the sampled action
+            index and the log_prob of taking that action.
+        """
         # Batchify the drawing function.
         return_value = np.apply_along_axis(
             func1d=self.draw_legacy,
@@ -268,3 +244,4 @@ class FunnelProposal(ProposalDistribution):
         choice_index = np.array([self.rng.multinomial(1, probs, 1).argmax()])
         choice_prob = probs[choice_index]
         return np.concatenate((choice_index, np.log(choice_prob)))
+
