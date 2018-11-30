@@ -2,6 +2,7 @@ import logging
 from scipy.spatial.distance import cosine
 import numpy as np
 
+from rvi_sampling.distributions import sampling_utils
 
 class ProposalDistribution(object):
     def __init__(self, seed=0):
@@ -236,12 +237,9 @@ class FunnelProposal(ProposalDistribution):
     def draw_legacy(self, w, time_left, sampling_probs_only=False):
 
         STEP_SIZE = 1
-        # print(w)
-        # w = w[0
-        # print(w)
 
         # assuming symmetric window
-        steps_left = STEP_SIZE * (time_left)
+        steps_left = STEP_SIZE * time_left
 
         if np.abs(w - self.push_toward[0]) > steps_left \
                 or np.abs(w-self.push_toward[1]) > steps_left:
@@ -262,8 +260,6 @@ class FunnelProposal(ProposalDistribution):
                     return np.array([1, 0])
                 return np.array([0]), np.log(1-np.finfo(float).eps)
 
-        choices = np.array([[-STEP_SIZE], [STEP_SIZE]])
-
         probs = np.array([1 / 2., 1 / 2.])
 
         if sampling_probs_only:
@@ -271,5 +267,4 @@ class FunnelProposal(ProposalDistribution):
 
         choice_index = np.array([self.rng.multinomial(1, probs, 1).argmax()])
         choice_prob = probs[choice_index]
-
         return np.concatenate((choice_index, np.log(choice_prob)))
