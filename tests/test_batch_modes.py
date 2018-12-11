@@ -177,7 +177,7 @@ def test_mcsampler_two_window_batch():
 def test_rvisampler_two_window_batch():
     args = twrwargs(5, 50, 7, [(-2, 2)])
 
-    rw, analytic = sstochastic_processes.create_rw_two_window(
+    rw, analytic = stochastic_processes.create_rw_two_window(
             args,  n_agents=10)
 
     fn_approximator = MLP_factory(DIMENSIONS+1,
