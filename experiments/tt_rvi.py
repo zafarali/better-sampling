@@ -91,7 +91,8 @@ def run_rvi_experiment(args, sampler_seed, end_point):
     rvi_io.argparse_saver(
         os.path.join(save_dir, 'args.txt'), args)
 
-    rw, analytic = stochastic_processes.create_rw(args, biased=False, n_agents=args.n_agents)
+    rw, analytic = stochastic_processes.create_rw(
+            args, biased=False, n_agents=args.n_agents)
     rw.xT = np.array([end_point])
     rw = PyTorchWrap(rw)
 
@@ -172,7 +173,8 @@ def run_rvi_experiment(args, sampler_seed, end_point):
 
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))
-    print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
+    print('Analytic Starting Position: {}'.format(
+        analytic.expectation(rw.xT[0])))
 
     start_time = time.time()
 
