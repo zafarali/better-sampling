@@ -129,7 +129,9 @@ class MCSampler(Sampler):
                 self.run_diagnostic(
                     SamplingResults.from_information(
                         self._name, all_trajectories, trajectories),
-                    verbose=verbose)
+                    other_information={
+                        'override_count': i * stochastic_process.n_agents
+                    }, verbose=verbose)
 
         results.all_trajectories(all_trajectories)
         results.trajectories(trajectories)
@@ -205,7 +207,9 @@ class ISSampler(Sampler):
                 self.run_diagnostic(
                     ImportanceSamplingResults.from_information(
                         self._name, all_trajectories, trajectories, posterior_particles, posterior_weights),
-                    verbose=verbose)
+                    other_information={
+                        'override_count': i * stochastic_process.n_agents
+                    }, verbose=verbose)
 
         results.all_trajectories(all_trajectories)
         results.trajectories(trajectories)
