@@ -76,12 +76,20 @@ def run_IS_experiment(args, seed, end_point):
 
     #folder_name = rvi_io.create_folder_name('./', save_dir)
 
+    if args.IS_proposal_type == 'funnel' and args.softness_coefficient > 0.0:
+        # Since softness coefficient does not make a difference in
+        # this setting, reduce the number of unnecessary runs by just
+        # exiting if we are not in the default.
+        print('Analysis not run for Funnel with non-zero softness.')
+        sys.exit(0)
+
     rvi_io.create_folder(save_dir)
     rvi_io.create_folder(os.path.join(save_dir, 'ISSampler'))
     rvi_io.argparse_saver(
         os.path.join(save_dir, 'args.txt'), args)
 
-    rw, analytic = stochastic_processes.create_rw(args, biased=False)
+    rw, analytic = stochastic_processes.create_rw(
+            args, biased=False, n_agents=args.n_agents)
     rw.xT = np.array([end_point])
 
     print(rw.xT)
@@ -95,14 +103,6 @@ def run_IS_experiment(args, seed, end_point):
         proposal = proposal_distributions.SimonsSoftProposal(
             push_toward, softness_coeff=args.softness_coefficient)
     else:
-        if args.softness_coefficient > 0.1:
-            # Since softness coefficient does not make a difference in
-            # this setting, reduce the number of unnecessary runs by just
-            # exiting if we are not in the default.
-            rvi_io.touch(
-                os.path.join(save_dir, 'Analysis not run'))
-            sys.exit(0)
-
         proposal = proposal_distributions.FunnelProposal(push_toward)
 
     sampler = ISSampler(proposal, seed=seed)
@@ -165,10 +165,16 @@ if __name__ == '__main__':
     parser.opt_list(
         '--IS_proposal_type',
         options=[
-            # 'funnel',
+            'funnel',
             'soft'
         ],
         tunable=True
+    )
+    parser.opt_list(
+        '--n_agents',
+        options=[10],
+        type=int,
+        tunable=True,
     )
     parser.add_argument(
         '--dry_run',

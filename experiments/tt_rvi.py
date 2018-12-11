@@ -219,19 +219,19 @@ if __name__ == '__main__':
     )
     parser.opt_list(
         '--learning_rate',
-        options=[0.0005, 0.0001, 0.00005, 0.00001],
+        options=[0.001, 0.0001, 0.00001],
         type=float,
         tunable=True,
     )
     parser.opt_list(
         '--gae_value',
-        options=[0.94, 0.97],
+        options=[0.95],
         type=float,
         tunable=True,
     )
     parser.opt_list(
         '--n_agents',
-        options=[1, 10, 100],
+        options=[10],
         type=int,
         tunable=True,
     )
