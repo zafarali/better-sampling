@@ -175,8 +175,8 @@ class ISSampler(Sampler):
                 x_t, path_log_prob, done, _ = stochastic_process.step(step_idx, reverse=False)
 
                 # accumulate log probs of the path and the proposal:
-                log_path_prob += path_log_prob
-                log_proposal_prob += log_prob_proposal_step
+                log_path_prob += path_log_prob.reshape(-1)
+                log_proposal_prob += log_prob_proposal_step.reshape(-1)
 
                 trajectory_i.append(x_t)
 
