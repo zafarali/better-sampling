@@ -219,7 +219,7 @@ if __name__ == '__main__':
     # Execute the same experiment 5 times.
     cluster.add_slurm_cmd(
         cmd='array',
-        value='0-40',
+        value='0-100',
         comment='Number of repeats.')
 
     cluster.add_slurm_cmd(
