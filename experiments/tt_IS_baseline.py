@@ -118,7 +118,7 @@ def run_IS_experiment(args, seed, end_point):
             args,
             save_dir,
             kl_function,
-            frequency=50))
+            frequency=5))
 
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))
@@ -170,11 +170,10 @@ if __name__ == '__main__':
         ],
         tunable=True
     )
-    parser.opt_list(
+    parser.add_argument(
         '--n_agents',
-        options=[10],
+        default=10,
         type=int,
-        tunable=True,
     )
     parser.add_argument(
         '--dry_run',

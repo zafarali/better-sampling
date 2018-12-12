@@ -75,7 +75,8 @@ def run_MC_experiment(args, seed, end_point):
     rvi_io.argparse_saver(
         os.path.join(save_dir, 'args.txt'), args)
 
-    rw, analytic = stochastic_processes.create_rw(args, biased=False)
+    rw, analytic = stochastic_processes.create_rw(
+            args, biased=False, n_agents=args.n_agents)
     rw.xT = np.array([end_point])
 
     print(rw.xT)
@@ -98,7 +99,7 @@ def run_MC_experiment(args, seed, end_point):
             args,
             save_dir,
             kl_function,
-            frequency=50))
+            frequency=5))
 
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))
@@ -130,7 +131,11 @@ if __name__ == '__main__':
                  '/{experiment_name}'
                  '/end_point{end_point}')
     )
-
+    parser.add_argument(
+        '--n_agents',
+        default=10,
+        type=int,
+    )
     parser.add_argument(
         '--dry_run',
         default=False,
