@@ -34,6 +34,10 @@ OUTPUT_SIZE = 2
 END_POINTS = [0, 12, 24, 36, 48]
 TOTAL_END_POINTS = len(END_POINTS)
 
+
+def get_training_iterations(mc_samples, n_agents):
+    return mc_samples // n_agents
+
 def run_IS(args, *throwaway):
     # Use Slurm task ID as the environment variable.
     print(args)
@@ -125,7 +129,11 @@ def run_IS_experiment(args, seed, end_point):
     print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
 
     start_time = time.time()
-    sampler_result = sampler.solve(rw, args.samples, verbose=True)
+
+    training_iterations = get_training_iterations(args.samples, args.n_agents)
+    print('Number of training iterations: {}'.format(training_iterations))
+
+    sampler_result = sampler.solve(rw, training_iterations, verbose=True)
     print('Total time taken: {}'.format(time.time() - start_time))
     
     sampler_result.save_results(save_dir)

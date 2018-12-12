@@ -179,11 +179,12 @@ def run_rvi_experiment(args, sampler_seed, end_point):
     start_time = time.time()
 
     training_iterations = get_training_iterations(args.samples, args.n_agents)
+    print('Number of training iterations: {}'.format(training_iterations))
+
     sampler_result = sampler.train(
         rw, training_iterations, verbose=True)
 
     print('Total time: {}'.format(time.time() - start_time))
-    print('Number of training iterations: {}'.format(training_iterations))
 
     sampler_result.save_results(save_dir)
     sampler_analysis.analyze_sampler_result(
@@ -225,7 +226,7 @@ if __name__ == '__main__':
     )
     parser.opt_list(
         '--gae_value',
-        options=[0.95],
+        options=[0.94, 0.95],
         type=float,
         tunable=True,
     )
