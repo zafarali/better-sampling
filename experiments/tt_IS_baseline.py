@@ -271,6 +271,7 @@ if __name__ == '__main__':
         run_IS,
         nb_trials=350,
         job_name='ImpS hyperparameter search',
-        job_display_name=(
-            'imp_' + hyperparams.n_windows + hyperparams.experiment_name))
+        job_display_name='imp{}_{}'.format(
+            hyperparams.n_windows,
+            hyperparams.experiment_name))
 

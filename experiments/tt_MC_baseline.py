@@ -228,6 +228,7 @@ if __name__ == '__main__':
         run_MC,
         nb_trials=350,
         job_name='MC hyperparameter search',
-        job_display_name=(
-            'mcs_' + hyperparams.n_windows + hyperparams.experiment_name))
+        job_display_name='mcs{}_{}'.format(
+            hyperparams.n_windows,
+            hyperparams.experiment_name))
 
