@@ -91,7 +91,8 @@ def run_rvi_experiment(args, sampler_seed, end_point):
     rvi_io.argparse_saver(
         os.path.join(save_dir, 'args.txt'), args)
 
-    rw, analytic = stochastic_processes.create_rw(args, biased=False, n_agents=args.n_agents)
+    rw, analytic = stochastic_processes.create_rw(
+            args, biased=False, n_agents=args.n_agents)
     rw.xT = np.array([end_point])
     rw = PyTorchWrap(rw)
 
@@ -168,20 +169,22 @@ def run_rvi_experiment(args, sampler_seed, end_point):
             args,
             save_dir,
             kl_function,
-            frequency=10))
+            frequency=5))
 
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))
-    print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
+    print('Analytic Starting Position: {}'.format(
+        analytic.expectation(rw.xT[0])))
 
     start_time = time.time()
 
     training_iterations = get_training_iterations(args.samples, args.n_agents)
+    print('Number of training iterations: {}'.format(training_iterations))
+
     sampler_result = sampler.train(
         rw, training_iterations, verbose=True)
 
     print('Total time: {}'.format(time.time() - start_time))
-    print('Number of training iterations: {}'.format(training_iterations))
 
     sampler_result.save_results(save_dir)
     sampler_analysis.analyze_sampler_result(
@@ -215,24 +218,21 @@ if __name__ == '__main__':
         default=1,
         help='Number of hyperparameter trials'
     )
-    parser.opt_range(
+    parser.opt_list(
         '--learning_rate',
-        low=0.000005,
-        high=0.001,
+        options=[0.001, 0.0001, 0.00001],
         type=float,
-        log_base=10,
         tunable=True,
-        nb_samples=50,
     )
     parser.opt_list(
         '--gae_value',
-        options=[0.94, 0.95, 0.96, 0.97],
+        options=[0.94, 0.95],
         type=float,
         tunable=True,
     )
     parser.opt_list(
         '--n_agents',
-        options=[1],
+        options=[10],
         type=int,
         tunable=True,
     )
@@ -282,7 +282,7 @@ if __name__ == '__main__':
     # Execute the same experiment 5 times.
     cluster.add_slurm_cmd(
         cmd='array',
-        value='0-20',
+        value='0-100',
         comment='Number of repeats.')
 
     cluster.add_slurm_cmd(

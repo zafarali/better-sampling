@@ -33,6 +33,9 @@ OUTPUT_SIZE = 2
 END_POINTS = [0, 12, 24, 36, 48]
 TOTAL_END_POINTS = len(END_POINTS)
 
+def get_training_iterations(mc_samples, n_agents):
+    return mc_samples // n_agents
+
 def run_MC(args, *throwaway):
     # Use Slurm task ID as the environment variable.
     print(args)
@@ -75,7 +78,8 @@ def run_MC_experiment(args, seed, end_point):
     rvi_io.argparse_saver(
         os.path.join(save_dir, 'args.txt'), args)
 
-    rw, analytic = stochastic_processes.create_rw(args, biased=False)
+    rw, analytic = stochastic_processes.create_rw(
+            args, biased=False, n_agents=args.n_agents)
     rw.xT = np.array([end_point])
 
     print(rw.xT)
@@ -98,13 +102,16 @@ def run_MC_experiment(args, seed, end_point):
             args,
             save_dir,
             kl_function,
-            frequency=10))
+            frequency=5))
 
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))
     print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
 
-    sampler_result = sampler.solve(rw, args.samples, verbose=True)
+    training_iterations = get_training_iterations(args.samples, args.n_agents)
+    print('Number of training iterations: {}'.format(training_iterations))
+
+    sampler_result = sampler.solve(rw, training_iterations, verbose=True)
 
     
     sampler_result.save_results(save_dir)
@@ -130,7 +137,11 @@ if __name__ == '__main__':
                  '/{experiment_name}'
                  '/end_point{end_point}')
     )
-
+    parser.add_argument(
+        '--n_agents',
+        default=10,
+        type=int,
+    )
     parser.add_argument(
         '--dry_run',
         default=False,
@@ -165,7 +176,7 @@ if __name__ == '__main__':
     # Execute the same experiment 5 times.
     cluster.add_slurm_cmd(
         cmd='array',
-        value='0-20',
+        value='0-100',
         comment='Number of repeats.')
 
     cluster.add_slurm_cmd(
@@ -174,19 +185,20 @@ if __name__ == '__main__':
         comment='Account to run this on.'
     )
 
-    cluster.notify_job_status(
-        email='zafarali.ahmed@mail.mcgill.ca',
-        on_done=True,
-        on_fail=True)
+    if hyperparams.cc_mail is not None:
+        cluster.notify_job_status(
+            email=hyperparams.cc_mail,
+            on_done=True,
+            on_fail=True)
 
     cluster.load_modules(['cuda/8.0.44', 'cudnn/7.0'])
     cluster.add_command('source $RVI_ENV')
 
     cluster.per_experiment_nb_cpus = 1  # 1 CPU per job.
-    cluster.job_time = '1:00:00'  # One hour.
+    cluster.job_time = hyperparams.cc_time  # One hour.
     cluster.memory_mb_per_node = 16384
     cluster.optimize_parallel_cluster_cpu(
         run_MC,
         nb_trials=350,
         job_name='MC hyperparameter search',
-        job_display_name='mc_hps')
+        job_display_name='mc_hps_' + hyperparams.experiment_name)

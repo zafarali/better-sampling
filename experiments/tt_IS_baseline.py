@@ -34,6 +34,10 @@ OUTPUT_SIZE = 2
 END_POINTS = [0, 12, 24, 36, 48]
 TOTAL_END_POINTS = len(END_POINTS)
 
+
+def get_training_iterations(mc_samples, n_agents):
+    return mc_samples // n_agents
+
 def run_IS(args, *throwaway):
     # Use Slurm task ID as the environment variable.
     print(args)
@@ -76,12 +80,20 @@ def run_IS_experiment(args, seed, end_point):
 
     #folder_name = rvi_io.create_folder_name('./', save_dir)
 
+    if args.IS_proposal_type == 'funnel' and args.softness_coefficient > 0.0:
+        # Since softness coefficient does not make a difference in
+        # this setting, reduce the number of unnecessary runs by just
+        # exiting if we are not in the default.
+        print('Analysis not run for Funnel with non-zero softness.')
+        sys.exit(0)
+
     rvi_io.create_folder(save_dir)
     rvi_io.create_folder(os.path.join(save_dir, 'ISSampler'))
     rvi_io.argparse_saver(
         os.path.join(save_dir, 'args.txt'), args)
 
-    rw, analytic = stochastic_processes.create_rw(args, biased=False)
+    rw, analytic = stochastic_processes.create_rw(
+            args, biased=False, n_agents=args.n_agents)
     rw.xT = np.array([end_point])
 
     print(rw.xT)
@@ -95,14 +107,6 @@ def run_IS_experiment(args, seed, end_point):
         proposal = proposal_distributions.SimonsSoftProposal(
             push_toward, softness_coeff=args.softness_coefficient)
     else:
-        if args.softness_coefficient > 0.1:
-            # Since softness coefficient does not make a difference in
-            # this setting, reduce the number of unnecessary runs by just
-            # exiting if we are not in the default.
-            rvi_io.touch(
-                os.path.join(save_dir, 'Analysis not run'))
-            sys.exit(0)
-
         proposal = proposal_distributions.FunnelProposal(push_toward)
 
     sampler = ISSampler(proposal, seed=seed)
@@ -118,14 +122,18 @@ def run_IS_experiment(args, seed, end_point):
             args,
             save_dir,
             kl_function,
-            frequency=10))
+            frequency=5))
 
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))
     print('Analytic Starting Position: {}'.format(analytic.expectation(rw.xT[0])))
 
     start_time = time.time()
-    sampler_result = sampler.solve(rw, args.samples, verbose=True)
+
+    training_iterations = get_training_iterations(args.samples, args.n_agents)
+    print('Number of training iterations: {}'.format(training_iterations))
+
+    sampler_result = sampler.solve(rw, training_iterations, verbose=True)
     print('Total time taken: {}'.format(time.time() - start_time))
     
     sampler_result.save_results(save_dir)
@@ -158,17 +166,22 @@ if __name__ == '__main__':
         # low=0.1,
         # high=1.5,
         type=float,
-        options=[0.8, 1.0, 1.1],
+        options=[0.0, 0.5, 0.8, 1.0, 1.1, 1.5, 2.0],
         tunable=True,
         # nb_samples=5
     )
     parser.opt_list(
         '--IS_proposal_type',
         options=[
-            # 'funnel',
+            'funnel',
             'soft'
         ],
         tunable=True
+    )
+    parser.add_argument(
+        '--n_agents',
+        default=10,
+        type=int,
     )
     parser.add_argument(
         '--dry_run',
@@ -206,7 +219,7 @@ if __name__ == '__main__':
     # Execute the same experiment 5 times.
     cluster.add_slurm_cmd(
         cmd='array',
-        value='0-20',
+        value='0-100',
         comment='Number of repeats.')
 
     cluster.add_slurm_cmd(
@@ -215,19 +228,20 @@ if __name__ == '__main__':
         comment='Account to run this on.'
     )
 
-    cluster.notify_job_status(
-        email='zafarali.ahmed@mail.mcgill.ca',
-        on_done=True,
-        on_fail=True)
+    if hyperparams.cc_mail is not None:
+        cluster.notify_job_status(
+            email=hyperparams.cc_mail,
+            on_done=True,
+            on_fail=True)
 
     cluster.load_modules(['cuda/8.0.44', 'cudnn/7.0'])
     cluster.add_command('source $RVI_ENV')
 
     cluster.per_experiment_nb_cpus = 1  # 1 CPU per job.
-    cluster.job_time = '0:15:00'  # 15 mins.
+    cluster.job_time = hyperparams.cc_time  # 15 mins.
     cluster.memory_mb_per_node = 16384
     cluster.optimize_parallel_cluster_cpu(
         run_IS,
         nb_trials=350,
         job_name='ImpS hyperparameter search',
-        job_display_name='imps_hps')
+        job_display_name='imps_hps_'+ hyperparams.experiment_name)

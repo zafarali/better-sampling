@@ -129,7 +129,9 @@ class MCSampler(Sampler):
                 self.run_diagnostic(
                     SamplingResults.from_information(
                         self._name, all_trajectories, trajectories),
-                    verbose=verbose)
+                    other_information={
+                        'override_count': i * stochastic_process.n_agents
+                    }, verbose=verbose)
 
         results.all_trajectories(all_trajectories)
         results.trajectories(trajectories)
@@ -175,8 +177,8 @@ class ISSampler(Sampler):
                 x_t, path_log_prob, done, _ = stochastic_process.step(step_idx, reverse=False)
 
                 # accumulate log probs of the path and the proposal:
-                log_path_prob += path_log_prob
-                log_proposal_prob += log_prob_proposal_step
+                log_path_prob += path_log_prob.reshape(-1)
+                log_proposal_prob += log_prob_proposal_step.reshape(-1)
 
                 trajectory_i.append(x_t)
 
@@ -205,7 +207,9 @@ class ISSampler(Sampler):
                 self.run_diagnostic(
                     ImportanceSamplingResults.from_information(
                         self._name, all_trajectories, trajectories, posterior_particles, posterior_weights),
-                    verbose=verbose)
+                    other_information={
+                        'override_count': i * stochastic_process.n_agents
+                    }, verbose=verbose)
 
         results.all_trajectories(all_trajectories)
         results.trajectories(trajectories)

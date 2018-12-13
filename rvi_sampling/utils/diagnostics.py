@@ -91,7 +91,10 @@ class OtherInformationDiagnostic(Diagnostic):
         if other_information is None:
             return NO_RETURN
         else:
-            return other_information[self._other_information_key]
+            if self._other_information_key in other_information:
+                return other_information[self._other_information_key]
+            else:
+                return NO_RETURN
 
 
 class EpisodeRewardDiagnostic(OtherInformationDiagnostic):
