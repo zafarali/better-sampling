@@ -78,11 +78,19 @@ def run_MC_experiment(args, seed, end_point):
     rvi_io.argparse_saver(
         os.path.join(save_dir, 'args.txt'), args)
 
-    rw, analytic = stochastic_processes.create_rw(
-            args, biased=False, n_agents=args.n_agents)
-    rw.xT = np.array([end_point])
+    if args.n_windows == 1:
+        rw, analytic = stochastic_processes.create_rw(
+                args, biased=False, n_agents=args.n_agents)
+    elif args.n_windows == 2:
+        rw, analytic = stochastic_process.create_rw_two_window(
+                args, n_agents=args.n_agents)
+    else:
+        raise ValueError('Undefined number of windows!')
 
-    print(rw.xT)
+    print('Number of windows: {}'.format(args.n_windows))
+    rw.xT = np.array([end_point])
+    print('end point set to: {}'.format(rw.xT))
+
     rvi_io.touch(
         os.path.join(save_dir, 'start={}'.format(rw.x0)))
     rvi_io.touch(
@@ -131,6 +139,11 @@ if __name__ == '__main__':
         default='MC_baseline_experiment',
     )
     parser.add_argument(
+        '--n_windows',
+        default=1,
+        type=int
+    )
+    parser.add_argument(
         '--save_dir_template',
         default=('{scratch}'
                  '/rvi/MC_baseline_results'
@@ -155,6 +168,10 @@ if __name__ == '__main__':
 
 
     hyperparams = parser.parse_args()
+
+    if args.n_windows > 1:
+        hyperparams.save_dir_template = hyperparams.save_dir_template.replace(
+                'rvi', 'two_window')
 
     if hyperparams.dry_run:
         run_MC(hyperparams)
@@ -201,4 +218,6 @@ if __name__ == '__main__':
         run_MC,
         nb_trials=350,
         job_name='MC hyperparameter search',
-        job_display_name='mc_hps_' + hyperparams.experiment_name)
+        job_display_name=(
+            'mcs_' + hyperparams.n_windows + hyperparams.experiment_name))
+
