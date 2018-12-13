@@ -5,6 +5,7 @@ seaborn
 pandas
 tensorboardX
 gym
+test_tube
 http://download.pytorch.org/whl/cu80/torch-0.4.0-cp35-cp35m-linux_x86_64.whl
 -e git+https://github.com/zafarali/mlresearchkit.git#egg=mlresearchkit
 -e git+https://github.com/zafarali/policy-gradient-methods.git#egg=pg_methods
