@@ -27,7 +27,8 @@ class RVISampler(Sampler):
                  use_cuda=False,
                  lr_scheduler=None,
                  use_gae=False,
-                 multitask_training=False):
+                 multitask_training=False,
+                 reward_type='KLD'):
         """
         The reinforced variational inference sampler
         :param policy: the policy to use
@@ -37,8 +38,11 @@ class RVISampler(Sampler):
                           should not feed time into the proposal
         :param seed: the seed to use
         :param use_cuda: uses cuda (currently not working)
-        :multitask_training: boolean indicating if a new task should be sampled
-            before every training step.
+        :param multitask_training: boolean indicating if a new task should be
+            sampled before every training step.
+        :param reward_type: A string representing the type of reward to give
+            to the reinforcement learning algorithm. Currently supports
+            KL divergence: 'KLD' and Chi-squared divergence: 'C2'.
         """
         Sampler.__init__(self, seed)
         self.policy = policy
@@ -52,6 +56,8 @@ class RVISampler(Sampler):
         self.negative_reward_clip = negative_reward_clip
         self.lr_scheduler=lr_scheduler
         self.train_steps_completed = 0
+        self._reward_implementation = 'KLD'
+        self._reward_buffer = []
 
         # Generalized Advantages
         self.use_gae = use_gae
@@ -278,12 +284,7 @@ class RVISampler(Sampler):
             # reward_ = path_log_prob.float().view(-1,1)
 
             # OPTION B:
-            reward_ = path_log_prob.float().view(-1, 1) - log_prob_action.data.float().view(-1, 1)
-
-            reward = torch.zeros_like(reward_)
-            reward.copy_(reward_)
-            if self.negative_reward_clip is not None:
-                reward[reward <= -np.inf] = float(self.negative_reward_clip)  # throw away infinite negative rewards
+            reward = self._process_rewards(path_log_prob, log_prob_action, done)
 
             # OPTION A: (kept here for historical purposes only)
             # reward -= log_prob_action.data.float().view(-1, 1)
@@ -291,7 +292,6 @@ class RVISampler(Sampler):
             # probability of the path gets updated:
             log_path_prob += path_log_prob.numpy().reshape(-1, 1)
             log_proposal_prob += log_prob_action.data.float().numpy().reshape(-1, 1)
-
 
             sampled_trajectory.append(x_t.data.numpy())
 
@@ -315,6 +315,23 @@ class RVISampler(Sampler):
 
         return pg_trajectory_info, sampled_trajectory, log_path_prob, log_proposal_prob
 
+    def _process_rewards(self, path_log_prob, log_prob_action, done=None):
+        reward_ = path_log_prob.float().view(-1, 1) - log_prob_action.data.float().view(-1, 1)
+        reward = torch.zeros_like(reward_)
+
+        if self._reward_implementation == 'KLD':
+            reward.copy_(reward_)
+            if self.negative_reward_clip is not None:
+                # throw away infinite negative rewards
+                reward[reward <= -np.inf] = float(self.negative_reward_clip)
+            return reward
+        elif self._reward_implementation== 'C2':
+            if done is None: raise ValueError('Done is required for C2.')
+            raise NotImplementedError
+        else:
+            raise ValueError(
+                    'Unknown objective function {}.'
+                    'Must be C2 or KLD'.format(self.objective_function))
 
     # UTILITY FUNCTIONS
     def check_stochastic_process(self, stochastic_process):
