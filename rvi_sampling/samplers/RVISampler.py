@@ -56,7 +56,7 @@ class RVISampler(Sampler):
         self.negative_reward_clip = negative_reward_clip
         self.lr_scheduler=lr_scheduler
         self.train_steps_completed = 0
-        self._reward_implementation = 'KLD'
+        self._reward_implementation = reward_type
         self._reward_buffer = []
 
         # Generalized Advantages
@@ -316,17 +316,28 @@ class RVISampler(Sampler):
         return pg_trajectory_info, sampled_trajectory, log_path_prob, log_proposal_prob
 
     def _process_rewards(self, path_log_prob, log_prob_action, done=None):
-        reward_ = path_log_prob.float().view(-1, 1) - log_prob_action.data.float().view(-1, 1)
+        reward_ = (
+                path_log_prob.float().view(-1, 1) -
+                log_prob_action.data.float().view(-1, 1)
+        )
         reward = torch.zeros_like(reward_)
+        reward.copy_(reward_)
 
         if self._reward_implementation == 'KLD':
-            reward.copy_(reward_)
             if self.negative_reward_clip is not None:
                 # throw away infinite negative rewards
                 reward[reward <= -np.inf] = float(self.negative_reward_clip)
             return reward
         elif self._reward_implementation== 'C2':
             if done is None: raise ValueError('Done is required for C2.')
+            self._reward_buffer.append(reward)
+            if np.all(done.numpy()):
+                traj_ratio = torch.stack(self._reward_buffer).sum(0).exp() ** 2
+                self._reward_buffer = []
+                return -traj_ratio.view_as(reward_)
+            else:
+                # Delay the rewards until the end of the trajectory.
+                return torch.zeros_like(reward_)
             raise NotImplementedError
         else:
             raise ValueError(
