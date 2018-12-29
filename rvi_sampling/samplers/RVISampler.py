@@ -334,7 +334,7 @@ class RVISampler(Sampler):
             if np.all(done.numpy()):
                 traj_ratio = torch.stack(self._reward_buffer).sum(0).exp() ** 2
                 self._reward_buffer = []
-                return traj_ratio.view_as(reward_)
+                return -traj_ratio.view_as(reward_)
             else:
                 # Delay the rewards until the end of the trajectory.
                 return torch.zeros_like(reward_)
