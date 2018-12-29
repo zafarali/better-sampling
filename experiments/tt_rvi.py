@@ -81,7 +81,9 @@ def run_rvi_experiment(args, sampler_seed, end_point):
             learning_rate=args.learning_rate,
             gae_value=args.gae_value,
             n_agents=args.n_agents,
-            end_point=end_point),
+            end_point=end_point,
+            reward_type=args.reward_type,
+            gamma=args.gamma),
         'Seed{}'.format(sampler_seed)
     )
 
@@ -208,10 +210,12 @@ if __name__ == '__main__':
         default=('{scratch}'
                  '/rvi/rvi_results'
                  '/{experiment_name}'
+                 '/reward_type{reward_type}'
                  '/end_point{end_point}'
                  '/n_agents{n_agents}'
                  '/lr{learning_rate}'
-                 '/gae{gae_value}')
+                 '/gae{gae_value}'
+                 '/gamma{gamma}')
     )
     parser.add_argument(
         '--n_trials',
@@ -308,4 +312,6 @@ if __name__ == '__main__':
         run_rvi,
         nb_trials=hyperparams.n_trials,
         job_name='RVI Hyperparameter Search',
-        job_display_name='rvi_hps_' + hyperparams.experiment_name)
+        job_display_name='rvi_{}_{}'.format(
+            hyperparams.reward_type,
+            hyperparams.experiment_name))
