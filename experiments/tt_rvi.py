@@ -39,7 +39,7 @@ INCLUDE_TIME = True
 # Make use of backfilling using this slightly messy solutions:
 END_POINTS = [0, 12, 24, 36, 48]
 TOTAL_END_POINTS = len(END_POINTS)
-NEURAL_NETWORK = (16, 16)
+NEURAL_NETWORK = (32, 32, 32)
 
 def get_training_iterations(mc_samples, n_agents):
     return mc_samples // n_agents
@@ -151,7 +151,8 @@ def run_rvi_experiment(args, sampler_seed, end_point):
         seed=sampler_seed,
         use_gae=(args.gae_value is not None),
         lam=args.gae_value,
-        gamma=args.gamma)
+        gamma=args.gamma,
+        reward_type=args.reward_type)
 
     if args.disable_training:
         print('Training has been disabled.')
@@ -170,7 +171,7 @@ def run_rvi_experiment(args, sampler_seed, end_point):
             save_dir,
             kl_function,
             frequency=5))
-
+    print('Reward Type: {}'.format(args.reward_type))
     print('True Starting Position is:{}'.format(rw.x0))
     print('True Ending Position is: {}'.format(rw.xT))
     print('Analytic Starting Position: {}'.format(
