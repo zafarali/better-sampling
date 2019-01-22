@@ -95,10 +95,23 @@ def run_rvi_experiment(args, sampler_seed, end_point):
 
     rw, analytic = stochastic_processes.create_rw(
             args, biased=False, n_agents=args.n_agents)
+
+
+    if args.n_windows == 1:
+        rw, analytic = stochastic_processes.create_rw(
+                args, biased=False, n_agents=args.n_agents)
+    elif args.n_windows == 2:
+        rw, analytic = stochastic_processes.create_rw_two_window(
+                args, n_agents=args.n_agents)
+    else:
+        raise ValueError('Undefined number of windows!')
+    print('Number of windows: {}'.format(args.n_windows))
+    print('Window locations: {}'.format(args.rw_windows))
+
     rw.xT = np.array([end_point])
     rw = PyTorchWrap(rw)
+    print('end point set to: {}'.format(rw.xT))
 
-    print(rw.xT)
     rvi_io.touch(
         os.path.join(save_dir, 'start={}'.format(rw.x0)))
     rvi_io.touch(
@@ -218,6 +231,11 @@ if __name__ == '__main__':
                  '/gamma{gamma}')
     )
     parser.add_argument(
+        '--n_windows',
+        default=1,
+        type=int
+    )
+    parser.add_argument(
         '--n_trials',
         type=int,
         default=1,
@@ -235,11 +253,10 @@ if __name__ == '__main__':
         type=float,
         tunable=True,
     )
-    parser.opt_list(
+    parser.add_argument(
         '--n_agents',
-        options=[10],
+        default=10,
         type=int,
-        tunable=True,
     )
     parser.add_argument(
         '--dry_run',
@@ -259,6 +276,19 @@ if __name__ == '__main__':
 
 
     hyperparams = parser.parse_args()
+
+    array_def = '0-100'
+    if hyperparams.n_windows > 1:
+        hyperparams.save_dir_template = hyperparams.save_dir_template.replace(
+                'rvi', 'two_window')
+        hyperparams.rw_windows = [
+                (-hyperparams.rw_width, -hyperparams.rw_width // 2),
+                (hyperparams.rw_width // 2, hyperparams.rw_width)]
+        array_def = '0-52'
+        # pylint: disable
+        END_POINTS = [0, 12, 24, 36]
+        TOTAL_END_POINTS = len(END_POINTS)
+        # pylint: enable
 
     if hyperparams.dry_run:
         run_rvi(hyperparams)
@@ -287,7 +317,7 @@ if __name__ == '__main__':
     # Execute the same experiment 5 times.
     cluster.add_slurm_cmd(
         cmd='array',
-        value='0-100',
+        value=array_def,
         comment='Number of repeats.')
 
     cluster.add_slurm_cmd(
@@ -312,6 +342,7 @@ if __name__ == '__main__':
         run_rvi,
         nb_trials=hyperparams.n_trials,
         job_name='RVI Hyperparameter Search',
-        job_display_name='rvi_{}_{}'.format(
+        job_display_name='rvi_{}_{}_{}'.format(
             hyperparams.reward_type,
+            hyperparams.n_windows,
             hyperparams.experiment_name))
