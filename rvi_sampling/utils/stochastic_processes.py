@@ -27,7 +27,7 @@ def random_walk_arguments(parser):
                         help='width of the discrete uniform in the random walk')
     return parser
 
-def bind_random_walk_arguments(parser, rw_width=True, rw_time=True, rw_endpoint=True):
+def bind_random_walk_arguments(parser, rw_width=True, rw_time=True, rw_endpoint=True, rw_windows=True):
     if rw_time:
         parser.add_argument('--rw_time',
                             default=50,
@@ -44,6 +44,11 @@ def bind_random_walk_arguments(parser, rw_width=True, rw_time=True, rw_endpoint=
                             default=5,
                             type=int,
                             help='width of the discrete uniform in the random walk')
+    if rw_windows:
+        parser.add_argument('--rw_windows',
+                            default=None,
+                            type=list,
+                            help='window opening definition')
     return parser
 
 
@@ -89,7 +94,7 @@ def create_rw_two_window(args, n_agents=1):
 
     T = args.rw_time
     DISC_UNIFORM_WIDTH = args.rw_width
-    WINDOWS = args.windows
+    WINDOWS = args.rw_windows
     # first simulate a random walk
 
     POSSIBLE_STEPS, STEP_PROBS, DIMENSIONS = UNBIASED_RW

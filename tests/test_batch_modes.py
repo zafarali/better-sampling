@@ -19,7 +19,7 @@ DIMENSIONS = 1
 OUTPUT_SIZE = 2
 
 rwargs = namedtuple('rwargs', 'rw_width rw_time rw_seed')
-twrwargs = namedtuple('twrwargs', 'rw_width rw_time rw_seed windows')
+twrwargs = namedtuple('twrwargs', 'rw_width rw_time rw_seed rw_windows')
 
 def test_issampler_funnel_batch():
     args = rwargs(5, 50, 7)
