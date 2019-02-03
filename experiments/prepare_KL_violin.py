@@ -140,7 +140,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '--hyperparameters',
         nargs='+',
-        required=True,
+        required=False,
+        default=[],
         help='Hyperparameters to extract from the folder path.')
     parser.add_argument(
         '--save_file',
