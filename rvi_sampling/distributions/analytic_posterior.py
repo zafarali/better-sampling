@@ -153,7 +153,30 @@ class MultiWindowTwoStepRandomwWalkPosterior(TwoStepRandomWalkPosterior):
         return ax
 
     def expectation(self, observed_d):
-        pdf = np.array([self.pdf(x, observed_d) for x in self.support])
+        np.array([self.pdf(x, observed_d) for x in self.support])
         pdf /= pdf.sum()
         return np.sum(np.array(self.support) * pdf)
+
+
+class MultiDimensionalRandomWalkPosterior(AnalyticPosterior):
+    def __init__(self, c, p, T, dimensions=2):
+        """
+        See TwoStepRandomWalkPosterior for details on the arguments.
+        """
+        self._posteriors = [
+            TwoStepRandomWalkPosterior(c, p, T) for  _ in range(dimensions)
+        ]
+        # TODO(zaf): Merge into TwoStepRandomWalkPosterior?
+        self.c = c
+        self.p = p
+        self.T = T-1
+        self.support = np.arange(-self.c, self.c+1)
+
+    def pdf(self, x, d):
+        probability = 1.0
+        for i, posterior in enumerate(self._posterior):
+            probability *= posterior.pdf(x[i], d[i])
+
+        return probability
+
 
