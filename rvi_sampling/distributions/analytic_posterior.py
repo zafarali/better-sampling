@@ -174,9 +174,21 @@ class MultiDimensionalRandomWalkPosterior(AnalyticPosterior):
 
     def pdf(self, x, d):
         probability = 1.0
-        for i, posterior in enumerate(self._posterior):
+        for i, posterior in enumerate(self._posteriors):
             probability *= posterior.pdf(x[i], d[i])
 
         return probability
+
+    def kl_divergence(self, estimated_dist, observed_d, verbose=False):
+        kl_divergences = []
+        for i, posterior in enumerate(self._posteriors):
+            kl_divergences.append(
+                posterior.kl_divergence(
+                    estimated_dist[i],
+                    observed_d[i],
+                    verbose)
+                )
+        # Return the worst KL Divergence.
+        return list(map(np.max, zip(*kl_divergences)))
 
 

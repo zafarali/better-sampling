@@ -5,7 +5,10 @@ import logging
 import numpy as np
 from ..stochastic_processes.random_walk import RandomWalk, DiscreteUniform, RWParameters
 from ..stochastic_processes.epidemiology import SIR, SIRParameters
-from ..distributions.analytic_posterior import TwoStepRandomWalkPosterior, MultiWindowTwoStepRandomwWalkPosterior
+from ..distributions.analytic_posterior import (
+        TwoStepRandomWalkPosterior,
+        MultiWindowTwoStepRandomwWalkPosterior,
+        MultiDimensionalRandomWalkPosterior)
 from ..distributions.prior_distributions import MultiWindowDiscreteUniform
 from ..distributions.arbitriary_priors import ArbitriaryPrior
 
@@ -80,6 +83,9 @@ def create_rw(args, biased=False, n_agents=1):
     rw.reset()
     if DIMENSIONS == 1 and not biased:
         analytic = TwoStepRandomWalkPosterior(DISC_UNIFORM_WIDTH, 0.5, T)
+    elif DIMENSIONS > 1:
+        analytic = MultiDimensionalRandomWalkPosterior(
+                DISC_UNIFORM_WIDTH, 0.5, T, dimensions=DIMENSIONS)
     else:
         analytic = None
     return rw, analytic
