@@ -226,13 +226,13 @@ if __name__ == '__main__':
     )
     parser.opt_list(
         '--learning_rate',
-        options=[0.000001],
+        options=[0.00001],
         type=float,
         tunable=True,
     )
     parser.opt_list(
         '--gae_value',
-        options=[0.94, 0.95],
+        options=[0.9],
         type=float,
         tunable=True,
     )
