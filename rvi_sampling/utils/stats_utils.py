@@ -74,6 +74,8 @@ def empirical_distribution(particles, weights, histbin_range, return_numpy=False
             estimated_dists.append(
                     empirical_distribution(
                         particles[:, i], weights, histbin_range, return_numpy))
+
+        if len(estimated_dists) == 1: return estimated_dists[0]
         return estimated_dists
 
     probs, vals = np.histogram(particles, bins=hist_range, density=True,
