@@ -1,3 +1,4 @@
+import logging
 from scipy.misc import comb
 from rvi_sampling.utils.common import EPSILON
 import numpy as np
@@ -163,6 +164,15 @@ class MultiDimensionalRandomWalkPosterior(AnalyticPosterior):
         """
         See TwoStepRandomWalkPosterior for details on the arguments.
         """
+        logging.warning((
+            '(!) When using a multidimensional random walk, make '
+            'sure that you acknowledge that the walks are _independent_.  '
+            'This means that your stochastic process should have 2^d '
+            'transisions. For example, for d=2, we have that '
+            '[-1, +1], [-1, -1], [+1, -1], [+1, +1] are the valid transitions.'
+            ' and NOT: [-1, 0], [0, -1], [+1, 0], [0, +1] which would imply '
+            'that if one walk takes a step, the other cannot.'
+            ))
         self._posteriors = [
             TwoStepRandomWalkPosterior(c, p, T) for  _ in range(dimensions)
         ]
