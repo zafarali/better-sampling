@@ -49,7 +49,8 @@ def get_stochastic_process(args):
     #args = rwargs(5, 50, 0)
 
     ACTION_PROB = np.ones(4) / 4.0
-    ACTIONS = [[-1, 0], [0, -1], [0, +1], [+1, 0]]
+    #ACTIONS = [[-1, 0], [0, -1], [0, +1], [+1, 0]]
+    ACTIONS = [[-1, +1], [-1, -1], [+1, +1], [+1, -1]]
     bias = RWParameters(ACTIONS, ACTION_PROB, DIMENSIONS)
 
     rw, analytic = stochastic_processes.create_rw(
@@ -206,7 +207,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--save_dir_template',
         default=('{scratch}'
-                 '/rvi/2d_results'
+                 '/rvi/2d_results_indep'
                  '/{experiment_name}'
                  #'/end_point{end_point}'
                  '/n_agents{n_agents}'
@@ -260,7 +261,7 @@ if __name__ == '__main__':
 
     hyperparams = parser.parse_args()
 
-    array_def = '0-20'
+    array_def = '0-10'
 
     if hyperparams.dry_run:
         run_rvi(hyperparams)
