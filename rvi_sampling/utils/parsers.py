@@ -104,6 +104,11 @@ def bind_rvi_arguments(parser, n_agents=True, gae_value=True):
                         type=float,
                         help=('The value to clip negative infinite rewards to this value. '
                              'If not set, will not clip.'))
+
+    parser.add_argument('--reward_type',
+            default='KLD',
+            type=str,
+            help=('The type of reward to use. Must be KLD or C2.'))
     if n_agents:
         parser.add_argument('--n_agents',
                             default=1,

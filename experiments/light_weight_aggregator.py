@@ -23,6 +23,7 @@ def extract_data(
     """
     glob_path = os.path.join(template_file, 'Seed*', sampler_name + '_' + statistic + '.txt')
     files = glob(glob_path)
+    print('Found {} files.'.format(len(files)))
     datas = []
 #     print(files)
     for file_ in files:
@@ -56,7 +57,7 @@ def main(args):
                 sampler_name=args.sampler_name,
                 hyperparameters=['end_point', 'Seed'] + list(args.hyperparameters),
                 return_pd=False))
-
+    print('Total extracted items: {}'.format(len(extracted_data)))
     extracted_data = pd.concat(extracted_data, ignore_index=True)
     extracted_data = extracted_data.apply(pd.to_numeric, errors='ignore',)
 
@@ -78,22 +79,34 @@ def main(args):
         print('Summarizing at trajectory count {}'.format(trajectory_count))
         summary_df = extracted_data[np.isclose(extracted_data.trajectories, trajectory_count)].groupby(
             ['end_point']+list(args.hyperparameters))
-
+        print(summary_df.mean())
         tag = '{}_{}_mean'.format(args.statistic, trajectory_count)
-        mean_kls = summary_df.mean().swaplevel()
+        mean_kls = summary_df.mean()
+        try:
+            mean_kls = mean_kls.swaplevel()
+        except AttributeError:
+            print('Swap Level Failed')
         mean_kls[tag] = mean_kls[args.statistic]
         grouped_data.append(mean_kls[tag])
 
 
         tag = '{}_{}_std'.format(args.statistic, trajectory_count)
-        std_kls = summary_df.std().swaplevel()
+        std_kls = summary_df.std()
+        try:
+            std_kls = std_kls.swaplevel()
+        except AttributeError:
+            print('Swap level failed.')
         std_kls[tag] = std_kls[args.statistic]
         grouped_data.append(std_kls[tag])
 
 
         counts = extracted_data[np.isclose(extracted_data.trajectories, trajectory_count)].groupby(
-            ['end_point']+list(args.hyperparameters)).count().swaplevel()
-
+            ['end_point']+list(args.hyperparameters)).count()
+        
+        try:
+            counts = counts.swaplevel()
+        except AttributeError:
+            print('Swap level failed.')
 
         tag_count = '{}_{}'.format('count', trajectory_count)
         tag_prop = '{}_{}'.format('prop', trajectory_count)
@@ -149,7 +162,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '--hyperparameters',
         nargs='+',
-        required=True,
+        required=False,
+        default=[],
         help='Hyperparameters to extract from the folder path.')
     parser.add_argument(
         '--save_file',
