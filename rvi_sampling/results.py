@@ -78,7 +78,11 @@ class SamplingResults(object):
         """
         if posterior_particles is not None:
             assert self._posterior_particles is None
-            self._posterior_particles = np.array(posterior_particles).reshape(-1)
+            self._posterior_particles = np.array(posterior_particles)
+
+            # Backward compat:
+            if len(self._all_trajectories[0]) == 1:
+                self._posterior_particles = self._posterior_particles.reshape(-1)
             return self._posterior_particles
         else:
             return self._posterior_particles
@@ -234,12 +238,22 @@ class SamplingResults(object):
         :param path:
         :return:
         """
-        results_dict = dict(sampler_name=self.sampler_name,
-                            true_trajectory=self.true_trajectory.tolist(),
-                            all_trejctories=[traj.tolist() for traj in self._all_trajectories],
-                            trajectories=[traj.tolist() for traj in self._trajectories],
-                            posterior_particles= [float(p) for p in self._posterior_particles] if self._posterior_particles is not None else None,
-                            posterior_weights= [ float(w) for w in self._posterior_weights] if self._posterior_weights is not None else None)
+
+        prepared_posterior_particles = None
+        if len(self._all_trajectories[0]) == 1:
+            if self._posterior_particles is not None:
+                prepared_posterior_particles = [ float(p) for p in self._posterior_particles]
+        elif len(self._all_trajectories[0]) > 1:
+            if self._posterior_particles is not None:
+                prepared_posterior_particles = [ p.tolist() for p in self._posterior_particles]
+
+        results_dict = dict(
+                sampler_name=self.sampler_name,
+                true_trajectory=self.true_trajectory.tolist(),
+                all_trejctories=[traj.tolist() for traj in self._all_trajectories],
+                trajectories=[traj.tolist() for traj in self._trajectories],
+                posterior_particles=prepared_posterior_particles,
+                posterior_weights= [ float(w) for w in self._posterior_weights] if self._posterior_weights is not None else None)
 
         import json
         with open(os.path.join(path, 'trajectory_results_{}'.format(self.sampler_name)), 'w') as f:

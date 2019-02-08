@@ -66,6 +66,18 @@ def empirical_distribution(particles, weights, histbin_range, return_numpy=False
     """
     hist_range = np.arange(-histbin_range- 2, histbin_range+2) + 0.5 # add 0.5 to move into put center of boxes in integers
 
+    # Handle the example when there are multiple dimensions.
+    # Treat each dimension as independent and then just multiplex the dists.
+    if len(particles.shape) > 1:
+        estimated_dists = []
+        for i in range(particles.shape[1]):
+            estimated_dists.append(
+                    empirical_distribution(
+                        particles[:, i], weights, histbin_range, return_numpy))
+
+        if len(estimated_dists) == 1: return estimated_dists[0]
+        return estimated_dists
+
     probs, vals = np.histogram(particles, bins=hist_range, density=True,
                                weights=weights)
 

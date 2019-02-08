@@ -1,3 +1,4 @@
+import logging
 from scipy.misc import comb
 from rvi_sampling.utils.common import EPSILON
 import numpy as np
@@ -153,7 +154,51 @@ class MultiWindowTwoStepRandomwWalkPosterior(TwoStepRandomWalkPosterior):
         return ax
 
     def expectation(self, observed_d):
-        pdf = np.array([self.pdf(x, observed_d) for x in self.support])
+        np.array([self.pdf(x, observed_d) for x in self.support])
         pdf /= pdf.sum()
         return np.sum(np.array(self.support) * pdf)
+
+
+class MultiDimensionalRandomWalkPosterior(AnalyticPosterior):
+    def __init__(self, c, p, T, dimensions=2):
+        """
+        See TwoStepRandomWalkPosterior for details on the arguments.
+        """
+        logging.warning((
+            '(!) When using a multidimensional random walk, make '
+            'sure that you acknowledge that the walks are _independent_.  '
+            'This means that your stochastic process should have 2^d '
+            'transisions. For example, for d=2, we have that '
+            '[-1, +1], [-1, -1], [+1, -1], [+1, +1] are the valid transitions.'
+            ' and NOT: [-1, 0], [0, -1], [+1, 0], [0, +1] which would imply '
+            'that if one walk takes a step, the other cannot.'
+            ))
+        self._posteriors = [
+            TwoStepRandomWalkPosterior(c, p, T) for  _ in range(dimensions)
+        ]
+        # TODO(zaf): Merge into TwoStepRandomWalkPosterior?
+        self.c = c
+        self.p = p
+        self.T = T-1
+        self.support = np.arange(-self.c, self.c+1)
+
+    def pdf(self, x, d):
+        probability = 1.0
+        for i, posterior in enumerate(self._posteriors):
+            probability *= posterior.pdf(x[i], d[i])
+
+        return probability
+
+    def kl_divergence(self, estimated_dist, observed_d, verbose=False):
+        kl_divergences = []
+        for i, posterior in enumerate(self._posteriors):
+            kl_divergences.append(
+                posterior.kl_divergence(
+                    estimated_dist[i],
+                    observed_d[i],
+                    verbose)
+                )
+        # Return the worst KL Divergence.
+        return list(map(np.max, zip(*kl_divergences)))
+
 
