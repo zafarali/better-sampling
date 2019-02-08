@@ -1,12 +1,18 @@
-# Data aggregator
-import argparse
-import os
+"""
+A utility to plot a histogram of KL divergences as a nice plot
+this is useful for showing performance of a method on average.
 
-from glob import glob
-import numpy as np
-# import seaborn as sns
-# import matplotlib.pyplot as plt
+"""
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import sys
+import seaborn as sns
+import os
+import argparse
 import pandas as pd
+import numpy as np
+from glob import glob
 
 def get_hyperparameter(path, hyperparameter_name, splitter='/'):
     # Get the hyperparameter from the path.
@@ -23,7 +29,6 @@ def extract_data(
     """
     glob_path = os.path.join(template_file, 'Seed*', sampler_name + '_' + statistic + '.txt')
     files = glob(glob_path)
-    print('Found {} files.'.format(len(files)))
     datas = []
 #     print(files)
     for file_ in files:
@@ -31,9 +36,7 @@ def extract_data(
         data = pd.DataFrame(data=raw_data, columns=[statistic, 'trajectories'])
         for hp in hyperparameters:
             data[hp] = get_hyperparameter(file_, hp)
-            
         datas.append(data)
-    
     if return_pd:
         return pd.concat(datas, ignore_index=True)
     else:
@@ -57,7 +60,7 @@ def main(args):
                 sampler_name=args.sampler_name,
                 hyperparameters=['end_point', 'Seed'] + list(args.hyperparameters),
                 return_pd=False))
-    print('Total extracted items: {}'.format(len(extracted_data)))
+
     extracted_data = pd.concat(extracted_data, ignore_index=True)
     extracted_data = extracted_data.apply(pd.to_numeric, errors='ignore',)
 
@@ -73,60 +76,35 @@ def main(args):
             args.trajectory_count = (100, 500, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 10000)
 
     print('Summarizing data at: {}'.format(args.trajectory_count))
-    
+
     grouped_data = []
     for trajectory_count in args.trajectory_count:
         print('Summarizing at trajectory count {}'.format(trajectory_count))
-        summary_df = extracted_data[np.isclose(extracted_data.trajectories, trajectory_count)].groupby(
-            ['end_point']+list(args.hyperparameters))
-        print(summary_df.mean())
-        tag = '{}_{}_mean'.format(args.statistic, trajectory_count)
-        mean_kls = summary_df.mean()
-        try:
-            mean_kls = mean_kls.swaplevel()
-        except AttributeError:
-            print('Swap Level Failed')
-        mean_kls[tag] = mean_kls[args.statistic]
-        grouped_data.append(mean_kls[tag])
+        summary_df = extracted_data[np.isclose(
+            extracted_data.trajectories, trajectory_count)]
 
+        grouped_data.append(summary_df)
 
-        tag = '{}_{}_std'.format(args.statistic, trajectory_count)
-        std_kls = summary_df.std()
-        try:
-            std_kls = std_kls.swaplevel()
-        except AttributeError:
-            print('Swap level failed.')
-        std_kls[tag] = std_kls[args.statistic]
-        grouped_data.append(std_kls[tag])
-
-
-        counts = extracted_data[np.isclose(extracted_data.trajectories, trajectory_count)].groupby(
-            ['end_point']+list(args.hyperparameters)).count()
-        
-        try:
-            counts = counts.swaplevel()
-        except AttributeError:
-            print('Swap level failed.')
-
-        tag_count = '{}_{}'.format('count', trajectory_count)
-        tag_prop = '{}_{}'.format('prop', trajectory_count)
-        counts[tag_count] = counts[args.statistic]
-        counts[tag_prop] = counts[tag_count]/counts['Seed']
-
-        grouped_data.append(counts[tag_count])
-        grouped_data.append(counts[tag_prop])
-
-    combined_df = pd.concat(grouped_data, axis=1)
+    combined_df = pd.concat(grouped_data)
     combined_df['sampler'] = args.sampler_name
+    combined_df['method'] = args.method_name
 
     print('Data summarized.')
-
     if args.dry_run:
         print(combined_df)
     else:
         print('Saving...')
-        with open(args.save_file, 'w') as f_:
-            f_.write(combined_df.to_csv())
+        print(combined_df)
+        df = combined_df[[
+            'method',
+            'end_point',
+            'trajectories',
+            'Seed',
+            args.statistic]]
+        if os.path.exists(args.save_file):
+            df.to_csv(args.save_file, mode='a', header=False)
+        else:
+            df.to_csv(args.save_file, header=True)
         print('Saved.')
 
 
@@ -176,6 +154,10 @@ if __name__ == '__main__':
         required=False,
         action='store_true',
         default=False)
-    
+    parser.add_argument(
+        '--method_name',
+        help='Name of the method',
+        required=False,
+        default='method') 
     args = parser.parse_args()
     main(args)
